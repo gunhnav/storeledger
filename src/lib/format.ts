@@ -21,3 +21,14 @@ export function errorMessage(error: unknown): string {
 export function formatDate(iso: string): string {
   return iso.split('-').reverse().join('/')
 }
+
+// Bỏ dấu tiếng Việt + chữ thường, để tìm "bun dau" ra "Bún đậu"
+export function normalizeSearch(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim()
+}

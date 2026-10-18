@@ -398,3 +398,145 @@ td.actions {
   width: 110px;
   text-align: right;
 }
+
+/* Chọn món: tìm kiếm, lọc nhóm, tick nhiều / nhập nhanh */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mode-toggle {
+  display: flex;
+}
+.mode-toggle button {
+  flex: 1;
+  min-height: 40px;
+  border-radius: 0;
+}
+.mode-toggle button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.mode-toggle button:last-child {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+.mode-toggle button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.picker-search {
+  min-height: 40px;
+  width: 100%;
+}
+.chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.chip {
+  min-height: 36px;
+  border-radius: 999px;
+  white-space: nowrap;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.picker-list > li + li {
+  border-top: 1px solid var(--border);
+}
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.picker-row.quick {
+  cursor: default;
+  flex-wrap: wrap;
+}
+.picker-row.selected {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.picker-row input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.picker-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 140px;
+  min-width: 0;
+}
+.quick-inputs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+.stepper {
+  display: flex;
+  align-items: center;
+}
+.stepper button {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  font-size: 18px;
+}
+.stepper input {
+  width: 56px;
+  min-height: 40px;
+  text-align: center;
+  margin: 0 4px;
+}
+.price-input {
+  width: 100px;
+  min-height: 40px;
+  text-align: right;
+}
+.warn {
+  color: var(--low-fg);
+  background: var(--low-bg);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+  align-self: flex-start;
+}
+.picked {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.picked h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-h);
+}
+.picked-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
