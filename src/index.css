@@ -1526,7 +1526,7 @@ a.button.primary:hover {
 }
 .expense-line {
   display: grid;
-  grid-template-columns: 170px minmax(160px, 1fr) 90px 130px 140px 32px;
+  grid-template-columns: 160px minmax(160px, 1fr) 80px 130px 170px 32px;
   gap: 8px;
   align-items: center;
 }
@@ -1568,6 +1568,13 @@ a.button.primary:hover {
 }
 .input-action-btn:hover {
   background: var(--surface-2);
+}
+.calc-result {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
 }
 .expense-line-error {
   grid-column: 1 / -1;

@@ -6,12 +6,15 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, capitalizeFirst, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import { expenseGroupsFor, expenseLine, isBlankDraft, parseDraft, type ExpenseDraft } from '../lib/expenses'
+import { evalExpression, isExpression } from '../lib/calc'
 import type { Expense } from '../types/database'
 
 type Draft = ExpenseDraft & { id: number }
 
 const cleanNumber = (text: string) => text.replace(/[^0-9.]/g, '')
-const toNumber = (text: string) => (text.trim() === '' ? Number.NaN : Number(text))
+// Ô tiền: cho gõ số và phép tính (+ − × ÷, ngoặc, k / tr)
+const cleanExpression = (text: string) => text.replace(/[^0-9.,+\-*/x×÷:()kKtTrR\s]/g, '')
+const toNumber = (text: string) => (text.trim() === '' ? Number.NaN : (evalExpression(text) ?? Number.NaN))
 let nextId = 1
 
 export function ExpensePage() {
@@ -225,20 +228,20 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
                     className={line.overridden ? 'computed' : undefined}
                     readOnly={line.overridden}
                     value={line.overridden ? (Number.isFinite(line.unitPrice) ? formatVND(line.unitPrice) : '') : d.unitPrice}
-                    onChange={(e) => update(d.id, { unitPrice: cleanNumber(e.target.value) })}
+                    onChange={(e) => update(d.id, { unitPrice: cleanExpression(e.target.value) })}
                   />
                 </label>
                 <label>
                   <span className="mobile-label">{t('Thành tiền')}</span>
                   <span className="input-action">
+                    {/* Bàn phím đầy đủ để gõ được phép tính, ví dụ 50000+30000*2 hoặc 3x25k */}
                     <input
                       type="text"
-                      inputMode="numeric"
                       aria-label={t('Thành tiền')}
                       className={line.overridden ? 'overridden' : undefined}
-                      placeholder={Number.isFinite(line.total) && line.total > 0 ? formatVND(line.total) : t('= số lượng × đơn giá')}
+                      placeholder={Number.isFinite(line.total) && line.total > 0 ? formatVND(line.total) : t('Số hoặc phép tính')}
                       value={d.total}
-                      onChange={(e) => update(d.id, { total: cleanNumber(e.target.value) })}
+                      onChange={(e) => update(d.id, { total: cleanExpression(e.target.value) })}
                       onKeyDown={(e) => {
                         // Enter ở ô cuối của dòng cuối: thêm dòng mới
                         if (e.key === 'Enter' && !editing && i === drafts.length - 1) {
@@ -247,6 +250,9 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
                         }
                       }}
                     />
+                    {isExpression(d.total) && Number.isFinite(line.total) && (
+                      <small className="calc-result">= {formatVND(line.total)}</small>
+                    )}
                     {line.overridden && (
                       <button
                         type="button"
@@ -278,7 +284,7 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
             + {t('Thêm dòng')}
           </button>
         )}
-        <small className="muted">{t('Thành tiền tự tính = số lượng × đơn giá. Gõ vào ô Thành tiền để ghi đè.')}</small>
+        <small className="muted">{t('Thành tiền tự tính = số lượng × đơn giá. Gõ số hoặc phép tính vào ô Thành tiền để ghi đè, ví dụ 50000+30000*2 hoặc 3x25k.')}</small>
 
         <div className="expense-footer">
           <span>

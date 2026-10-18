@@ -43,3 +43,15 @@ describe('nhập nhiều chi phí cùng ngày', () => {
     expect(isBlankDraft({ ...base, note: 'Đá' })).toBe(false)
   })
 })
+
+describe('ô tiền có phép tính', () => {
+  const base = { category: 'Nguyên liệu', note: 'Lòng', quantity: '1', unitPrice: '', total: '' }
+  it('thành tiền là phép tính', () => {
+    expect(parseDraft({ ...base, total: '50000+30000*2' }, 1e9)).toEqual({ ok: true, quantity: 1, unitPrice: 110000, total: 110000 })
+    expect(parseDraft({ ...base, quantity: '3', unitPrice: '25k' }, 1e9)).toEqual({ ok: true, quantity: 3, unitPrice: 25000, total: 75000 })
+  })
+  it('phép tính sai báo lỗi rõ ô nào', () => {
+    expect(parseDraft({ ...base, total: '5000+' }, 1e9)).toEqual({ ok: false, error: 'Phép tính ở ô Thành tiền không hợp lệ' })
+    expect(parseDraft({ ...base, unitPrice: '(3' }, 1e9)).toEqual({ ok: false, error: 'Phép tính ở ô Đơn giá không hợp lệ' })
+  })
+})

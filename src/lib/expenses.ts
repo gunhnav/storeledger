@@ -1,3 +1,5 @@
+import { evalExpression } from './calc'
+
 // Nhóm chi phí cố định theo cửa hàng (DB nhận hợp của các danh sách, xem
 // 20261018162323_company_channel_expense_groups.sql). Quán không có danh sách riêng dùng nhóm mặc định.
 export const EXPENSE_GROUPS = ['Dụng cụ', 'Bao bì', 'In ấn - quảng cáo', 'Vận chuyển', 'Khác'] as const
@@ -36,7 +38,8 @@ export type ExpenseDraft = { category: string; note: string; quantity: string; u
 export const isBlankDraft = (d: ExpenseDraft) =>
   d.note.trim() === '' && d.unitPrice.trim() === '' && d.total.trim() === '' && (d.quantity.trim() === '' || d.quantity.trim() === '1')
 
-const num = (text: string) => (text.trim() === '' ? Number.NaN : Number(text))
+// Ô tiền cho phép phép tính (50000+30000*2, 3x25k…); ô trống hoặc phép tính sai là NaN
+const num = (text: string) => (text.trim() === '' ? Number.NaN : (evalExpression(text) ?? Number.NaN))
 
 // Kiểm tra một dòng và tính số lưu DB; dòng trống hoàn toàn bỏ qua ở nơi gọi
 export function parseDraft(
@@ -45,6 +48,8 @@ export function parseDraft(
 ): { ok: true; quantity: number; unitPrice: number; total: number } | { ok: false; error: string } {
   const quantity = num(d.quantity)
   if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1000000) return { ok: false, error: 'Số lượng phải lớn hơn 0' }
+  if (d.total.trim() !== '' && evalExpression(d.total) === null) return { ok: false, error: 'Phép tính ở ô Thành tiền không hợp lệ' }
+  if (d.unitPrice.trim() !== '' && evalExpression(d.unitPrice) === null) return { ok: false, error: 'Phép tính ở ô Đơn giá không hợp lệ' }
   const override = d.total.trim() === '' ? null : num(d.total)
   const unit = num(d.unitPrice)
   if (override === null && (!Number.isFinite(unit) || unit < 0)) return { ok: false, error: 'Nhập đơn giá hoặc thành tiền' }
