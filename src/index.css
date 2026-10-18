@@ -1797,6 +1797,11 @@ input[aria-invalid='true']:focus {
 .lang-select select:focus {
   box-shadow: none;
 }
+/* Trong .form (trang Tài khoản): không để kiểu label dạng cột của form kéo giãn ô chọn */
+.form label.lang-select {
+  flex-direction: row;
+  align-self: flex-start;
+}
 .login {
   position: relative;
 }
