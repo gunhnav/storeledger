@@ -26,6 +26,7 @@ export const ja: Record<string, string> = {
   'Bạn không có quyền thao tác với cửa hàng này': 'この店舗を操作する権限がありません',
   'Bạn không có quyền xem cửa hàng này': 'この店舗を閲覧する権限がありません',
   'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quầy.': '商品をタップし、販売チャネルを選んで注文を保存します。カウンター在庫から差し引かれます。',
+  'Bấm vào thẻ quán ở cột “Làm việc tại” để thêm hoặc bỏ quán cho nhân viên, lưu ngay không cần bấm Sửa. Admin luôn thấy tất cả cửa hàng.': '「勤務店舗」列の店舗カードをタップすると、スタッフの店舗を追加・解除できます。「編集」を押さなくてもすぐ保存されます。管理者は常にすべての店舗を見られます。',
   'Bỏ chọn': '選択解除',
   'Bỏ chọn hết cửa hàng để khoá quyền nhập liệu của nhân viên (tài khoản vẫn đăng nhập được nhưng không thấy gì).': 'すべての店舗のチェックを外すとスタッフの入力権限がロックされます（ログインはできますが何も表示されません）。',
   'CN': '日',

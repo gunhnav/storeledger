@@ -26,6 +26,7 @@ export const ko: Record<string, string> = {
   'Bạn không có quyền thao tác với cửa hàng này': '이 매장에 대한 권한이 없습니다',
   'Bạn không có quyền xem cửa hàng này': '이 매장을 볼 권한이 없습니다',
   'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quầy.': '상품을 누르고 판매 채널을 고른 뒤 주문을 저장합니다. 매장 재고에서 차감됩니다.',
+  'Bấm vào thẻ quán ở cột “Làm việc tại” để thêm hoặc bỏ quán cho nhân viên, lưu ngay không cần bấm Sửa. Admin luôn thấy tất cả cửa hàng.': '“근무 매장” 열의 매장 카드를 눌러 직원의 매장을 추가하거나 뺄 수 있으며, 수정 버튼 없이 바로 저장됩니다. 관리자는 항상 모든 매장을 봅니다.',
   'Bỏ chọn': '선택 해제',
   'Bỏ chọn hết cửa hàng để khoá quyền nhập liệu của nhân viên (tài khoản vẫn đăng nhập được nhưng không thấy gì).': '모든 매장 선택을 해제하면 직원의 입력 권한이 잠깁니다(로그인은 가능하지만 아무것도 볼 수 없음).',
   'CN': '일',

@@ -295,6 +295,8 @@ export function StaffPage() {
         </div>
       )}
       <p className="muted">
+        {t('Bấm vào thẻ quán ở cột “Làm việc tại” để thêm hoặc bỏ quán cho nhân viên, lưu ngay không cần bấm Sửa. Admin luôn thấy tất cả cửa hàng.')}
+        <br />
         {t('Bỏ chọn hết cửa hàng để khoá quyền nhập liệu của nhân viên (tài khoản vẫn đăng nhập được nhưng không thấy gì).')}
       </p>
     </section>

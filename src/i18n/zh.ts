@@ -26,6 +26,7 @@ export const zh: Record<string, string> = {
   'Bạn không có quyền thao tác với cửa hàng này': '您无权操作此门店',
   'Bạn không có quyền xem cửa hàng này': '您无权查看此门店',
   'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quầy.': '点选商品，选择销售渠道后保存订单。从柜台库存扣减。',
+  'Bấm vào thẻ quán ở cột “Làm việc tại” để thêm hoặc bỏ quán cho nhân viên, lưu ngay không cần bấm Sửa. Admin luôn thấy tất cả cửa hàng.': '点按“工作门店”列中的门店卡片即可为员工添加或移除门店，立即保存，无需点“编辑”。管理员始终可以看到所有门店。',
   'Bỏ chọn': '取消选择',
   'Bỏ chọn hết cửa hàng để khoá quyền nhập liệu của nhân viên (tài khoản vẫn đăng nhập được nhưng không thấy gì).': '取消所有门店即可锁定员工的录入权限（仍可登录但看不到任何内容）。',
   'CN': '日',

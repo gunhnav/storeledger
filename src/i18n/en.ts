@@ -26,6 +26,7 @@ export const en: Record<string, string> = {
   'Bạn không có quyền thao tác với cửa hàng này': 'You do not have permission for this store',
   'Bạn không có quyền xem cửa hàng này': 'You do not have permission to view this store',
   'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quầy.': 'Tap the items, choose the sales channel and save the order. Counter stock goes down.',
+  'Bấm vào thẻ quán ở cột “Làm việc tại” để thêm hoặc bỏ quán cho nhân viên, lưu ngay không cần bấm Sửa. Admin luôn thấy tất cả cửa hàng.': 'Tap a store card in the “Works at” column to add or remove that store for a staff member; it saves right away, no need to press Edit. Admins always see all stores.',
   'Bỏ chọn': 'Clear',
   'Bỏ chọn hết cửa hàng để khoá quyền nhập liệu của nhân viên (tài khoản vẫn đăng nhập được nhưng không thấy gì).': 'Untick all stores to lock a staff member\'s data entry (they can still sign in but will see nothing).',
   'CN': 'Sun',
