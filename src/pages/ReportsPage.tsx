@@ -3,6 +3,7 @@ import {
   Bar,
   CartesianGrid,
   ComposedChart,
+  LabelList,
   Legend,
   Line,
   ReferenceLine,
@@ -302,6 +303,9 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
     net_profit: r.net_profit,
   }))
   const hasLoss = rows.some((r) => r.net_profit < 0)
+  // Hiện số trên cột / điểm khi ít kỳ; nhiều kỳ thì chữ chồng nhau nên chỉ xem qua tooltip
+  const showLabels = chartData.length <= 14
+  const label = (v: unknown) => (Number(v) === 0 ? '' : formatCompact(Number(v), locale))
 
   return (
     <>
@@ -320,7 +324,7 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
 
       <div className="chart-wrap">
         <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: showLabels ? 22 : 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
             <XAxis
               dataKey="label"
@@ -356,14 +360,18 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
               fill="var(--chart-1)"
               radius={[4, 4, 0, 0]}
               maxBarSize={28}
-            />
+            >
+              {showLabels && <LabelList dataKey="net_revenue" position="top" formatter={label} className="chart-label" fill="var(--chart-1)" />}
+            </Bar>
             <Bar
               dataKey="cost"
               name={t('Giá vốn + chi phí')}
               fill="var(--chart-2)"
               radius={[4, 4, 0, 0]}
               maxBarSize={28}
-            />
+            >
+              {showLabels && <LabelList dataKey="cost" position="top" formatter={label} className="chart-label" fill="var(--chart-2)" />}
+            </Bar>
             <Line
               dataKey="net_profit"
               name={t('Lãi ròng')}
@@ -371,7 +379,9 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
               stroke="var(--chart-3)"
               strokeWidth={2}
               dot={{ r: 4, fill: 'var(--chart-3)', stroke: 'var(--surface)', strokeWidth: 2 }}
-            />
+            >
+              {showLabels && <LabelList dataKey="net_profit" position="top" offset={10} formatter={label} className="chart-label chart-label-line" fill="var(--chart-3)" />}
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
       </div>

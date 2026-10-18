@@ -82,8 +82,9 @@ function BatchStats({ storeId }: { storeId: string }) {
             {batches.map((b, i) => (
               <tr key={b.purchaseId}>
                 <td className="sticky-col">
-                  <strong>{t('Đợt {n}', { n: i + 1 })}</strong> · {formatDate(b.date)}
-                  {b.note && <small className="muted"> · {b.note}</small>}
+                  <strong>{t('Đợt {n}', { n: i + 1 })}</strong>
+                  <small className="batch-date">{formatDate(b.date)}</small>
+                  {b.note && <small className="muted batch-date">{b.note}</small>}
                 </td>
                 <td className="num">{b.totalQty}</td>
                 <td className="num">{formatVND(b.cost)}</td>
