@@ -118,90 +118,129 @@ function TransferForm({ storeId }: { storeId: string }) {
     const row = stock.get(p.id)
     return `Ở nhà: ${row?.qty_home ?? 0} · Ở quầy: ${row?.qty_shop ?? 0}`
   }
+  const badge = (p: Product) => ((stock.get(p.id)?.qty_home ?? 0) === 0 ? 'Ở nhà hết' : null)
   const lineFor = (id: string) => lines.find((l) => l.product_id === id)
   const hasWarning = lines.some((l) => overHome(l) !== null)
+  const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
+
+  const submitLabel = isSubmitting ? 'Đang lưu…' : 'Chuyển ra quầy'
+  const canSubmit = !isSubmitting && !hasWarning && lines.length > 0
 
   return (
     <section>
       <h2>Chuyển hàng ra quầy</h2>
-      <form className="card form" onSubmit={handleSubmit(onSubmit)}>
-        <label>
-          Ngày chuyển
-          <input
-            type="date"
-            max={todayVN()}
-            {...register('transfer_date', { required: 'Chọn ngày chuyển', validate: notFuture })}
-          />
-        </label>
-        {errors.transfer_date && <p className="error">{errors.transfer_date.message}</p>}
+      <form className="pos" onSubmit={handleSubmit(onSubmit)}>
+        <div className="pos-main card">
+          <label className="field">
+            Ngày chuyển
+            <input
+              type="date"
+              max={todayVN()}
+              {...register('transfer_date', { required: 'Chọn ngày chuyển', validate: notFuture })}
+            />
+          </label>
+          {errors.transfer_date && <p className="error">{errors.transfer_date.message}</p>}
 
-        {stocked.length === 0 ? (
-          <p className="muted">Cửa hàng chưa có món nào đếm tồn kho.</p>
-        ) : (
-          <ProductPicker
-            products={stocked}
-            selectedIds={lines.map((l) => l.product_id)}
-            onChange={onPick}
-            renderInfo={info}
-            quick={quick}
-            onQuickChange={setQuickMode}
-            renderQuick={(p) => {
-              const line = lineFor(p.id)
-              const warn = line && overHome(line)
-              return (
-                <div className="quick-inputs">
-                  <QtyStepper
-                    value={line?.qty ?? ''}
-                    onChange={(v) => setQty(p.id, v)}
-                    min={0}
-                    label={`số lượng chuyển ${p.name}`}
-                  />
-                  {warn && <small className="warn">{warn}</small>}
-                </div>
-              )
-            }}
-          />
-        )}
+          {stocked.length === 0 ? (
+            <p className="pos-empty muted">Cửa hàng chưa có món nào đếm tồn kho.</p>
+          ) : (
+            <ProductPicker
+              products={stocked}
+              selectedIds={lines.map((l) => l.product_id)}
+              onChange={onPick}
+              renderInfo={info}
+              renderBadge={badge}
+              quick={quick}
+              onQuickChange={setQuickMode}
+              renderQuick={(p) => {
+                const line = lineFor(p.id)
+                const warn = line && overHome(line)
+                return (
+                  <div className="quick-inputs">
+                    {warn && <small className="warn">{warn}</small>}
+                    <QtyStepper
+                      value={line?.qty ?? ''}
+                      onChange={(v) => setQty(p.id, v)}
+                      min={0}
+                      label={`số lượng chuyển ${p.name}`}
+                    />
+                  </div>
+                )
+              }}
+            />
+          )}
+        </div>
 
-        {!quick && lines.length > 0 && (
-          <div className="picked">
-            <h3>Món đã chọn ({lines.length})</h3>
-            {lines.map((line) => {
-              const name = byId.get(line.product_id)?.name ?? ''
-              const warn = overHome(line)
-              return (
-                <div key={line.product_id} className="picked-row">
-                  <div className="picker-name">
-                    {name}
+        <aside className="pos-side card">
+          <div className="pos-side-head">
+            <h3>Mang ra quầy</h3>
+            <span className="count-pill">{lines.length} món</span>
+          </div>
+
+          {lines.length === 0 ? (
+            <p className="pos-empty muted">
+              {quick ? 'Nhập số lượng ở danh sách món bên cạnh.' : 'Chạm vào món ở bên cạnh để chọn.'}
+            </p>
+          ) : (
+            <div className="order-lines">
+              {lines.map((line) => {
+                const name = byId.get(line.product_id)?.name ?? ''
+                const warn = overHome(line)
+                return (
+                  <div key={line.product_id} className={`order-line${warn ? ' has-warn' : ''}`}>
+                    <div className="order-line-top">
+                      <span className="order-line-name">{name}</span>
+                      <button
+                        type="button"
+                        className="remove"
+                        aria-label={`Xoá ${name}`}
+                        onClick={() => removeLine(line.product_id)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="order-line-bottom">
+                      <QtyStepper
+                        value={line.qty}
+                        onChange={(v) => setQty(line.product_id, v)}
+                        min={1}
+                        label={`số lượng chuyển ${name}`}
+                      />
+                      <span className="subtotal">Ở nhà còn {stock.get(line.product_id)?.qty_home ?? 0}</span>
+                    </div>
                     {warn && <small className="warn">{warn}</small>}
                   </div>
-                  <QtyStepper
-                    value={line.qty}
-                    onChange={(v) => setQty(line.product_id, v)}
-                    min={1}
-                    label={`số lượng chuyển ${name}`}
-                  />
-                  <button type="button" className="link" onClick={() => removeLine(line.product_id)}>
-                    Xoá
-                  </button>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
+          )}
+
+          <label className="field">
+            Ghi chú
+            <input type="text" placeholder="Không bắt buộc" {...register('note')} />
+          </label>
+
+          <div className="pos-total">
+            <span>Tổng số lượng</span>
+            <strong>{totalQty}</strong>
           </div>
-        )}
 
-        <label>
-          Ghi chú
-          <input type="text" {...register('note')} />
-        </label>
+          {formError && <p className="error">{formError}</p>}
+          {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
+          <button type="submit" className="primary block" disabled={!canSubmit}>
+            {submitLabel}
+          </button>
+        </aside>
 
-        <p className="total">{lines.length} món sẽ chuyển ra quầy</p>
-
-        {formError && <p className="error">{formError}</p>}
-        {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
-        <button type="submit" className="primary" disabled={isSubmitting || hasWarning}>
-          {isSubmitting ? 'Đang lưu…' : 'Chuyển hàng'}
-        </button>
+        <div className="pos-mobilebar">
+          <div>
+            <small>{lines.length} món</small>
+            <strong>{totalQty} hộp/phần</strong>
+          </div>
+          <button type="submit" className="primary" disabled={!canSubmit}>
+            {submitLabel}
+          </button>
+        </div>
       </form>
     </section>
   )

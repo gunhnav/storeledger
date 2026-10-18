@@ -160,88 +160,127 @@ function PurchaseForm({ storeId }: { storeId: string }) {
     />
   )
 
+  const submitLabel = isSubmitting ? 'Đang lưu…' : 'Lưu đợt nhập'
+  const canSubmit = !isSubmitting && lines.length > 0
+
   return (
     <section>
       <h2>Nhập hàng</h2>
-      <form className="card form" onSubmit={handleSubmit(onSubmit)}>
-        <label>
-          Ngày nhập
-          <input
-            type="date"
-            max={todayVN()}
-            {...register('purchase_date', { required: 'Chọn ngày nhập', validate: notFuture })}
-          />
-        </label>
-        {errors.purchase_date && <p className="error">{errors.purchase_date.message}</p>}
+      <form className="pos" onSubmit={handleSubmit(onSubmit)}>
+        <div className="pos-main card">
+          <label className="field">
+            Ngày nhập
+            <input
+              type="date"
+              max={todayVN()}
+              {...register('purchase_date', { required: 'Chọn ngày nhập', validate: notFuture })}
+            />
+          </label>
+          {errors.purchase_date && <p className="error">{errors.purchase_date.message}</p>}
 
-        {stocked.length === 0 ? (
-          <p className="muted">Cửa hàng chưa có món nào đếm tồn kho.</p>
-        ) : (
-          <ProductPicker
-            products={stocked}
-            selectedIds={lines.map((l) => l.product_id)}
-            onChange={onPick}
-            renderInfo={info}
-            quick={quick}
-            onQuickChange={setQuickMode}
-            renderQuick={(p) => {
-              const line = lineFor(p.id)
-              return (
-                <div className="quick-inputs">
-                  <QtyStepper
-                    value={line?.qty ?? ''}
-                    onChange={(v) => setQty(p.id, v)}
-                    min={0}
-                    label={`số lượng ${p.name}`}
-                  />
-                  {line && costInput(line, p.name)}
-                </div>
-              )
-            }}
-          />
-        )}
+          {stocked.length === 0 ? (
+            <p className="pos-empty muted">Cửa hàng chưa có món nào đếm tồn kho.</p>
+          ) : (
+            <ProductPicker
+              products={stocked}
+              selectedIds={lines.map((l) => l.product_id)}
+              onChange={onPick}
+              renderInfo={info}
+              quick={quick}
+              onQuickChange={setQuickMode}
+              renderQuick={(p) => {
+                const line = lineFor(p.id)
+                return (
+                  <div className="quick-inputs">
+                    {line && costInput(line, p.name)}
+                    <QtyStepper
+                      value={line?.qty ?? ''}
+                      onChange={(v) => setQty(p.id, v)}
+                      min={0}
+                      label={`số lượng ${p.name}`}
+                    />
+                  </div>
+                )
+              }}
+            />
+          )}
+        </div>
 
-        {!quick && lines.length > 0 && (
-          <div className="picked">
-            <h3>Món đã chọn ({lines.length})</h3>
-            {lines.map((line) => {
-              const name = byId.get(line.product_id)?.name ?? ''
-              return (
-                <div key={line.product_id} className="picked-row">
-                  <div className="picker-name">{name}</div>
-                  <QtyStepper
-                    value={line.qty}
-                    onChange={(v) => setQty(line.product_id, v)}
-                    min={1}
-                    label={`số lượng ${name}`}
-                  />
-                  {costInput(line, name)}
-                  <button type="button" className="link" onClick={() => removeLine(line.product_id)}>
-                    Xoá
-                  </button>
-                </div>
-              )
-            })}
+        <aside className="pos-side card">
+          <div className="pos-side-head">
+            <h3>Đợt nhập</h3>
+            <span className="count-pill">{lines.length} món</span>
           </div>
-        )}
 
-        <small className="muted">Ô giá nhập để trống thì dùng giá vốn hiện hành của món.</small>
+          {lines.length === 0 ? (
+            <p className="pos-empty muted">
+              {quick ? 'Nhập số lượng ở danh sách món bên cạnh.' : 'Chạm vào món ở bên cạnh để thêm vào đợt nhập.'}
+            </p>
+          ) : (
+            <div className="order-lines">
+              {lines.map((line) => {
+                const name = byId.get(line.product_id)?.name ?? ''
+                const cost = Number(costText(line))
+                return (
+                  <div key={line.product_id} className="order-line">
+                    <div className="order-line-top">
+                      <span className="order-line-name">{name}</span>
+                      <button
+                        type="button"
+                        className="remove"
+                        aria-label={`Xoá ${name}`}
+                        onClick={() => removeLine(line.product_id)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="order-line-bottom">
+                      <QtyStepper
+                        value={line.qty}
+                        onChange={(v) => setQty(line.product_id, v)}
+                        min={1}
+                        label={`số lượng ${name}`}
+                      />
+                      <span className="times">×</span>
+                      {costInput(line, name)}
+                      <span className="subtotal">
+                        {costText(line) === '' ? '—' : formatVND((Number(line.qty) || 0) * (cost || 0))}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
-        <label>
-          Ghi chú
-          <input type="text" {...register('note')} />
-        </label>
+          <small className="muted">Ô giá nhập để trống thì dùng giá vốn hiện hành của món.</small>
 
-        <p className="total">
-          {lines.length} món · Tổng tiền nhập: <strong>{formatVND(total)}</strong>
-          {hasBlankCost && <small className="muted"> (chưa gồm món để trống giá)</small>}
-        </p>
+          <label className="field">
+            Ghi chú
+            <input type="text" placeholder="Không bắt buộc" {...register('note')} />
+          </label>
 
-        {formError && <p className="error">{formError}</p>}
-        {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
-        <button type="submit" className="primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Đang lưu…' : 'Lưu đợt nhập'}
-        </button>
+          <div className="pos-total">
+            <span>Tổng tiền nhập{hasBlankCost && <small> (chưa gồm món để trống giá)</small>}</span>
+            <strong>{formatVND(total)}</strong>
+          </div>
+
+          {formError && <p className="error">{formError}</p>}
+          {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
+          <button type="submit" className="primary block" disabled={!canSubmit}>
+            {submitLabel}
+          </button>
+        </aside>
+
+        <div className="pos-mobilebar">
+          <div>
+            <small>{lines.length} món</small>
+            <strong>{formatVND(total)}</strong>
+          </div>
+          <button type="submit" className="primary" disabled={!canSubmit}>
+            {submitLabel}
+          </button>
+        </div>
       </form>
     </section>
   )

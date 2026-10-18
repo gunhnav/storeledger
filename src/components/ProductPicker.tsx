@@ -8,18 +8,21 @@ type Props = {
   onChange: (ids: string[]) => void
   // Thông tin phụ dưới tên món: giá, "Ở nhà: N"…
   renderInfo: (product: Product) => ReactNode
+  // Nhãn trạng thái ở góc thẻ (ví dụ "Hết ở quầy"), null = không có
+  renderBadge?: (product: Product) => ReactNode
   // Nhập nhanh: mỗi món một dòng có sẵn ô nhập (do trang vẽ), không cần tick
   quick: boolean
   onQuickChange: (quick: boolean) => void
   renderQuick: (product: Product) => ReactNode
 }
 
-// Danh sách món có tìm kiếm (không dấu), lọc theo nhóm, tick chọn nhiều hoặc nhập nhanh
+// Danh sách món có tìm kiếm (không dấu), lọc theo nhóm, chạm thẻ để chọn nhiều hoặc nhập nhanh
 export function ProductPicker({
   products,
   selectedIds,
   onChange,
   renderInfo,
+  renderBadge,
   quick,
   onQuickChange,
   renderQuick,
@@ -46,22 +49,28 @@ export function ProductPicker({
 
   return (
     <div className="picker">
-      <div className="mode-toggle" role="group" aria-label="Cách nhập">
-        <button type="button" className={quick ? 'active' : undefined} onClick={() => onQuickChange(true)}>
-          Nhập nhanh
-        </button>
-        <button type="button" className={quick ? undefined : 'active'} onClick={() => onQuickChange(false)}>
-          Chọn món
-        </button>
+      <div className="picker-toolbar">
+        <div className="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Tìm món (gõ không dấu cũng được)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="segmented" role="group" aria-label="Cách nhập">
+          <button type="button" className={quick ? 'active' : undefined} onClick={() => onQuickChange(true)}>
+            Nhập nhanh
+          </button>
+          <button type="button" className={quick ? undefined : 'active'} onClick={() => onQuickChange(false)}>
+            Chọn món
+          </button>
+        </div>
       </div>
-
-      <input
-        type="search"
-        className="picker-search"
-        placeholder="Tìm món (gõ không dấu cũng được)"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
 
       {categories.length > 1 && (
         <div className="chips">
@@ -78,43 +87,59 @@ export function ProductPicker({
         </div>
       )}
 
-      {!quick && (
-        <div className="row">
-          <button type="button" onClick={selectVisible} disabled={visible.length === 0}>
-            Chọn tất cả (đang lọc)
-          </button>
-          <button type="button" onClick={() => onChange([])} disabled={selectedIds.length === 0}>
-            Bỏ chọn
-          </button>
-        </div>
-      )}
+      <div className="picker-meta">
+        <span className="muted">
+          {visible.length} món{selectedIds.length > 0 && ` · đã chọn ${selectedIds.length}`}
+        </span>
+        {!quick && (
+          <span className="picker-actions">
+            <button type="button" className="link" onClick={selectVisible} disabled={visible.length === 0}>
+              Chọn tất cả
+            </button>
+            <button type="button" className="link" onClick={() => onChange([])} disabled={selectedIds.length === 0}>
+              Bỏ chọn
+            </button>
+          </span>
+        )}
+      </div>
 
       {visible.length === 0 ? (
-        <p className="muted">Không có món nào khớp.</p>
-      ) : (
-        <ul className="picker-list">
-          {visible.map((p) =>
-            quick ? (
-              <li key={p.id} className={`picker-row quick${selected.has(p.id) ? ' selected' : ''}`}>
-                <div className="picker-name">
-                  {p.name}
-                  <small className="muted">{renderInfo(p)}</small>
-                </div>
-                {renderQuick(p)}
-              </li>
-            ) : (
-              <li key={p.id}>
-                <label className={`picker-row${selected.has(p.id) ? ' selected' : ''}`}>
-                  <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggle(p.id)} />
-                  <div className="picker-name">
-                    {p.name}
-                    <small className="muted">{renderInfo(p)}</small>
-                  </div>
-                </label>
-              </li>
-            ),
-          )}
+        <p className="picker-empty muted">Không có món nào khớp.</p>
+      ) : quick ? (
+        <ul className="quick-list">
+          {visible.map((p) => (
+            <li key={p.id} className={selected.has(p.id) ? 'selected' : undefined}>
+              <div className="quick-name">
+                <span className="product-name">{p.name}</span>
+                <span className="product-info">{renderInfo(p)}</span>
+              </div>
+              {renderQuick(p)}
+            </li>
+          ))}
         </ul>
+      ) : (
+        <div className="product-grid">
+          {visible.map((p) => {
+            const isSelected = selected.has(p.id)
+            const badge = renderBadge?.(p)
+            return (
+              <button
+                key={p.id}
+                type="button"
+                className={`product-card${isSelected ? ' selected' : ''}`}
+                aria-pressed={isSelected}
+                onClick={() => toggle(p.id)}
+              >
+                <span className="product-check" aria-hidden="true">
+                  {isSelected ? '✓' : ''}
+                </span>
+                <span className="product-name">{p.name}</span>
+                <span className="product-info">{renderInfo(p)}</span>
+                {badge && <span className="product-badge">{badge}</span>}
+              </button>
+            )
+          })}
+        </div>
       )}
     </div>
   )
@@ -148,6 +173,7 @@ export function QtyStepper({
         inputMode="numeric"
         aria-label={label}
         value={value}
+        placeholder="0"
         onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
       />
       <button type="button" aria-label={`Tăng ${label}`} onClick={() => onChange(String(n + 1))}>
