@@ -324,6 +324,7 @@ export const zh: Record<string, string> = {
   'Tải lại trang': '刷新页面',
   'Tất cả': '全部',
   'Tất cả các đợt': '所有批次',
+  'Tất cả cửa hàng': '所有门店',
   'Tối': '深色',
   'Tối đa 50 ký tự': '最多 50 个字符',
   'Tồn kho': '库存',

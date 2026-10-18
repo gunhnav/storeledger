@@ -19,6 +19,7 @@ const PATHS = {
   globe: 'M12 22a10 10 0 100-20 10 10 0 000 20zM2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20',
   calendar: 'M8 2v4m8-4v4M3 9h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   store: 'M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
 } as const
 
 export type IconName = keyof typeof PATHS

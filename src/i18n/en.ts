@@ -324,6 +324,7 @@ export const en: Record<string, string> = {
   'Tải lại trang': 'Reload page',
   'Tất cả': 'All',
   'Tất cả các đợt': 'All batches',
+  'Tất cả cửa hàng': 'All stores',
   'Tối': 'Dark',
   'Tối đa 50 ký tự': 'At most 50 characters',
   'Tồn kho': 'Stock',

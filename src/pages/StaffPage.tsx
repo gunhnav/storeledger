@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -8,6 +8,7 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { errorMessage } from '../lib/format'
 import type { AdminUserRow } from '../types/database'
+import { StorePicker } from '../components/StorePicker'
 
 type FormValues = { full_name: string; email: string; password: string; store_ids: string[] }
 
@@ -51,6 +52,7 @@ export function StaffPage() {
   const [editing, setEditing] = useState<{ id: string; full_name: string; email: string } | null>(null)
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -168,14 +170,19 @@ export function StaffPage() {
 
         <div>
           <span className="field-label">{t('Làm việc tại')}</span>
-          <div className="row">
-            {stores.map((s) => (
-              <label key={s.id} className="check">
-                <input type="checkbox" value={s.id} {...register('store_ids')} />
-                {s.name}
-              </label>
-            ))}
-          </div>
+          <Controller
+            control={control}
+            name="store_ids"
+            render={({ field }) => (
+              <StorePicker
+                stores={stores}
+                selected={field.value}
+                onToggle={(id) =>
+                  field.onChange(field.value.includes(id) ? field.value.filter((v) => v !== id) : [...field.value, id])
+                }
+              />
+            )}
+          />
         </div>
 
         <button type="submit" className="primary" disabled={isSubmitting}>
@@ -195,9 +202,7 @@ export function StaffPage() {
             <thead>
               <tr>
                 <th>{t('Nhân viên')}</th>
-                {stores.map((s) => (
-                  <th key={s.id}>{s.name}</th>
-                ))}
+                <th>{t('Làm việc tại')}</th>
                 <th />
               </tr>
             </thead>
@@ -245,24 +250,20 @@ export function StaffPage() {
                         </>
                       )}
                     </td>
-                    {stores.map((s) => {
-                      const member = user.store_ids.includes(s.id)
-                      return (
-                        <td key={s.id}>
-                          {isAdminRow ? (
-                            <small className="muted">{t('Tất cả')}</small>
-                          ) : (
-                            <input
-                              type="checkbox"
-                              aria-label={t('{value} làm tại {name}', { value: user.full_name ?? user.email, name: s.name })}
-                              checked={member}
-                              disabled={busy === user.id}
-                              onChange={() => toggleStore(user, s.id, member)}
-                            />
-                          )}
-                        </td>
-                      )
-                    })}
+                    <td>
+                      {isAdminRow ? (
+                        <span className="badge badge-ok">{t('Tất cả cửa hàng')}</span>
+                      ) : (
+                        <StorePicker
+                          compact
+                          stores={stores}
+                          selected={user.store_ids}
+                          disabled={busy === user.id}
+                          onToggle={(id) => toggleStore(user, id, user.store_ids.includes(id))}
+                          ariaLabel={(s) => t('{value} làm tại {name}', { value: user.full_name ?? user.email, name: s.name })}
+                        />
+                      )}
+                    </td>
                     <td className="actions">
                       <button
                         type="button"

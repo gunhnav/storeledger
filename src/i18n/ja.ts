@@ -324,6 +324,7 @@ export const ja: Record<string, string> = {
   'Tải lại trang': 'ページを再読み込み',
   'Tất cả': 'すべて',
   'Tất cả các đợt': '全ロット',
+  'Tất cả cửa hàng': '全店舗',
   'Tối': 'ダーク',
   'Tối đa 50 ký tự': '50 文字まで',
   'Tồn kho': '在庫状況',

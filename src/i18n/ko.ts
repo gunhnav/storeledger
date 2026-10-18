@@ -324,6 +324,7 @@ export const ko: Record<string, string> = {
   'Tải lại trang': '페이지 새로고침',
   'Tất cả': '전체',
   'Tất cả các đợt': '전체 차수',
+  'Tất cả cửa hàng': '모든 매장',
   'Tối': '다크',
   'Tối đa 50 ký tự': '최대 50자',
   'Tồn kho': '재고 현황',

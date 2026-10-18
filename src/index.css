@@ -1504,6 +1504,124 @@ a.button.primary:hover {
   min-width: 220px;
 }
 
+/* Chọn quán dạng thẻ (trang Nhân viên) */
+.store-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.store-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+  padding: 10px 14px 10px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.store-card:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+.store-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.store-card.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.store-card:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.store-logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.store-logo.tone-0 {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+}
+.store-logo.tone-1 {
+  background: var(--low-bg);
+  color: var(--low-fg);
+}
+.store-logo.tone-2 {
+  background: var(--out-bg);
+  color: var(--out-fg);
+}
+.store-logo.tone-3 {
+  background: var(--highlight);
+  color: var(--highlight-text);
+}
+.store-card-name {
+  flex: 1;
+}
+.store-check {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  color: var(--accent-text);
+}
+.store-card.on .store-check {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.store-check .icon {
+  stroke-width: 3;
+}
+.store-picker.compact {
+  gap: 6px;
+}
+.store-picker.compact .store-card {
+  min-width: 0;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.store-picker.compact .store-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+.store-picker.compact .store-check {
+  width: 18px;
+  height: 18px;
+}
+@media (max-width: 560px) {
+  .store-card {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+  .store-picker.compact .store-card {
+    flex: none;
+  }
+}
+
 /* Chọn ngôn ngữ */
 .lang-select {
   display: inline-flex;
