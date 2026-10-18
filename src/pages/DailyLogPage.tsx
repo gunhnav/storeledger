@@ -51,6 +51,8 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
     key: string
     summary: DailySummaryRow[]
     products: DailyProductLogRow[]
+    // Số hũ phân phối cho công ty theo "mã món|ngày" (qty_transferred của DB gồm cả phần này)
+    company: Map<string, number>
     error: string | null
   } | null>(null)
 
@@ -67,13 +69,26 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
     Promise.all([
       supabase.rpc('get_daily_summary', args),
       supabase.rpc('get_daily_product_log', args),
-    ]).then(([summary, products]) => {
+      supabase
+        .from('stock_transfers')
+        .select('product_id, transfer_date, quantity')
+        .eq('store_id', storeId)
+        .eq('destination', 'company')
+        .gte('transfer_date', range.from)
+        .lte('transfer_date', to),
+    ]).then(([summary, products, company]) => {
       if (cancelled) return
-      const error = summary.error ?? products.error
+      const error = summary.error ?? products.error ?? company.error
+      const companyMap = new Map<string, number>()
+      for (const r of company.data ?? []) {
+        const k = `${r.product_id}|${r.transfer_date}`
+        companyMap.set(k, (companyMap.get(k) ?? 0) + r.quantity)
+      }
       setResult({
         key,
         summary: summary.data ?? [],
         products: products.data ?? [],
+        company: companyMap,
         error: error ? errorMessage(error) : null,
       })
     })
@@ -93,7 +108,7 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
     if (!wrap || !th) return
     wrap.scrollLeft = Math.max(0, th.offsetLeft - wrap.clientWidth / 2 + th.offsetWidth / 2)
   }, [loaded?.key])
-  const rows = loaded ? buildRows(loaded.summary, loaded.products, days, category, t) : []
+  const rows = loaded ? buildRows(loaded.summary, loaded.products, loaded.company, days, category, t) : []
   const categories = loaded
     ? [...new Set(loaded.products.map((p) => p.category ?? '').filter((c) => c !== ''))].sort()
     : []
@@ -262,16 +277,17 @@ function LogCell({
 function buildRows(
   summary: DailySummaryRow[],
   products: DailyProductLogRow[],
+  company: Map<string, number>,
   days: string[],
   category: string,
   t: Translate,
 ): Row[] {
   const rows: Row[] = []
-  const byProduct = new Map<string, { name: string; category: string | null; tracks: boolean; threshold: number; byDay: Map<string, DailyProductLogRow> }>()
+  const byProduct = new Map<string, { id: string; name: string; category: string | null; tracks: boolean; threshold: number; byDay: Map<string, DailyProductLogRow> }>()
   for (const p of products) {
     let entry = byProduct.get(p.product_id)
     if (!entry) {
-      entry = { name: p.product_name, category: p.category, tracks: p.tracks_stock, threshold: p.low_stock_threshold, byDay: new Map() }
+      entry = { id: p.product_id, name: p.product_name, category: p.category, tracks: p.tracks_stock, threshold: p.low_stock_threshold, byDay: new Map() }
       byProduct.set(p.product_id, entry)
     }
     entry.byDay.set(p.day, p)
@@ -296,10 +312,18 @@ function buildRows(
     cells: values.map((v) => ({ value: v, tone: v < 0 ? 'neg' : undefined })),
   })
 
-  // Khối 1: MANG RA QUÁN
+  // Khối 1: MANG RA QUÁN (đã trừ phần phân phối cho công ty) và PHÂN PHỐI CHO CÔNG TY
+  const toCompany = (id: string, d: string) => company.get(`${id}|${d}`) ?? 0
   if (stocked.length > 0) {
     rows.push({ kind: 'section', label: 'MANG RA QUÁN' })
-    for (const p of stocked) rows.push(qtyRow(p.name, days.map((d) => p.byDay.get(d)?.qty_transferred ?? 0)))
+    for (const p of stocked) {
+      rows.push(qtyRow(p.name, days.map((d) => (p.byDay.get(d)?.qty_transferred ?? 0) - toCompany(p.id, d))))
+    }
+    const companyProducts = stocked.filter((p) => days.some((d) => toCompany(p.id, d) > 0))
+    if (companyProducts.length > 0) {
+      rows.push({ kind: 'section', label: 'PHÂN PHỐI CHO CÔNG TY' })
+      for (const p of companyProducts) rows.push(qtyRow(p.name, days.map((d) => toCompany(p.id, d))))
+    }
   }
 
   // Khối 2: BÁN TRONG NGÀY (chỉ món có bán trong khoảng)

@@ -327,6 +327,7 @@ export const ko: Record<string, string> = {
   'Nhật ký ngày': '일일 기록',
   'Nơi nhận': '수령처',
   'Nơi nhận không hợp lệ: {value} (chỉ nhận shop hoặc company)': '잘못된 수령처: {value} (shop 또는 company만 가능)',
+  'PHÂN PHỐI CHO CÔNG TY': '회사로 배분',
   'Phân phối': '배분',
   'Phân phối cho công ty': '회사로 배분',
   'Phải còn ít nhất một admin': '관리자가 최소 한 명은 있어야 합니다',
