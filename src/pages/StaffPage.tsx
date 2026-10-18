@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -7,16 +7,17 @@ import { LANGUAGES, useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { errorMessage } from '../lib/format'
-import type { AdminUserRow } from '../types/database'
+import type { AdminUserRow, UserRole } from '../types/database'
 import { StorePicker } from '../components/StorePicker'
 import { PasswordInput } from '../components/PasswordInput'
+import { Icon, type IconName } from '../components/Icon'
 
-type FormValues = { full_name: string; email: string; password: string; store_ids: string[] }
+type FormValues = { full_name: string; email: string; password: string; role: UserRole; store_ids: string[] }
 
-const EMPTY: FormValues = { full_name: '', email: '', password: '', store_ids: [] }
+const EMPTY: FormValues = { full_name: '', email: '', password: '', role: 'staff', store_ids: [] }
 
 type AdminUsersBody =
-  | { action: 'create'; email: string; password: string; full_name: string; store_ids: string[] }
+  | { action: 'create'; email: string; password: string; full_name: string; store_ids: string[]; role: UserRole }
   | { action: 'set_password'; user_id: string; password: string }
   | { action: 'update'; user_id: string; full_name: string; email: string }
 
@@ -30,6 +31,11 @@ async function callAdminUsers(body: AdminUsersBody): Promise<void> {
   }
   throw error
 }
+
+const ROLE_CHOICES: { value: UserRole; label: string; hint: string; icon: IconName }[] = [
+  { value: 'staff', label: 'Nhân viên', hint: 'Bán hàng và kho, không thấy giá vốn / lãi', icon: 'user' },
+  { value: 'admin', label: 'Quản trị', hint: 'Thấy mọi cửa hàng, báo cáo, chi phí, tài khoản', icon: 'staff' },
+]
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -58,6 +64,7 @@ export function StaffPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ defaultValues: EMPTY, mode: 'onTouched' })
+  const role = useWatch({ control, name: 'role' })
 
   useEffect(() => {
     let cancelled = false
@@ -79,7 +86,8 @@ export function StaffPage() {
         full_name: values.full_name.trim(),
         email: values.email.trim(),
         password: values.password,
-        store_ids: values.store_ids,
+        role: values.role,
+        store_ids: values.role === 'admin' ? [] : values.store_ids,
       })
       toast.success(t('Đã tạo tài khoản cho {value}', { value: values.full_name.trim() }))
       reset(EMPTY)
@@ -97,6 +105,23 @@ export function StaffPage() {
       : await supabase.from('store_members').insert({ user_id: user.id, store_id: storeId })
     setBusy(null)
     if (error) setResult({ ok: false, text: errorMessage(error) })
+    reload()
+  }
+
+  // Cấp / thu hồi quyền admin (hàm admin_set_role tự chặn tự hạ quyền và mất admin cuối cùng)
+  const changeRole = async (user: AdminUserRow, role: UserRole) => {
+    const who = user.full_name || user.email
+    const question =
+      role === 'admin'
+        ? t('Cấp quyền admin cho {value}? Người này sẽ thấy giá vốn, lãi, chi phí của mọi cửa hàng và quản lý được tài khoản.', { value: who })
+        : t('Bỏ quyền admin của {value}? Tài khoản trở thành nhân viên, chỉ làm việc ở các cửa hàng được gán.', { value: who })
+    if (!window.confirm(question)) return
+    setResult(null)
+    setBusy(user.id)
+    const { error } = await supabase.rpc('admin_set_role', { p_user_id: user.id, p_role: role })
+    setBusy(null)
+    if (error) return setResult({ ok: false, text: errorMessage(error) })
+    toast.success(role === 'admin' ? t('Đã cấp quyền admin cho {value}', { value: who }) : t('Đã bỏ quyền admin của {value}', { value: who }))
     reload()
   }
 
@@ -180,21 +205,53 @@ export function StaffPage() {
         </div>
 
         <div>
-          <span className="field-label">{t('Làm việc tại')}</span>
+          <span className="field-label">{t('Vai trò')}</span>
           <Controller
             control={control}
-            name="store_ids"
+            name="role"
             render={({ field }) => (
-              <StorePicker
-                stores={stores}
-                selected={field.value}
-                onToggle={(id) =>
-                  field.onChange(field.value.includes(id) ? field.value.filter((v) => v !== id) : [...field.value, id])
-                }
-              />
+              <div className="role-picker" role="radiogroup" aria-label={t('Vai trò')}>
+                {ROLE_CHOICES.map((choice) => (
+                  <button
+                    key={choice.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={field.value === choice.value}
+                    className={field.value === choice.value ? 'role-card on' : 'role-card'}
+                    onClick={() => field.onChange(choice.value)}
+                  >
+                    <Icon name={choice.icon} size={20} />
+                    <span>
+                      <strong>{t(choice.label)}</strong>
+                      <small>{t(choice.hint)}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
             )}
           />
         </div>
+
+        {role === 'admin' ? (
+          <p className="muted">{t('Admin thấy tất cả cửa hàng nên không cần chọn quán.')}</p>
+        ) : (
+          <div>
+            <span className="field-label">{t('Làm việc tại')}</span>
+            <Controller
+              control={control}
+              name="store_ids"
+              render={({ field }) => (
+                <StorePicker
+                  stores={stores}
+                  selected={field.value}
+                  onToggle={(id) =>
+                    field.onChange(field.value.includes(id) ? field.value.filter((v) => v !== id) : [...field.value, id])
+                  }
+                />
+              )}
+            />
+          </div>
+        )}
 
         <button type="submit" className="primary" disabled={isSubmitting}>
           {isSubmitting ? t('Đang tạo…') : t('Tạo tài khoản')}
@@ -288,14 +345,24 @@ export function StaffPage() {
                         {t('Sửa')}
                       </button>
                       {user.id !== session?.user.id && (
-                        <button
-                          type="button"
-                          className="link"
-                          disabled={busy === user.id}
-                          onClick={() => resetPassword(user)}
-                        >
-                          {t('Đổi mật khẩu')}
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="link"
+                            disabled={busy === user.id}
+                            onClick={() => resetPassword(user)}
+                          >
+                            {t('Đổi mật khẩu')}
+                          </button>
+                          <button
+                            type="button"
+                            className={isAdminRow ? 'link danger' : 'link'}
+                            disabled={busy === user.id}
+                            onClick={() => changeRole(user, isAdminRow ? 'staff' : 'admin')}
+                          >
+                            {isAdminRow ? t('Bỏ quyền admin') : t('Cấp quyền admin')}
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>

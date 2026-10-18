@@ -10,7 +10,7 @@ const CORS_HEADERS = {
 };
 
 type Body =
-  | { action: "create"; email: string; password: string; full_name: string; store_ids: string[] }
+  | { action: "create"; email: string; password: string; full_name: string; store_ids: string[]; role?: "admin" | "staff" }
   | { action: "set_password"; user_id: string; password: string }
   | { action: "update"; user_id: string; full_name: string; email: string };
 
@@ -60,10 +60,11 @@ export default {
         const exists = /already|registered|exists/i.test(authUpdateError.message);
         return fail(exists ? "Email này đã có tài khoản khác dùng" : authUpdateError.message);
       }
-      const { error: profileError } = await ctx.supabaseAdmin
-        .from("profiles")
-        .update({ full_name: fullName })
-        .eq("id", body.user_id);
+      // service_role không ghi được bảng public: đổi tên qua hàm SECURITY DEFINER bằng phiên admin
+      const { error: profileError } = await ctx.supabase.rpc("admin_set_full_name", {
+        p_user_id: body.user_id,
+        p_full_name: fullName,
+      });
       if (profileError) return fail(profileError.message);
       return reply({ ok: true });
     }
@@ -82,7 +83,9 @@ export default {
 
     const email = (body.email ?? "").trim().toLowerCase();
     const fullName = (body.full_name ?? "").trim();
-    const storeIds = Array.isArray(body.store_ids) ? body.store_ids : [];
+    const role = body.role === "admin" ? "admin" : "staff";
+    // Admin thấy mọi cửa hàng theo role, không cần gán cửa hàng
+    const storeIds = role === "staff" && Array.isArray(body.store_ids) ? body.store_ids : [];
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email không hợp lệ");
     if (!fullName) return fail("Nhập tên nhân viên");
 
@@ -99,6 +102,13 @@ export default {
     }
 
     const userId = created.user.id;
+    if (role === "admin") {
+      const { error } = await ctx.supabase.rpc("admin_set_role", { p_user_id: userId, p_role: "admin" });
+      if (error) {
+        await ctx.supabaseAdmin.auth.admin.deleteUser(userId);
+        return fail(error.message);
+      }
+    }
     if (storeIds.length > 0) {
       // Ghi bằng client của admin đang gọi: RLS store_members_insert_admin cho phép,
       // service_role của project không có quyền ghi bảng public

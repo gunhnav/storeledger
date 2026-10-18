@@ -1544,6 +1544,59 @@ input[aria-invalid='true']:focus {
   font-size: 13px;
 }
 
+/* Chọn vai trò khi tạo tài khoản */
+.role-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.role-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 260px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.role-card span {
+  display: flex;
+  flex-direction: column;
+}
+.role-card strong {
+  color: var(--text-h);
+}
+.role-card small {
+  font-size: 13px;
+}
+.role-card:hover {
+  border-color: var(--accent);
+}
+.role-card.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.role-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button.link.danger {
+  color: var(--danger);
+}
+@media (max-width: 560px) {
+  .role-card {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+}
+
 /* Chọn quán dạng thẻ (trang Nhân viên) */
 .store-picker {
   display: flex;
