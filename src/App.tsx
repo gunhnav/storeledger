@@ -18,12 +18,14 @@ import { ReportsPage } from './pages/ReportsPage'
 import { SalePage } from './pages/SalePage'
 import { StaffPage } from './pages/StaffPage'
 import { StockPage } from './pages/StockPage'
+import { TransferGridPage } from './pages/TransferGridPage'
 import { TransferPage } from './pages/TransferPage'
 
 // Menu đã gộp: mỗi nhóm một trang có tab
 const STOCK_TABS: Tab[] = [
   { to: '/inventory/purchases', label: 'Nhập hàng', icon: 'purchase' },
   { to: '/inventory/transfers', label: 'Chuyển ra quầy', icon: 'transfer' },
+  { to: '/inventory/transfer-grid', label: 'Mang ra quán', icon: 'calendar' },
   { to: '/inventory/stock', label: 'Tồn kho', icon: 'stock' },
 ]
 const REPORT_TABS: Tab[] = [
@@ -81,6 +83,7 @@ function App() {
             <Route index element={<Navigate to="purchases" replace />} />
             <Route path="purchases" element={<PurchasePage />} />
             <Route path="transfers" element={<TransferPage />} />
+              <Route path="transfer-grid" element={<TransferGridPage />} />
             <Route path="stock" element={<StockPage />} />
           </Route>
           <Route path="account" element={<AccountPage />} />
