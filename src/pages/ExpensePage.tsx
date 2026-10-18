@@ -118,28 +118,30 @@ function ExpenseForm({ storeId }: { storeId: string }) {
           <p className="error">{t(errors.expense_date?.message ?? errors.amount?.message ?? '')}</p>
         )}
 
-        <label>
-          {t('Nhóm chi phí')}
-          <input
-            type="text"
-            list="expense-categories"
-            {...register('category', {
-              validate: (v) =>
-                v.trim() === '' ? 'Nhập nhóm chi phí' : v.trim().length > 50 ? 'Tối đa 50 ký tự' : true,
-            })}
-          />
-          <datalist id="expense-categories">
-            {categories.map((c) => (
-              <option key={c} value={t(c)} />
-            ))}
-          </datalist>
-        </label>
-        {errors.category && <p className="error">{t(errors.category.message ?? '')}</p>}
+        <div className="row">
+          <label>
+            {t('Nhóm chi phí')}
+            <input
+              type="text"
+              list="expense-categories"
+              {...register('category', {
+                validate: (v) =>
+                  v.trim() === '' ? 'Nhập nhóm chi phí' : v.trim().length > 50 ? 'Tối đa 50 ký tự' : true,
+              })}
+            />
+            <datalist id="expense-categories">
+              {categories.map((c) => (
+                <option key={c} value={t(c)} />
+              ))}
+            </datalist>
+          </label>
+          {errors.category && <p className="error">{t(errors.category.message ?? '')}</p>}
 
-        <label>
-          {t('Ghi chú')}
-          <input type="text" {...register('note')} />
-        </label>
+          <label>
+            {t('Ghi chú')}
+            <input type="text" {...register('note')} />
+          </label>
+        </div>
 
         {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
         <button type="submit" className="primary" disabled={isSubmitting}>

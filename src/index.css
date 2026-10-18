@@ -694,11 +694,15 @@ tr.inactive td {
 }
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-  margin: 12px 0;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
 }
+/* Ô số liệu: nhãn luôn chiếm 2 dòng để các con số thẳng hàng; chú thích nằm đáy ô */
 .stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-top: 3px solid var(--highlight);
@@ -708,7 +712,13 @@ tr.inactive td {
 }
 .stat-label {
   font-size: 13px;
+  line-height: 1.3;
   color: var(--muted);
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .stat-value {
   color: var(--text-h);
@@ -717,7 +727,11 @@ tr.inactive td {
   font-variant-numeric: tabular-nums;
 }
 .stat-sub {
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
   font-size: 12px;
+  line-height: 1.4;
   color: var(--muted);
 }
 .negative,
@@ -1923,4 +1937,56 @@ select option {
 .log-filters .field {
   flex: 0 0 auto;
   min-width: 190px;
+}
+
+/* Tiêu đề mục kèm nút hành động bên phải */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 28px 0 12px;
+}
+.section-head h2 {
+  margin: 0;
+}
+.progress {
+  margin-top: 8px;
+}
+
+/* Cân đối form: nút lưu vừa chữ, ô số ngắn thì hẹp */
+.form > button.primary {
+  align-self: flex-start;
+  min-width: 200px;
+}
+.form label.narrow {
+  max-width: 260px;
+}
+/* Cột hành động trong bảng căn phải */
+td.actions {
+  text-align: right;
+}
+/* Bộ lọc: nhãn và chiều cao ô đồng nhất với ô ngày */
+.filters label,
+.filters .field {
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text-h);
+}
+.filters select {
+  min-height: 42px;
+}
+/* Cột trong một hàng chia đều như nhau dù là label hay ô ngày; ô ngày cao bằng ô nhập */
+.row > label,
+.row > .field {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.date-field {
+  min-height: 40px;
+}
+.filters select,
+.filters .date-field {
+  min-height: 42px;
 }

@@ -299,7 +299,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
             )}
 
             {(editing ? editing.tracks_stock : tracksStock) && (
-              <label>
+              <label className="narrow">
                 {t('Báo sắp hết khi tổng tồn ≤')}
                 <input
                   type="number"
@@ -338,9 +338,8 @@ function ProductsManager({ storeId }: { storeId: string }) {
 
       {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
 
-      <div className="row section-title">
+      <div className="section-head">
         <h2>{t('Danh sách sản phẩm')}</h2>
-        <span className="spacer" />
         {!bulk && (
           <button
             type="button"

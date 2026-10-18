@@ -148,18 +148,18 @@ export function StaffPage() {
             {t('Email đăng nhập')}
             <input type="email" autoComplete="off" {...register('email', { required: 'Nhập email' })} />
           </label>
+          <label>
+            {t('Mật khẩu')}
+            <input
+              type="text"
+              autoComplete="new-password"
+              {...register('password', {
+                minLength: { value: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
+                required: 'Nhập mật khẩu',
+              })}
+            />
+          </label>
         </div>
-        <label>
-          {t('Mật khẩu')}
-          <input
-            type="text"
-            autoComplete="new-password"
-            {...register('password', {
-              minLength: { value: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
-              required: 'Nhập mật khẩu',
-            })}
-          />
-        </label>
         {(errors.full_name || errors.email || errors.password) && (
           <p className="error">
             {t((errors.full_name?.message ?? errors.email?.message ?? errors.password?.message) ?? '')}
