@@ -1990,3 +1990,43 @@ td.actions {
 .filters .date-field {
   min-height: 42px;
 }
+
+/* Thống kê theo đợt */
+.section-note {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+.batch-table th,
+.batch-table td {
+  white-space: nowrap;
+}
+.batch-table .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.batch-table thead .sticky-col {
+  background: var(--surface-2);
+  z-index: 2;
+}
+.batch-table .wrap-cell {
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.batch-table tfoot td {
+  background: var(--surface-2);
+  font-weight: 700;
+  color: var(--text-h);
+  border-top: 1px solid var(--border);
+}
+.batch-table tfoot .sticky-col {
+  background: var(--surface-2);
+}
+.batch-table tfoot .net-row td {
+  background: var(--highlight-soft);
+  color: var(--highlight-text);
+  font-size: 15px;
+}

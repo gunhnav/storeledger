@@ -5,6 +5,7 @@ import { StoreProvider } from './components/StoreProvider'
 import { TabsLayout, type Tab } from './components/TabsLayout'
 import { useAuth } from './lib/auth'
 import { AccountPage } from './pages/AccountPage'
+import { BatchStatsPage } from './pages/BatchStatsPage'
 import { DailyLogPage } from './pages/DailyLogPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { LoginPage } from './pages/LoginPage'
@@ -25,6 +26,7 @@ const STOCK_TABS: Tab[] = [
 ]
 const REPORT_TABS: Tab[] = [
   { to: '/reports/overview', label: 'Tổng quan', icon: 'report' },
+  { to: '/reports/batches', label: 'Theo đợt nhập', icon: 'purchase' },
   { to: '/reports/daily-log', label: 'Nhật ký ngày', icon: 'log' },
 ]
 const MANAGE_TABS: Tab[] = [
@@ -82,6 +84,7 @@ function App() {
             <Route path="reports" element={<TabsLayout title="Báo cáo" tabs={REPORT_TABS} />}>
               <Route index element={<Navigate to="overview" replace />} />
               <Route path="overview" element={<ReportsPage />} />
+              <Route path="batches" element={<BatchStatsPage />} />
               <Route path="daily-log" element={<DailyLogPage />} />
             </Route>
             <Route path="manage" element={<TabsLayout title="Quản lý" tabs={MANAGE_TABS} />}>
