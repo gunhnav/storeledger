@@ -9,6 +9,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionReady, setSessionReady] = useState(false)
   // Profile gắn với user id đã tải, để biết profile hiện tại có khớp session không
   const [loaded, setLoaded] = useState<{ userId: string; profile: Profile | null } | null>(null)
+  const [profileVersion, setProfileVersion] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, profileVersion])
 
   const profile = userId && loaded?.userId === userId ? loaded.profile : null
   const loading = !sessionReady || (userId !== null && loaded?.userId !== userId)
@@ -54,9 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }, [])
 
+  const refreshProfile = useCallback(() => setProfileVersion((v) => v + 1), [])
+
   const value = useMemo<AuthState>(
-    () => ({ session, profile, loading, isAdmin: profile?.role === 'admin', signIn, signOut }),
-    [session, profile, loading, signIn, signOut],
+    () => ({ session, profile, loading, isAdmin: profile?.role === 'admin', signIn, signOut, refreshProfile }),
+    [session, profile, loading, signIn, signOut, refreshProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

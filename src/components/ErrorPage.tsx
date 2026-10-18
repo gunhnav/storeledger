@@ -1,0 +1,26 @@
+import type { ReactNode } from 'react'
+
+// Trang báo lỗi theo mã: 401 chưa đăng nhập, 403 không có quyền, 404 không tìm thấy.
+// App chạy hoàn toàn ở trình duyệt nên đây là trang hiển thị; dữ liệu vẫn do DB (RLS) chặn.
+export function ErrorPage({
+  code,
+  title,
+  message,
+  children,
+}: {
+  code: 401 | 403 | 404
+  title: string
+  message: string
+  children?: ReactNode
+}) {
+  return (
+    <div className="error-page" role="alert">
+      <div className="error-code" aria-hidden="true">
+        {code}
+      </div>
+      <h1>{title}</h1>
+      <p className="muted">{message}</p>
+      {children && <div className="error-actions">{children}</div>}
+    </div>
+  )
+}

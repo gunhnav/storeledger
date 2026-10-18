@@ -1,4 +1,4 @@
-// Quản lý tài khoản nhân viên (chỉ admin): tạo tài khoản, đặt lại mật khẩu.
+// Quản lý tài khoản nhân viên (chỉ admin): tạo tài khoản, sửa tên / email, đặt lại mật khẩu.
 // Cần secret key nên không làm được từ trình duyệt; client gọi qua supabase.functions.invoke('admin-users').
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createSupabaseContext } from "@supabase/server";
@@ -11,7 +11,8 @@ const CORS_HEADERS = {
 
 type Body =
   | { action: "create"; email: string; password: string; full_name: string; store_ids: string[] }
-  | { action: "set_password"; user_id: string; password: string };
+  | { action: "set_password"; user_id: string; password: string }
+  | { action: "update"; user_id: string; full_name: string; email: string };
 
 function reply(body: unknown, status = 200) {
   return Response.json(body, { status, headers: CORS_HEADERS });
@@ -39,6 +40,32 @@ export default {
       body = await req.json();
     } catch {
       return fail("Dữ liệu gửi lên không hợp lệ");
+    }
+
+    if (body.action === "update") {
+      if (!body.user_id) return fail("Thiếu tài khoản cần sửa");
+      const email = (body.email ?? "").trim().toLowerCase();
+      const fullName = (body.full_name ?? "").trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email không hợp lệ");
+      if (!fullName) return fail("Nhập tên nhân viên");
+      if (fullName.length > 100) return fail("Tên tối đa 100 ký tự");
+
+      // Đổi email đăng nhập ngay (admin đã xác nhận), không cần nhân viên bấm link
+      const { error: authUpdateError } = await ctx.supabaseAdmin.auth.admin.updateUserById(body.user_id, {
+        email,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
+      if (authUpdateError) {
+        const exists = /already|registered|exists/i.test(authUpdateError.message);
+        return fail(exists ? "Email này đã có tài khoản khác dùng" : authUpdateError.message);
+      }
+      const { error: profileError } = await ctx.supabaseAdmin
+        .from("profiles")
+        .update({ full_name: fullName })
+        .eq("id", body.user_id);
+      if (profileError) return fail(profileError.message);
+      return reply({ ok: true });
     }
 
     const password = typeof body.password === "string" ? body.password : "";

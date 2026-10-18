@@ -4,6 +4,7 @@ import { RequireAdmin, RequireAuth } from './components/RequireAuth'
 import { StoreProvider } from './components/StoreProvider'
 import { TabsLayout, type Tab } from './components/TabsLayout'
 import { useAuth } from './lib/auth'
+import { AccountPage } from './pages/AccountPage'
 import { DailyLogPage } from './pages/DailyLogPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { LoginPage } from './pages/LoginPage'
@@ -18,25 +19,38 @@ import { TransferPage } from './pages/TransferPage'
 
 // Menu đã gộp: mỗi nhóm một trang có tab
 const STOCK_TABS: Tab[] = [
-  { to: '/kho/nhap-hang', label: 'Nhập hàng', icon: 'purchase' },
-  { to: '/kho/chuyen-hang', label: 'Chuyển ra quầy', icon: 'transfer' },
-  { to: '/kho/ton-kho', label: 'Tồn kho', icon: 'stock' },
+  { to: '/inventory/purchases', label: 'Nhập hàng', icon: 'purchase' },
+  { to: '/inventory/transfers', label: 'Chuyển ra quầy', icon: 'transfer' },
+  { to: '/inventory/stock', label: 'Tồn kho', icon: 'stock' },
 ]
 const REPORT_TABS: Tab[] = [
-  { to: '/bao-cao/tong-quan', label: 'Tổng quan', icon: 'report' },
-  { to: '/bao-cao/nhat-ky', label: 'Nhật ký ngày', icon: 'log' },
+  { to: '/reports/overview', label: 'Tổng quan', icon: 'report' },
+  { to: '/reports/daily-log', label: 'Nhật ký ngày', icon: 'log' },
 ]
 const MANAGE_TABS: Tab[] = [
-  { to: '/quan-ly/san-pham', label: 'Sản phẩm', icon: 'product' },
-  { to: '/quan-ly/chi-phi', label: 'Chi phí', icon: 'expense' },
+  { to: '/manage/products', label: 'Sản phẩm', icon: 'product' },
+  { to: '/manage/expenses', label: 'Chi phí', icon: 'expense' },
 ]
+// Đường dẫn tiếng Việt cũ → đường dẫn mới, để link đã lưu vẫn dùng được
 const LEGACY_PATHS: [string, string][] = [
-  ['nhap-hang', '/kho/nhap-hang'],
-  ['chuyen-hang', '/kho/chuyen-hang'],
-  ['ton-kho', '/kho/ton-kho'],
-  ['nhat-ky', '/bao-cao/nhat-ky'],
-  ['san-pham', '/quan-ly/san-pham'],
-  ['chi-phi', '/quan-ly/chi-phi'],
+  ['ban-hang', '/sales'],
+  ['kho', '/inventory'],
+  ['kho/nhap-hang', '/inventory/purchases'],
+  ['kho/chuyen-hang', '/inventory/transfers'],
+  ['kho/ton-kho', '/inventory/stock'],
+  ['nhap-hang', '/inventory/purchases'],
+  ['chuyen-hang', '/inventory/transfers'],
+  ['ton-kho', '/inventory/stock'],
+  ['bao-cao', '/reports'],
+  ['bao-cao/tong-quan', '/reports/overview'],
+  ['bao-cao/nhat-ky', '/reports/daily-log'],
+  ['nhat-ky', '/reports/daily-log'],
+  ['quan-ly', '/manage'],
+  ['quan-ly/san-pham', '/manage/products'],
+  ['quan-ly/chi-phi', '/manage/expenses'],
+  ['san-pham', '/manage/products'],
+  ['chi-phi', '/manage/expenses'],
+  ['nhan-vien', '/staff'],
 ]
 
 // Mount lại StoreProvider khi đổi user để không giữ danh sách cửa hàng của user trước
@@ -55,28 +69,28 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
-          <Route index element={<Navigate to="/ban-hang" replace />} />
-          <Route path="ban-hang" element={<SalePage />} />
-          <Route path="kho" element={<TabsLayout title="Kho hàng" tabs={STOCK_TABS} />}>
-            <Route index element={<Navigate to="nhap-hang" replace />} />
-            <Route path="nhap-hang" element={<PurchasePage />} />
-            <Route path="chuyen-hang" element={<TransferPage />} />
-            <Route path="ton-kho" element={<StockPage />} />
+          <Route index element={<Navigate to="/sales" replace />} />
+          <Route path="sales" element={<SalePage />} />
+          <Route path="inventory" element={<TabsLayout title="Kho hàng" tabs={STOCK_TABS} />}>
+            <Route index element={<Navigate to="purchases" replace />} />
+            <Route path="purchases" element={<PurchasePage />} />
+            <Route path="transfers" element={<TransferPage />} />
+            <Route path="stock" element={<StockPage />} />
           </Route>
+          <Route path="account" element={<AccountPage />} />
           <Route element={<RequireAdmin />}>
-            <Route path="bao-cao" element={<TabsLayout title="Báo cáo" tabs={REPORT_TABS} />}>
-              <Route index element={<Navigate to="tong-quan" replace />} />
-              <Route path="tong-quan" element={<ReportsPage />} />
-              <Route path="nhat-ky" element={<DailyLogPage />} />
+            <Route path="reports" element={<TabsLayout title="Báo cáo" tabs={REPORT_TABS} />}>
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<ReportsPage />} />
+              <Route path="daily-log" element={<DailyLogPage />} />
             </Route>
-            <Route path="quan-ly" element={<TabsLayout title="Quản lý" tabs={MANAGE_TABS} />}>
-              <Route index element={<Navigate to="san-pham" replace />} />
-              <Route path="san-pham" element={<ProductsPage />} />
-              <Route path="chi-phi" element={<ExpensePage />} />
+            <Route path="manage" element={<TabsLayout title="Quản lý" tabs={MANAGE_TABS} />}>
+              <Route index element={<Navigate to="products" replace />} />
+              <Route path="products" element={<ProductsPage />} />
+              <Route path="expenses" element={<ExpensePage />} />
             </Route>
-            <Route path="nhan-vien" element={<StaffPage />} />
+            <Route path="staff" element={<StaffPage />} />
           </Route>
-          {/* Đường dẫn cũ trước khi gộp menu */}
           {LEGACY_PATHS.map(([from, to]) => (
             <Route key={from} path={from} element={<Navigate to={to} replace />} />
           ))}

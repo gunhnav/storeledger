@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useStore } from '../lib/store'
+import { useTheme, type ThemeMode } from '../lib/theme'
+import { ErrorPage } from './ErrorPage'
 import { Icon, type IconName } from './Icon'
+import { Logo } from './Logo'
 
 type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean }
 
 // Menu gọn theo nhóm công việc; trang con là tab bên trong (xem App.tsx).
 // Nhân viên nằm trong menu ở tên người dùng (chỉ quản trị).
 const NAV_ITEMS: NavItem[] = [
-  { to: '/ban-hang', label: 'Bán hàng', icon: 'sale' },
-  { to: '/kho', label: 'Kho hàng', icon: 'stock' },
-  { to: '/bao-cao', label: 'Báo cáo', icon: 'report', adminOnly: true },
-  { to: '/quan-ly', label: 'Quản lý', icon: 'manage', adminOnly: true },
+  { to: '/sales', label: 'Bán hàng', icon: 'sale' },
+  { to: '/inventory', label: 'Kho hàng', icon: 'stock' },
+  { to: '/reports', label: 'Báo cáo', icon: 'report', adminOnly: true },
+  { to: '/manage', label: 'Quản lý', icon: 'manage', adminOnly: true },
 ]
 
 // Chữ cái đầu của tên để làm avatar
@@ -24,6 +27,7 @@ function initials(name: string): string {
 export function AppLayout() {
   const { profile, isAdmin, signOut } = useAuth()
   const { stores, current, loading, error, select } = useStore()
+  const navigate = useNavigate()
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
   const displayName = profile?.full_name || (isAdmin ? 'Admin' : 'Nhân viên')
@@ -34,9 +38,7 @@ export function AppLayout() {
         <div className="topbar-inner">
           <div className="topbar-row">
             <span className="brand">
-              <span className="brand-mark">
-                <Icon name="leaf" size={20} />
-              </span>
+              <Logo size={36} />
               <span className="brand-text">Nhập liệu</span>
             </span>
             <span className="store-pill">
@@ -58,7 +60,14 @@ export function AppLayout() {
               )}
             </span>
             <span className="spacer" />
-            <UserMenu name={displayName} isAdmin={isAdmin} onSignOut={() => signOut()} />
+            <UserMenu
+              name={displayName}
+              isAdmin={isAdmin}
+              onSignOut={async () => {
+                await signOut()
+                navigate('/login', { replace: true })
+              }}
+            />
           </div>
           <nav className="nav">
             {items.map((item) => (
@@ -76,7 +85,11 @@ export function AppLayout() {
         ) : error ? (
           <p className="error">{error}</p>
         ) : !current ? (
-          <p>Bạn chưa được thêm vào cửa hàng nào. Liên hệ admin.</p>
+          <ErrorPage
+            code={403}
+            title="Chưa được phân quyền cửa hàng"
+            message="Tài khoản của bạn chưa được thêm vào cửa hàng nào. Liên hệ quản trị để được cấp quyền."
+          />
         ) : (
           <Outlet />
         )}
@@ -85,7 +98,13 @@ export function AppLayout() {
   )
 }
 
-// Menu ở tên người dùng: Nhân viên (chỉ quản trị) và Đăng xuất
+const THEME_CHOICES: { value: ThemeMode; label: string; icon: IconName }[] = [
+  { value: 'light', label: 'Sáng', icon: 'sun' },
+  { value: 'dark', label: 'Tối', icon: 'moon' },
+  { value: 'system', label: 'Theo máy', icon: 'monitor' },
+]
+
+// Menu ở tên người dùng: tài khoản, giao diện sáng / tối, Nhân viên (chỉ quản trị), đăng xuất
 function UserMenu({
   name,
   isAdmin,
@@ -97,6 +116,7 @@ function UserMenu({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const { mode, change } = useTheme()
   const location = useLocation()
   const [lastPath, setLastPath] = useState(location.pathname)
 
@@ -149,8 +169,28 @@ function UserMenu({
             <strong>{name}</strong>
             <span className="muted">{isAdmin ? 'Quản trị' : 'Nhân viên'}</span>
           </div>
+          <NavLink to="/account" role="menuitem" className="user-dropdown-item">
+            <Icon name="user" />
+            Tài khoản của tôi
+          </NavLink>
+          <div className="theme-switch" role="radiogroup" aria-label="Giao diện">
+            {THEME_CHOICES.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                role="radio"
+                aria-checked={mode === t.value}
+                className={mode === t.value ? 'active' : undefined}
+                onClick={() => change(t.value)}
+                title={t.label}
+              >
+                <Icon name={t.icon} size={16} />
+                <span>{t.label}</span>
+              </button>
+            ))}
+          </div>
           {isAdmin && (
-            <NavLink to="/nhan-vien" role="menuitem" className="user-dropdown-item">
+            <NavLink to="/staff" role="menuitem" className="user-dropdown-item">
               <Icon name="staff" />
               Nhân viên
             </NavLink>

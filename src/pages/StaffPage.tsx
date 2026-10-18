@@ -14,6 +14,7 @@ const EMPTY: FormValues = { full_name: '', email: '', password: '', store_ids: [
 type AdminUsersBody =
   | { action: 'create'; email: string; password: string; full_name: string; store_ids: string[] }
   | { action: 'set_password'; user_id: string; password: string }
+  | { action: 'update'; user_id: string; full_name: string; email: string }
 
 // Gọi Edge Function admin-users; lấy thông báo lỗi tiếng Việt từ body trả về
 async function callAdminUsers(body: AdminUsersBody): Promise<void> {
@@ -26,6 +27,8 @@ async function callAdminUsers(body: AdminUsersBody): Promise<void> {
   throw error
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 function formatDateTime(value: string | null): string {
   if (!value) return 'Chưa đăng nhập'
   return new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
@@ -33,12 +36,14 @@ function formatDateTime(value: string | null): string {
 
 // Chỉ admin (route bọc RequireAdmin; RPC và Edge Function cũng tự kiểm tra)
 export function StaffPage() {
-  const { session } = useAuth()
+  const { session, refreshProfile } = useAuth()
   const { stores } = useStore()
   const [list, setList] = useState<{ rows: AdminUserRow[]; error: string | null } | null>(null)
   const [version, setVersion] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  // Đang sửa tên / email của tài khoản nào
+  const [editing, setEditing] = useState<{ id: string; full_name: string; email: string } | null>(null)
   const {
     register,
     handleSubmit,
@@ -95,6 +100,27 @@ export function StaffPage() {
     try {
       await callAdminUsers({ action: 'set_password', user_id: user.id, password })
       setResult({ ok: true, text: `Đã đổi mật khẩu cho ${user.full_name || user.email}` })
+    } catch (e) {
+      setResult({ ok: false, text: errorMessage(e) })
+    }
+    setBusy(null)
+  }
+
+  const saveEdit = async () => {
+    if (!editing) return
+    const fullName = editing.full_name.trim()
+    const email = editing.email.trim().toLowerCase()
+    if (!fullName) return setResult({ ok: false, text: 'Nhập tên nhân viên' })
+    if (fullName.length > 100) return setResult({ ok: false, text: 'Tên tối đa 100 ký tự' })
+    if (!EMAIL_PATTERN.test(email)) return setResult({ ok: false, text: 'Email không hợp lệ' })
+    setResult(null)
+    setBusy(editing.id)
+    try {
+      await callAdminUsers({ action: 'update', user_id: editing.id, full_name: fullName, email })
+      setResult({ ok: true, text: `Đã lưu thông tin ${fullName}` })
+      if (editing.id === session?.user.id) refreshProfile()
+      setEditing(null)
+      reload()
     } catch (e) {
       setResult({ ok: false, text: errorMessage(e) })
     }
@@ -176,12 +202,39 @@ export function StaffPage() {
                 return (
                   <tr key={user.id}>
                     <td>
-                      {user.full_name || '(chưa có tên)'}
-                      {isAdminRow && <span className="badge badge-ok"> admin</span>}
-                      <br />
-                      <small className="muted">{user.email}</small>
-                      <br />
-                      <small className="muted">Đăng nhập gần nhất: {formatDateTime(user.last_sign_in_at)}</small>
+                      {editing?.id === user.id ? (
+                        <div className="staff-edit">
+                          <input
+                            type="text"
+                            aria-label="Tên nhân viên"
+                            value={editing.full_name}
+                            onChange={(e) => setEditing({ ...editing, full_name: e.target.value })}
+                          />
+                          <input
+                            type="email"
+                            aria-label="Email đăng nhập"
+                            value={editing.email}
+                            onChange={(e) => setEditing({ ...editing, email: e.target.value })}
+                          />
+                          <div className="row">
+                            <button type="button" className="primary" disabled={busy === user.id} onClick={saveEdit}>
+                              {busy === user.id ? 'Đang lưu…' : 'Lưu'}
+                            </button>
+                            <button type="button" onClick={() => setEditing(null)} disabled={busy === user.id}>
+                              Huỷ
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {user.full_name || '(chưa có tên)'}
+                          {isAdminRow && <span className="badge badge-ok"> admin</span>}
+                          <br />
+                          <small className="muted">{user.email}</small>
+                          <br />
+                          <small className="muted">Đăng nhập gần nhất: {formatDateTime(user.last_sign_in_at)}</small>
+                        </>
+                      )}
                     </td>
                     {stores.map((s) => {
                       const member = user.store_ids.includes(s.id)
@@ -201,7 +254,18 @@ export function StaffPage() {
                         </td>
                       )
                     })}
-                    <td>
+                    <td className="actions">
+                      <button
+                        type="button"
+                        className="link"
+                        disabled={busy === user.id || editing?.id === user.id}
+                        onClick={() => {
+                          setResult(null)
+                          setEditing({ id: user.id, full_name: user.full_name ?? '', email: user.email })
+                        }}
+                      >
+                        Sửa
+                      </button>
                       {user.id !== session?.user.id && (
                         <button
                           type="button"

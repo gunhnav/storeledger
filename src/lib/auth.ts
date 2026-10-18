@@ -10,6 +10,8 @@ export type AuthState = {
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  // Tải lại profile sau khi người dùng tự sửa tên
+  refreshProfile: () => void
 }
 
 export const AuthContext = createContext<AuthState | null>(null)
