@@ -17,7 +17,6 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
   if (!data) return null
 
   const rows = stockRows(data.input)
-  const hasCompany = rows.some((r) => r.company !== 0)
   const results = productResults(data.input, data.allocations, data.currentPrice)
   const s = financialSummary(data.input, data.allocations, data.currentPrice)
   const money = (v: number) => <span className={v < 0 ? 'negative' : undefined}>{formatVND(v)}</span>
@@ -42,10 +41,10 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
                 <thead>
                   <tr>
                     <th>{t('Loại')}</th>
-                    <th className="num">{t('Đã nhập')}</th>
-                    <th className="num">{t('Đã mang ra')}</th>
-                    <th className="num">{t('Còn ở nhà')}</th>
-                    {hasCompany && <th className="num">{t('Ở công ty')}</th>}
+                    <th className="num">{t('Nhập hàng')}</th>
+                    <th className="num">{t('Quán')}</th>
+                    <th className="num">{t('Công ty')}</th>
+                    <th className="num">{t('Nhà')}</th>
                     <th>{t('Trạng thái')}</th>
                   </tr>
                 </thead>
@@ -53,10 +52,11 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
                   {rows.map((r) => (
                     <tr key={r.productId}>
                       <td>{r.name}</td>
+                      {/* Nhập hàng = phân phối ra quán + cho công ty + còn ở nhà */}
                       <td className="num">{r.purchased}</td>
-                      <td className="num">{r.moved}</td>
+                      <td className="num">{r.movedShop}</td>
+                      <td className="num">{r.moved - r.movedShop}</td>
                       <td className="num">{r.home}</td>
-                      {hasCompany && <td className="num">{r.company}</td>}
                       <td>
                         <StockStatusBadge status={r.homeStatus} />
                       </td>
