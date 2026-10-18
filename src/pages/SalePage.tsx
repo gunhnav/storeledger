@@ -10,9 +10,11 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog, useStorePrices } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
+import { allocateSetTotal, allocatedTotal, setTotal } from '../lib/companySale'
 import type { Product, SaleChannel, StorePriceRow } from '../types/database'
 
-type FormValues = { channel: SaleChannel; sale_date: string; note: string }
+// sets / set_price: chỉ dùng cho kênh Công ty (bán set mix theo giá thoả thuận)
+type FormValues = { channel: SaleChannel; sale_date: string; note: string; sets: string; set_price: string }
 // price null = dùng giá gợi ý theo kênh và ngày bán
 type Line = { product_id: string; qty: string; price: string | null }
 
@@ -49,11 +51,14 @@ function SaleForm({ storeId }: { storeId: string }) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { channel: 'in_store', sale_date: todayVN(), note: '' },
+    defaultValues: { channel: 'in_store', sale_date: todayVN(), note: '', sets: '1', set_price: '' },
   })
 
   const channel = useWatch({ control, name: 'channel' })
   const saleDate = useWatch({ control, name: 'sale_date' })
+  const isCompany = channel === 'company'
+  const sets = Number(useWatch({ control, name: 'sets' })) || 0
+  const pricePerSet = Number(useWatch({ control, name: 'set_price' })) || 0
   const { prices, error: pricesError } = useStorePrices(storeId, saleDate)
   const quick = quickMode ?? products.length <= QUICK_MAX
   const byId = new Map(products.map((p) => [p.id, p]))
@@ -61,7 +66,15 @@ function SaleForm({ storeId }: { storeId: string }) {
   const suggested = (id: string) => priceFor(prices?.get(id), channel)
   const priceText = (line: Line) => line.price ?? String(suggested(line.product_id))
   const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
-  const total = lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(priceText(l)) || 0), 0)
+  const total = isCompany
+    ? setTotal(sets, pricePerSet)
+    : lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(priceText(l)) || 0), 0)
+  // Kênh Công ty: chia tổng tiền set cho từng loại theo giá tại quầy (chỉ để báo cáo theo loại)
+  const companyLines = lines.map((l) => ({
+    productId: l.product_id,
+    qty: Number(l.qty) || 0,
+    weight: prices?.get(l.product_id)?.sale_price ?? 0,
+  }))
 
   // Món đếm tồn chỉ bán được hàng đã chuyển ra quầy (server vẫn chặn cuối cùng)
   const overStock = (line: Line) => {
@@ -111,17 +124,27 @@ function SaleForm({ storeId }: { storeId: string }) {
     setFormError(null)
     if (lines.length === 0) return setFormError(t('Đơn bán phải có ít nhất một món'))
     if (!prices) return setFormError(t('Đang tải giá, thử lại sau giây lát'))
+    if (isCompany) {
+      if (!Number.isInteger(sets) || sets <= 0) return setFormError(t('Số set phải là số nguyên > 0'))
+      if (!(pricePerSet > 0)) return setFormError(t('Nhập giá 1 set'))
+      if (total > MAX_MONEY) return setFormError(t('Tổng tiền quá lớn, kiểm tra lại'))
+    }
+    const companyPrices = isCompany ? allocateSetTotal(total, companyLines) : null
     const items = []
     for (const line of lines) {
       const name = byId.get(line.product_id)?.name ?? ''
       const quantity = Number(line.qty)
-      const unitPrice = Number(priceText(line))
+      const unitPrice = companyPrices ? (companyPrices.get(line.product_id) ?? 0) : Number(priceText(line))
       if (!Number.isInteger(quantity) || quantity <= 0) {
         return setFormError(t('Số lượng của "{name}" phải là số nguyên > 0', { name }))
       }
       if (quantity > MAX_QTY) return setFormError(t('Số lượng của "{name}" quá lớn, kiểm tra lại', { name }))
       const stockProblem = overStock(line)
       if (stockProblem) return setFormError(`"${name}": ${stockProblem}`)
+      if (companyPrices) {
+        items.push({ product_id: line.product_id, quantity, unit_price: unitPrice })
+        continue
+      }
       if (line.price === null && !prices.has(line.product_id)) {
         return setFormError(t('"{name}" chưa có giá bán vào ngày này: nhập đơn giá hoặc nhờ admin đặt giá', { name }))
       }
@@ -136,7 +159,9 @@ function SaleForm({ storeId }: { storeId: string }) {
       p_store_id: storeId,
       p_sale_date: values.sale_date || null,
       p_channel: values.channel,
-      p_note: values.note.trim() || null,
+      p_note: isCompany
+        ? [`${sets} set × ${formatVND(pricePerSet)}`, values.note.trim()].filter(Boolean).join(' · ')
+        : values.note.trim() || null,
       p_items: items,
     })
     if (error) {
@@ -144,9 +169,12 @@ function SaleForm({ storeId }: { storeId: string }) {
       return
     }
     toast.success(
-      t('Đã lưu đơn bán {amount} ngày {date}', { amount: formatVND(total), date: formatDate(values.sale_date) }),
+      t('Đã lưu đơn bán {amount} ngày {date}', {
+        amount: formatVND(companyPrices ? allocatedTotal(companyLines, companyPrices) : total),
+        date: formatDate(values.sale_date),
+      }),
     )
-    reset({ channel: values.channel, sale_date: values.sale_date, note: '' })
+    reset({ channel: values.channel, sale_date: values.sale_date, note: '', sets: '1', set_price: '' })
     setLines([])
     reload()
     setAlertVersion((v) => v + 1)
@@ -158,7 +186,7 @@ function SaleForm({ storeId }: { storeId: string }) {
   // Giá và tồn ở quầy hiện dưới tên món
   const info = (p: Product) => {
     const parts: string[] = []
-    if (prices) parts.push(prices.has(p.id) ? formatVND(suggested(p.id)) : t('chưa có giá'))
+    if (prices && !isCompany) parts.push(prices.has(p.id) ? formatVND(suggested(p.id)) : t('chưa có giá'))
     if (p.tracks_stock) {
       const shop = stock.get(p.id)?.qty_shop ?? 0
       if (shop > 0) parts.push(t('Còn {shop}', { shop }))
@@ -196,6 +224,7 @@ function SaleForm({ storeId }: { storeId: string }) {
               <select {...register('channel', { onChange: resetPrices })}>
                 <option value="in_store">{t('Tại quầy')}</option>
                 <option value="shopeefood">ShopeeFood</option>
+                <option value="company">{t('Công ty')}</option>
               </select>
             </label>
             <div className="field">
@@ -220,6 +249,23 @@ function SaleForm({ storeId }: { storeId: string }) {
             </div>
           </div>
           {errors.sale_date && <p className="error">{t(errors.sale_date.message ?? '')}</p>}
+          {isCompany && (
+            <div className="company-set">
+              <div className="row">
+                <label className="field">
+                  {t('Số set')}
+                  <input type="text" inputMode="numeric" {...register('sets')} />
+                </label>
+                <label className="field">
+                  {t('Giá 1 set')}
+                  <input type="text" inputMode="numeric" placeholder={t('Ví dụ: 50000')} {...register('set_price')} />
+                </label>
+              </div>
+              <small className="muted">
+                {t('Bán set mix theo giá thoả thuận, không dùng giá tại quầy. Nhập tổng số hũ từng loại của cả đơn bên dưới (ví dụ 10 set × 2 cacao = 20 cacao).')}
+              </small>
+            </div>
+          )}
           {pricesError && <p className="error">{t('Không tải được giá: {error}', { error: pricesError })}</p>}
 
           <ProductPicker
@@ -236,7 +282,7 @@ function SaleForm({ storeId }: { storeId: string }) {
               return (
                 <div className="quick-inputs">
                   {warn && <small className="warn">{warn}</small>}
-                  {line && priceInput(line, p.name)}
+                  {line && !isCompany && priceInput(line, p.name)}
                   <QtyStepper
                     value={line?.qty ?? ''}
                     onChange={(v) => setQty(p.id, v)}
@@ -269,10 +315,16 @@ function SaleForm({ storeId }: { storeId: string }) {
                 return (
                   <li key={line.product_id} className={warn ? 'has-warn' : undefined}>
                     <span className="summary-name">{byId.get(line.product_id)?.name}</span>
-                    <span className="summary-qty">
-                      {line.qty || 0} × {formatVND(Number(priceText(line)) || 0)}
-                    </span>
-                    <strong>{formatVND((Number(line.qty) || 0) * (Number(priceText(line)) || 0))}</strong>
+                    {isCompany ? (
+                      <strong>{line.qty || 0}</strong>
+                    ) : (
+                      <>
+                        <span className="summary-qty">
+                          {line.qty || 0} × {formatVND(Number(priceText(line)) || 0)}
+                        </span>
+                        <strong>{formatVND((Number(line.qty) || 0) * (Number(priceText(line)) || 0))}</strong>
+                      </>
+                    )}
                   </li>
                 )
               })}
@@ -303,9 +355,13 @@ function SaleForm({ storeId }: { storeId: string }) {
                         min={1}
                         label={t('số lượng {name}', { name })}
                       />
-                      <span className="times">×</span>
-                      {priceInput(line, name)}
-                      <span className="subtotal">{formatVND(subtotal)}</span>
+                      {!isCompany && (
+                        <>
+                          <span className="times">×</span>
+                          {priceInput(line, name)}
+                          <span className="subtotal">{formatVND(subtotal)}</span>
+                        </>
+                      )}
                     </div>
                     {warn && <small className="warn">{warn}</small>}
                   </div>

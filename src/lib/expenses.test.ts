@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { expenseLine, storedUnitPrice } from './expenses'
+import { expenseGroupsFor, expenseLine, storedUnitPrice } from './expenses'
 
 describe('chi phí đồ dùng: thành tiền', () => {
   it('thành tiền = số lượng × đơn giá', () => {
@@ -16,5 +16,13 @@ describe('chi phí đồ dùng: thành tiền', () => {
 
   it('số lượng 0 không chia cho 0', () => {
     expect(expenseLine(0, 0, 1000).unitPrice).toBe(0)
+  })
+})
+
+describe('nhóm chi phí theo cửa hàng', () => {
+  it('Bún đậu có nhóm riêng, Hogi và quán khác dùng 5 nhóm mặc định', () => {
+    expect(expenseGroupsFor('bundau')).toEqual(['Đồ uống', 'Nguyên liệu', 'Dụng cụ', 'Quảng cáo', 'Khác'])
+    expect(expenseGroupsFor('hogi')).toEqual(['Dụng cụ', 'Bao bì', 'In ấn - quảng cáo', 'Vận chuyển', 'Khác'])
+    expect(expenseGroupsFor(undefined)).toEqual(expenseGroupsFor('hogi'))
   })
 })

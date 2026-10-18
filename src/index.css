@@ -1504,6 +1504,17 @@ a.button.primary:hover {
   min-width: 220px;
 }
 
+/* Bán hàng – kênh Công ty: số set × giá 1 set */
+.company-set {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px dashed var(--accent);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
 /* Số trên biểu đồ */
 .chart-label {
   font-size: 11px;

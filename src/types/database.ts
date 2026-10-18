@@ -3,7 +3,7 @@
 // Cột numeric được PostgREST trả về dạng number; date dạng 'YYYY-MM-DD'; timestamptz dạng chuỗi ISO.
 
 export type UserRole = 'admin' | 'staff'
-export type SaleChannel = 'in_store' | 'shopeefood'
+export type SaleChannel = 'in_store' | 'shopeefood' | 'company'
 export type StockStatus = 'ok' | 'low' | 'out'
 export type PnlPeriod = 'day' | 'week' | 'month'
 

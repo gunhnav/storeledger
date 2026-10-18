@@ -25,6 +25,7 @@ const SECTIONS: Section[] = [
     title: 'Bán hàng',
     items: [
       'Chọn kênh “Tại quầy” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.',
+      'Kênh “Công ty”: bán set mix theo giá thoả thuận. Nhập số set và giá 1 set, rồi nhập tổng số hũ từng loại của cả đơn.',
       'Món nào chưa mang ra quầy thì chuyển hàng trước rồi mới bán, để tồn tại quầy không bị âm.',
       'Ghi đơn ngay khi bán. Nếu quên, đổi ngày bán sang đúng ngày rồi lưu.',
     ],

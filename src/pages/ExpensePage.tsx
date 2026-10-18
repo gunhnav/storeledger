@@ -6,7 +6,7 @@ import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
-import { EXPENSE_GROUPS, expenseLine, storedUnitPrice } from '../lib/expenses'
+import { expenseGroupsFor, expenseLine, storedUnitPrice } from '../lib/expenses'
 import type { Expense } from '../types/database'
 
 type FormValues = { expense_date: string; category: string; note: string }
@@ -18,11 +18,11 @@ const cleanNumber = (text: string) => text.replace(/[^0-9.]/g, '')
 
 export function ExpensePage() {
   const { current } = useStore()
-  return current ? <ExpenseForm key={current.id} storeId={current.id} /> : null
+  return current ? <ExpenseForm key={current.id} storeId={current.id} groups={expenseGroupsFor(current.code)} /> : null
 }
 
 // Chỉ admin (route bọc RequireAdmin, RLS cũng chặn)
-function ExpenseForm({ storeId }: { storeId: string }) {
+function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly string[] }) {
   const { t } = useI18n()
   const toast = useToast()
   const [recent, setRecent] = useState<{ rows: Expense[]; error: string | null } | null>(null)
@@ -40,7 +40,7 @@ function ExpenseForm({ storeId }: { storeId: string }) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { expense_date: todayVN(), category: 'Dụng cụ', note: '' },
+    defaultValues: { expense_date: todayVN(), category: groups[0], note: '' },
   })
 
   useEffect(() => {
@@ -115,7 +115,7 @@ function ExpenseForm({ storeId }: { storeId: string }) {
           <label>
             {t('Nhóm chi phí')}
             <select {...register('category', { required: true })}>
-              {EXPENSE_GROUPS.map((g) => (
+              {groups.map((g) => (
                 <option key={g} value={g}>
                   {t(g)}
                 </option>

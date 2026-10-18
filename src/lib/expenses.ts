@@ -1,6 +1,13 @@
-// Chi phí đồ dùng: 5 nhóm cố định (khớp CHECK constraint trong DB)
+// Nhóm chi phí cố định theo cửa hàng (DB nhận hợp của các danh sách, xem
+// 20261018162323_company_channel_expense_groups.sql). Quán không có danh sách riêng dùng nhóm mặc định.
 export const EXPENSE_GROUPS = ['Dụng cụ', 'Bao bì', 'In ấn - quảng cáo', 'Vận chuyển', 'Khác'] as const
-export type ExpenseGroup = (typeof EXPENSE_GROUPS)[number]
+const STORE_EXPENSE_GROUPS: Record<string, readonly string[]> = {
+  bundau: ['Đồ uống', 'Nguyên liệu', 'Dụng cụ', 'Quảng cáo', 'Khác'],
+}
+
+export function expenseGroupsFor(storeCode: string | undefined): readonly string[] {
+  return (storeCode && STORE_EXPENSE_GROUPS[storeCode]) || EXPENSE_GROUPS
+}
 
 export type ExpenseLine = {
   // Thành tiền (lưu vào amount, giữ số gốc khi ghi đè)
