@@ -70,8 +70,11 @@ export function monthEnd(iso: string, offset = 0): string {
 
 const compact = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 })
 
-// Số tiền rút gọn: 1,2tr · 350k · 2,5 tỷ
-export function formatCompact(value: number): string {
+// Số tiền rút gọn: tiếng Việt 1,2tr · 350k · 2,5 tỷ; ngôn ngữ khác theo chuẩn của locale (1.2M, 120万…)
+export function formatCompact(value: number, locale = 'vi-VN'): string {
+  if (locale !== 'vi-VN') {
+    return new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+  }
   const abs = Math.abs(value)
   if (abs >= 1e9) return `${compact.format(value / 1e9)} tỷ`
   if (abs >= 1e6) return `${compact.format(value / 1e6)}tr`

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabase'
+import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
 import type { Expense } from '../types/database'
@@ -17,6 +18,7 @@ export function ExpensePage() {
 
 // Chỉ admin (route bọc RequireAdmin, RLS cũng chặn)
 function ExpenseForm({ storeId }: { storeId: string }) {
+  const { t } = useI18n()
   const [recent, setRecent] = useState<{ rows: Expense[]; error: string | null } | null>(null)
   const [version, setVersion] = useState(0)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -61,7 +63,7 @@ function ExpenseForm({ storeId }: { storeId: string }) {
       setResult({ ok: false, text: errorMessage(error) })
       return
     }
-    setResult({ ok: true, text: `Đã lưu chi phí ${formatVND(values.amount)}` })
+    setResult({ ok: true, text: t('Đã lưu chi phí {amount}', { amount: formatVND(values.amount) }) })
     reset({ expense_date: values.expense_date, category: '', amount: Number.NaN, note: '' })
     setVersion((v) => v + 1)
   }
@@ -71,7 +73,7 @@ function ExpenseForm({ storeId }: { storeId: string }) {
       <form className="card form" onSubmit={handleSubmit(onSubmit)}>
         <div className="row">
           <label>
-            Ngày
+            {t('Ngày')}
             <input
               type="date"
               max={todayVN()}
@@ -79,7 +81,7 @@ function ExpenseForm({ storeId }: { storeId: string }) {
             />
           </label>
           <label>
-            Số tiền
+            {t('Số tiền')}
             <input
               type="number"
               inputMode="numeric"
@@ -98,11 +100,11 @@ function ExpenseForm({ storeId }: { storeId: string }) {
           </label>
         </div>
         {(errors.expense_date || errors.amount) && (
-          <p className="error">{errors.expense_date?.message ?? errors.amount?.message}</p>
+          <p className="error">{t(errors.expense_date?.message ?? errors.amount?.message ?? '')}</p>
         )}
 
         <label>
-          Nhóm chi phí
+          {t('Nhóm chi phí')}
           <input
             type="text"
             list="expense-categories"
@@ -113,39 +115,39 @@ function ExpenseForm({ storeId }: { storeId: string }) {
           />
           <datalist id="expense-categories">
             {categories.map((c) => (
-              <option key={c} value={c} />
+              <option key={c} value={t(c)} />
             ))}
           </datalist>
         </label>
-        {errors.category && <p className="error">{errors.category.message}</p>}
+        {errors.category && <p className="error">{t(errors.category.message ?? '')}</p>}
 
         <label>
-          Ghi chú
+          {t('Ghi chú')}
           <input type="text" {...register('note')} />
         </label>
 
-        {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
+        {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
         <button type="submit" className="primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Đang lưu…' : 'Lưu chi phí'}
+          {isSubmitting ? t('Đang lưu…') : t('Lưu chi phí')}
         </button>
       </form>
 
-      <h2 className="section-title">20 chi phí gần nhất</h2>
+      <h2 className="section-title">{t('20 chi phí gần nhất')}</h2>
       {!recent ? (
-        <p className="muted">Đang tải…</p>
+        <p className="muted">{t('Đang tải…')}</p>
       ) : recent.error ? (
-        <p className="error">{recent.error}</p>
+        <p className="error">{t(recent.error)}</p>
       ) : recent.rows.length === 0 ? (
-        <p className="muted">Chưa có chi phí nào.</p>
+        <p className="muted">{t('Chưa có chi phí nào.')}</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Ngày</th>
-                <th>Nhóm</th>
-                <th className="num">Số tiền</th>
-                <th>Ghi chú</th>
+                <th>{t('Ngày')}</th>
+                <th>{t('Nhóm')}</th>
+                <th className="num">{t('Số tiền')}</th>
+                <th>{t('Ghi chú')}</th>
               </tr>
             </thead>
             <tbody>

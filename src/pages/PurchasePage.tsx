@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
@@ -23,6 +24,7 @@ export function PurchasePage() {
 // Nhân viên cũng nhập được, nhưng không bao giờ xem được giá vốn: ô giá để trống
 // thì DB dùng giá vốn hiện hành. Chỉ admin được điền sẵn giá vốn (đọc product_prices).
 function PurchaseForm({ storeId }: { storeId: string }) {
+  const { t } = useI18n()
   const { isAdmin } = useAuth()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
   const [lines, setLines] = useState<Line[]>([])
@@ -101,27 +103,27 @@ function PurchaseForm({ storeId }: { storeId: string }) {
   const onSubmit = async (values: FormValues) => {
     setResult(null)
     setFormError(null)
-    if (lines.length === 0) return setFormError('Đợt nhập phải có ít nhất một sản phẩm')
+    if (lines.length === 0) return setFormError(t('Đợt nhập phải có ít nhất một sản phẩm'))
     const items = []
     for (const line of lines) {
       const name = byId.get(line.product_id)?.name ?? ''
       const quantity = Number(line.qty)
       if (!Number.isInteger(quantity) || quantity <= 0) {
-        return setFormError(`Số lượng của "${name}" phải là số nguyên > 0`)
+        return setFormError(t('Số lượng của "{name}" phải là số nguyên > 0', { name }))
       }
-      if (quantity > MAX_QTY) return setFormError(`Số lượng của "${name}" quá lớn, kiểm tra lại`)
+      if (quantity > MAX_QTY) return setFormError(t('Số lượng của "{name}" quá lớn, kiểm tra lại', { name }))
       // Admin thấy được giá vốn nên báo sớm món chưa có giá vốn mà ô giá để trống
       if (isAdmin && costText(line) === '') {
-        return setFormError(`"${name}" chưa có giá vốn: nhập giá nhập cho món này`)
+        return setFormError(t('"{name}" chưa có giá vốn: nhập giá nhập cho món này', { name }))
       }
       // Chỉ gửi giá khi người dùng tự gõ; còn lại để DB lấy giá vốn hiện hành
       const typed = line.cost?.trim() ?? ''
       const unitCost = typed === '' ? null : Number(typed)
       if (unitCost !== null && (!Number.isFinite(unitCost) || unitCost < 0)) {
-        return setFormError(`Giá nhập của "${name}" không hợp lệ`)
+        return setFormError(t('Giá nhập của "{name}" không hợp lệ', { name }))
       }
       if (unitCost !== null && unitCost > MAX_MONEY) {
-        return setFormError(`Giá nhập của "${name}" quá lớn, kiểm tra lại`)
+        return setFormError(t('Giá nhập của "{name}" quá lớn, kiểm tra lại', { name }))
       }
       items.push({ product_id: line.product_id, quantity, unit_cost: unitCost })
     }
@@ -136,16 +138,16 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       setResult({ ok: false, text: errorMessage(error) })
       return
     }
-    setResult({ ok: true, text: `Đã lưu đợt nhập ${lines.length} món` })
+    setResult({ ok: true, text: t('Đã lưu đợt nhập {count} món', { count: lines.length }) })
     reset({ purchase_date: values.purchase_date, note: '' })
     setLines([])
     reload()
   }
 
-  if (loading) return <p className="muted">Đang tải sản phẩm…</p>
-  if (error) return <p className="error">{error}</p>
+  if (loading) return <p className="muted">{t('Đang tải sản phẩm…')}</p>
+  if (error) return <p className="error">{t(error)}</p>
 
-  const info = (p: Product) => `Ở nhà: ${stock.get(p.id)?.qty_home ?? 0}`
+  const info = (p: Product) => t('Ở nhà: {value}', { value: stock.get(p.id)?.qty_home ?? 0 })
   const lineFor = (id: string) => lines.find((l) => l.product_id === id)
 
   const costInput = (line: Line, name: string) => (
@@ -153,14 +155,14 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       type="text"
       inputMode="numeric"
       className="price-input"
-      placeholder="Giá hiện hành"
-      aria-label={`Giá nhập ${name}`}
+      placeholder={t('Giá hiện hành')}
+      aria-label={t('Giá nhập {name}', { name })}
       value={costText(line)}
       onChange={(e) => setCost(line.product_id, e.target.value.replace(/[^0-9.]/g, ''))}
     />
   )
 
-  const submitLabel = isSubmitting ? 'Đang lưu…' : 'Lưu đợt nhập'
+  const submitLabel = isSubmitting ? t('Đang lưu…') : t('Lưu đợt nhập')
   const canSubmit = !isSubmitting && lines.length > 0
 
   return (
@@ -168,17 +170,17 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
           <label className="field">
-            Ngày nhập
+            {t('Ngày nhập')}
             <input
               type="date"
               max={todayVN()}
               {...register('purchase_date', { required: 'Chọn ngày nhập', validate: notFuture })}
             />
           </label>
-          {errors.purchase_date && <p className="error">{errors.purchase_date.message}</p>}
+          {errors.purchase_date && <p className="error">{t(errors.purchase_date.message ?? '')}</p>}
 
           {stocked.length === 0 ? (
-            <p className="pos-empty muted">Cửa hàng chưa có món nào đếm tồn kho.</p>
+            <p className="pos-empty muted">{t('Cửa hàng chưa có món nào đếm tồn kho.')}</p>
           ) : (
             <ProductPicker
               products={stocked}
@@ -196,7 +198,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
                       value={line?.qty ?? ''}
                       onChange={(v) => setQty(p.id, v)}
                       min={0}
-                      label={`số lượng ${p.name}`}
+                      label={t('số lượng {name}', { name: p.name })}
                     />
                   </div>
                 )
@@ -207,13 +209,13 @@ function PurchaseForm({ storeId }: { storeId: string }) {
 
         <aside className="pos-side card">
           <div className="pos-side-head">
-            <h3>Đợt nhập</h3>
-            <span className="count-pill">{lines.length} món</span>
+            <h3>{t('Đợt nhập')}</h3>
+            <span className="count-pill">{t('{count} món', { count: lines.length })}</span>
           </div>
 
           {lines.length === 0 ? (
             <p className="pos-empty muted">
-              {quick ? 'Nhập số lượng ở danh sách món bên cạnh.' : 'Chạm vào món ở bên cạnh để thêm vào đợt nhập.'}
+              {quick ? t('Nhập số lượng ở danh sách món bên cạnh.') : t('Chạm vào món ở bên cạnh để thêm vào đợt nhập.')}
             </p>
           ) : (
             <div className="order-lines">
@@ -227,7 +229,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
                       <button
                         type="button"
                         className="remove"
-                        aria-label={`Xoá ${name}`}
+                        aria-label={t('Xoá {name}', { name })}
                         onClick={() => removeLine(line.product_id)}
                       >
                         ×
@@ -238,7 +240,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
                         value={line.qty}
                         onChange={(v) => setQty(line.product_id, v)}
                         min={1}
-                        label={`số lượng ${name}`}
+                        label={t('số lượng {name}', { name })}
                       />
                       <span className="times">×</span>
                       {costInput(line, name)}
@@ -252,20 +254,20 @@ function PurchaseForm({ storeId }: { storeId: string }) {
             </div>
           )}
 
-          <small className="muted">Ô giá nhập để trống thì dùng giá vốn hiện hành của món.</small>
+          <small className="muted">{t('Ô giá nhập để trống thì dùng giá vốn hiện hành của món.')}</small>
 
           <label className="field">
-            Ghi chú
-            <input type="text" placeholder="Không bắt buộc" {...register('note')} />
+            {t('Ghi chú')}
+            <input type="text" placeholder={t('Không bắt buộc')} {...register('note')} />
           </label>
 
           <div className="pos-total">
-            <span>Tổng tiền nhập{hasBlankCost && <small> (chưa gồm món để trống giá)</small>}</span>
+            <span>{t('Tổng tiền nhập')}{hasBlankCost && <small> {t('(chưa gồm món để trống giá)')}</small>}</span>
             <strong>{formatVND(total)}</strong>
           </div>
 
-          {formError && <p className="error">{formError}</p>}
-          {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
+          {formError && <p className="error">{t(formError)}</p>}
+          {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
           <button type="submit" className="primary block" disabled={!canSubmit}>
             {submitLabel}
           </button>
@@ -273,7 +275,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
 
         <div className="pos-mobilebar">
           <div>
-            <small>{lines.length} món</small>
+            <small>{t('{count} món', { count: lines.length })}</small>
             <strong>{formatVND(total)}</strong>
           </div>
           <button type="submit" className="primary" disabled={!canSubmit}>

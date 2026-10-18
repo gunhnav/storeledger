@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { supabase } from '../lib/supabase'
+import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import {
   addDays,
@@ -58,10 +59,10 @@ function defaultRange(period: PnlPeriod): { from: string; to: string } {
   return { from: monthStart(today, -5), to: today }
 }
 
-function periodLabel(iso: string, period: PnlPeriod): string {
+function periodLabel(iso: string, period: PnlPeriod, t: Translate): string {
   const [y, m, d] = iso.split('-')
   if (period === 'day') return `${d}/${m}`
-  if (period === 'week') return `Tuần ${d}/${m}`
+  if (period === 'week') return t('Tuần {date}', { date: `${d}/${m}` })
   return `${m}/${y}`
 }
 
@@ -72,6 +73,7 @@ const percent = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 })
 // ---------------------------------------------------------------------------
 
 function BreakEvenBlock({ storeId }: { storeId: string }) {
+  const { t } = useI18n()
   const [result, setResult] = useState<{ row: BreakEvenRow | null; error: string | null } | null>(
     null,
   )
@@ -89,15 +91,15 @@ function BreakEvenBlock({ storeId }: { storeId: string }) {
 
   return (
     <section className="report-block">
-      <h2>Điểm hoà vốn</h2>
+      <h2>{t('Điểm hoà vốn')}</h2>
       {!result ? (
-        <p className="muted">Đang tải…</p>
+        <p className="muted">{t('Đang tải…')}</p>
       ) : result.error ? (
-        <p className="error">{result.error}</p>
+        <p className="error">{t(result.error)}</p>
       ) : !result.row ||
         (result.row.total_invested === 0 && result.row.cumulative_net_revenue === 0) ? (
         <p className="muted">
-          Chưa có dữ liệu. Khi có nhập hàng, chi phí hoặc đơn bán, tiến độ thu hồi vốn sẽ hiện ở đây.
+          {t('Chưa có dữ liệu. Khi có nhập hàng, chi phí hoặc đơn bán, tiến độ thu hồi vốn sẽ hiện ở đây.')}
         </p>
       ) : (
         <BreakEvenSummary row={result.row} />
@@ -107,21 +109,23 @@ function BreakEvenBlock({ storeId }: { storeId: string }) {
 }
 
 function BreakEvenSummary({ row }: { row: BreakEvenRow }) {
+  const { t } = useI18n()
   const pct = row.pct_recovered
   const width = pct === null ? 0 : Math.min(Math.max(pct, 0), 100)
 
   let status: string
   if (row.total_invested === 0) {
-    status = 'Chưa có nhập hàng hay chi phí nên chưa tính được điểm hoà vốn.'
+    status = t('Chưa có nhập hàng hay chi phí nên chưa tính được điểm hoà vốn.')
   } else if (row.break_even_date) {
-    status = `Đã hoà vốn ngày ${formatDate(row.break_even_date)}.`
+    status = t('Đã hoà vốn ngày {value}.', { value: formatDate(row.break_even_date) })
   } else if (row.avg_daily_net_revenue > 0) {
     const days = Math.ceil(row.shortfall / row.avg_daily_net_revenue)
-    status =
-      `Dự kiến hoà vốn sau khoảng ${days} ngày ` +
-      `(ước tính theo doanh thu thuần bình quân ${formatVND(row.avg_daily_net_revenue)}/ngày).`
+    status = t(
+      'Dự kiến hoà vốn sau khoảng {days} ngày (ước tính theo doanh thu thuần bình quân {amount}/ngày).',
+      { days, amount: formatVND(row.avg_daily_net_revenue) },
+    )
   } else {
-    status = 'Chưa có doanh thu nên chưa ước tính được ngày hoà vốn.'
+    status = t('Chưa có doanh thu nên chưa ước tính được ngày hoà vốn.')
   }
 
   return (
@@ -129,12 +133,12 @@ function BreakEvenSummary({ row }: { row: BreakEvenRow }) {
       {pct !== null && (
         <>
           <p>
-            Đã thu hồi <strong>{percent.format(pct)}%</strong> vốn
+            {t('Đã thu hồi {pct}% vốn', { pct: percent.format(pct) })}
           </p>
           <div
             className="progress"
             role="progressbar"
-            aria-label="Tiến độ thu hồi vốn"
+            aria-label={t('Tiến độ thu hồi vốn')}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={width}
@@ -145,22 +149,25 @@ function BreakEvenSummary({ row }: { row: BreakEvenRow }) {
       )}
       <div className="stats">
         <div className="stat">
-          <div className="stat-label">Vốn đầu tư</div>
+          <div className="stat-label">{t('Vốn đầu tư')}</div>
           <div className="stat-value">{formatVND(row.total_invested)}</div>
           <div className="stat-sub">
-            Nhập hàng {formatVND(row.total_purchase_cost)} + chi phí {formatVND(row.total_expenses)}
+            {t('Nhập hàng {purchase} + chi phí {expenses}', {
+              purchase: formatVND(row.total_purchase_cost),
+              expenses: formatVND(row.total_expenses),
+            })}
           </div>
         </div>
         <div className="stat">
-          <div className="stat-label">Doanh thu thuần luỹ kế</div>
+          <div className="stat-label">{t('Doanh thu thuần luỹ kế')}</div>
           <div className="stat-value">{formatVND(row.cumulative_net_revenue)}</div>
         </div>
         <div className="stat">
-          <div className="stat-label">Còn thiếu</div>
+          <div className="stat-label">{t('Còn thiếu')}</div>
           <div className="stat-value">{formatVND(row.shortfall)}</div>
         </div>
         <div className="stat">
-          <div className="stat-label">Giá trị hàng tồn</div>
+          <div className="stat-label">{t('Giá trị hàng tồn')}</div>
           <div className="stat-value">{formatVND(row.remaining_stock_value)}</div>
         </div>
       </div>
@@ -202,6 +209,7 @@ function sumRows(rows: PnlRow[]): Totals {
 }
 
 function PnlBlock({ storeId }: { storeId: string }) {
+  const { t } = useI18n()
   const [period, setPeriod] = useState<PnlPeriod>('day')
   const [range, setRange] = useState(() => defaultRange('day'))
   const [result, setResult] = useState<{
@@ -236,18 +244,18 @@ function PnlBlock({ storeId }: { storeId: string }) {
 
   return (
     <section className="report-block">
-      <h2>Lãi lỗ</h2>
+      <h2>{t('Lãi lỗ')}</h2>
       <div className="filters">
         <label>
-          Kỳ
+          {t('Kỳ')}
           <select value={period} onChange={(e) => changePeriod(e.target.value as PnlPeriod)}>
-            <option value="day">Ngày</option>
-            <option value="week">Tuần</option>
-            <option value="month">Tháng</option>
+            <option value="day">{t('Ngày')}</option>
+            <option value="week">{t('Tuần')}</option>
+            <option value="month">{t('Tháng')}</option>
           </select>
         </label>
         <label>
-          Từ ngày
+          {t('Từ ngày')}
           <input
             type="date"
             value={range.from}
@@ -255,7 +263,7 @@ function PnlBlock({ storeId }: { storeId: string }) {
           />
         </label>
         <label>
-          Đến ngày
+          {t('Đến ngày')}
           <input
             type="date"
             value={range.to}
@@ -263,24 +271,24 @@ function PnlBlock({ storeId }: { storeId: string }) {
           />
         </label>
         <button type="button" onClick={() => setRange({ from: monthStart(today), to: today })}>
-          Tháng này
+          {t('Tháng này')}
         </button>
         <button
           type="button"
           onClick={() => setRange({ from: monthStart(today, -1), to: monthEnd(today, -1) })}
         >
-          Tháng trước
+          {t('Tháng trước')}
         </button>
       </div>
 
       {!valid ? (
-        <p className="error">Khoảng ngày không hợp lệ: "Từ ngày" phải trước hoặc bằng "Đến ngày".</p>
+        <p className="error">{t('Khoảng ngày không hợp lệ: "Từ ngày" phải trước hoặc bằng "Đến ngày".')}</p>
       ) : !result || result.key !== key ? (
-        <p className="muted">Đang tải…</p>
+        <p className="muted">{t('Đang tải…')}</p>
       ) : result.error ? (
-        <p className="error">{result.error}</p>
+        <p className="error">{t(result.error)}</p>
       ) : result.rows.length === 0 ? (
-        <p className="muted">Chưa có giao dịch trong khoảng này.</p>
+        <p className="muted">{t('Chưa có giao dịch trong khoảng này.')}</p>
       ) : (
         <PnlDetails rows={result.rows} period={period} />
       )}
@@ -289,9 +297,11 @@ function PnlBlock({ storeId }: { storeId: string }) {
 }
 
 function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
+  const { t, lang } = useI18n()
+  const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
   const totals = sumRows(rows)
   const chartData = rows.map((r) => ({
-    label: periodLabel(r.period_start, period),
+    label: periodLabel(r.period_start, period, t),
     net_revenue: r.net_revenue,
     cost: r.cogs + r.expenses,
     net_profit: r.net_profit,
@@ -303,7 +313,7 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
       <div className="stats">
         {TOTAL_FIELDS.map(({ key, label }) => (
           <div className="stat" key={key}>
-            <div className="stat-label">{label}</div>
+            <div className="stat-label">{t(label)}</div>
             <div
               className={`stat-value${key === 'net_profit' && totals[key] < 0 ? ' negative' : ''}`}
             >
@@ -325,7 +335,7 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
               minTickGap={8}
             />
             <YAxis
-              tickFormatter={formatCompact}
+              tickFormatter={(v: number) => formatCompact(v, locale)}
               tick={{ fill: 'var(--muted)', fontSize: 12 }}
               stroke="var(--border)"
               tickLine={false}
@@ -347,21 +357,21 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
             {hasLoss && <ReferenceLine y={0} stroke="var(--muted)" />}
             <Bar
               dataKey="net_revenue"
-              name="Doanh thu thuần"
+              name={t('Doanh thu thuần')}
               fill="var(--chart-1)"
               radius={[4, 4, 0, 0]}
               maxBarSize={28}
             />
             <Bar
               dataKey="cost"
-              name="Giá vốn + chi phí"
+              name={t('Giá vốn + chi phí')}
               fill="var(--chart-2)"
               radius={[4, 4, 0, 0]}
               maxBarSize={28}
             />
             <Line
               dataKey="net_profit"
-              name="Lãi ròng"
+              name={t('Lãi ròng')}
               type="monotone"
               stroke="var(--chart-3)"
               strokeWidth={2}
@@ -375,10 +385,10 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
         <table>
           <thead>
             <tr>
-              <th>Kỳ</th>
+              <th>{t('Kỳ')}</th>
               {TOTAL_FIELDS.map(({ key, label }) => (
                 <th key={key} className="num">
-                  {label}
+                  {t(label)}
                 </th>
               ))}
             </tr>
@@ -387,7 +397,7 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
             {rows.map((row) => (
               <tr key={row.period_start}>
                 <td>
-                  {period === 'day' ? formatDate(row.period_start) : periodLabel(row.period_start, period)}
+                  {period === 'day' ? formatDate(row.period_start) : periodLabel(row.period_start, period, t)}
                 </td>
                 {TOTAL_FIELDS.map(({ key }) => (
                   <td

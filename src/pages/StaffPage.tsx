@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { LANGUAGES, useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { errorMessage } from '../lib/format'
 import type { AdminUserRow } from '../types/database'
@@ -29,14 +30,16 @@ async function callAdminUsers(body: AdminUsersBody): Promise<void> {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function formatDateTime(value: string | null): string {
-  if (!value) return 'Chưa đăng nhập'
-  return new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+function formatDateTime(value: string | null, locale: string): string | null {
+  if (!value) return null
+  return new Date(value).toLocaleString(locale, { timeZone: 'Asia/Ho_Chi_Minh' })
 }
 
 // Chỉ admin (route bọc RequireAdmin; RPC và Edge Function cũng tự kiểm tra)
 export function StaffPage() {
   const { session, refreshProfile } = useAuth()
+  const { t, lang } = useI18n()
+  const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
   const { stores } = useStore()
   const [list, setList] = useState<{ rows: AdminUserRow[]; error: string | null } | null>(null)
   const [version, setVersion] = useState(0)
@@ -73,7 +76,7 @@ export function StaffPage() {
         password: values.password,
         store_ids: values.store_ids,
       })
-      setResult({ ok: true, text: `Đã tạo tài khoản cho ${values.full_name.trim()}` })
+      setResult({ ok: true, text: t('Đã tạo tài khoản cho {value}', { value: values.full_name.trim() }) })
       reset(EMPTY)
       reload()
     } catch (e) {
@@ -93,13 +96,13 @@ export function StaffPage() {
   }
 
   const resetPassword = async (user: AdminUserRow) => {
-    const password = window.prompt(`Mật khẩu mới cho ${user.full_name || user.email} (ít nhất 6 ký tự):`)
+    const password = window.prompt(t('Mật khẩu mới cho {value} (ít nhất 6 ký tự):', { value: user.full_name || user.email }))
     if (password === null) return
     setResult(null)
     setBusy(user.id)
     try {
       await callAdminUsers({ action: 'set_password', user_id: user.id, password })
-      setResult({ ok: true, text: `Đã đổi mật khẩu cho ${user.full_name || user.email}` })
+      setResult({ ok: true, text: t('Đã đổi mật khẩu cho {value}', { value: user.full_name || user.email }) })
     } catch (e) {
       setResult({ ok: false, text: errorMessage(e) })
     }
@@ -110,14 +113,14 @@ export function StaffPage() {
     if (!editing) return
     const fullName = editing.full_name.trim()
     const email = editing.email.trim().toLowerCase()
-    if (!fullName) return setResult({ ok: false, text: 'Nhập tên nhân viên' })
-    if (fullName.length > 100) return setResult({ ok: false, text: 'Tên tối đa 100 ký tự' })
-    if (!EMAIL_PATTERN.test(email)) return setResult({ ok: false, text: 'Email không hợp lệ' })
+    if (!fullName) return setResult({ ok: false, text: t('Nhập tên nhân viên') })
+    if (fullName.length > 100) return setResult({ ok: false, text: t('Tên tối đa 100 ký tự') })
+    if (!EMAIL_PATTERN.test(email)) return setResult({ ok: false, text: t('Email không hợp lệ') })
     setResult(null)
     setBusy(editing.id)
     try {
       await callAdminUsers({ action: 'update', user_id: editing.id, full_name: fullName, email })
-      setResult({ ok: true, text: `Đã lưu thông tin ${fullName}` })
+      setResult({ ok: true, text: t('Đã lưu thông tin {fullName}', { fullName }) })
       if (editing.id === session?.user.id) refreshProfile()
       setEditing(null)
       reload()
@@ -129,23 +132,23 @@ export function StaffPage() {
 
   return (
     <section>
-      <h2>Thêm nhân viên</h2>
+      <h2>{t('Thêm nhân viên')}</h2>
       <form className="card form" onSubmit={handleSubmit(onCreate)}>
         <div className="row">
           <label>
-            Tên nhân viên
+            {t('Tên nhân viên')}
             <input
               type="text"
               {...register('full_name', { validate: (v) => v.trim() !== '' || 'Nhập tên nhân viên' })}
             />
           </label>
           <label>
-            Email đăng nhập
+            {t('Email đăng nhập')}
             <input type="email" autoComplete="off" {...register('email', { required: 'Nhập email' })} />
           </label>
         </div>
         <label>
-          Mật khẩu
+          {t('Mật khẩu')}
           <input
             type="text"
             autoComplete="new-password"
@@ -157,12 +160,12 @@ export function StaffPage() {
         </label>
         {(errors.full_name || errors.email || errors.password) && (
           <p className="error">
-            {errors.full_name?.message ?? errors.email?.message ?? errors.password?.message}
+            {t((errors.full_name?.message ?? errors.email?.message ?? errors.password?.message) ?? '')}
           </p>
         )}
 
         <div>
-          <span className="field-label">Làm việc tại</span>
+          <span className="field-label">{t('Làm việc tại')}</span>
           <div className="row">
             {stores.map((s) => (
               <label key={s.id} className="check">
@@ -174,22 +177,22 @@ export function StaffPage() {
         </div>
 
         <button type="submit" className="primary" disabled={isSubmitting}>
-          {isSubmitting ? 'Đang tạo…' : 'Tạo tài khoản'}
+          {isSubmitting ? t('Đang tạo…') : t('Tạo tài khoản')}
         </button>
       </form>
 
-      <h2 className="section-title">Tài khoản</h2>
-      {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
+      <h2 className="section-title">{t('Tài khoản')}</h2>
+      {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
       {!list ? (
-        <p className="muted">Đang tải…</p>
+        <p className="muted">{t('Đang tải…')}</p>
       ) : list.error ? (
-        <p className="error">{list.error}</p>
+        <p className="error">{t(list.error)}</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Nhân viên</th>
+                <th>{t('Nhân viên')}</th>
                 {stores.map((s) => (
                   <th key={s.id}>{s.name}</th>
                 ))}
@@ -206,33 +209,37 @@ export function StaffPage() {
                         <div className="staff-edit">
                           <input
                             type="text"
-                            aria-label="Tên nhân viên"
+                            aria-label={t('Tên nhân viên')}
                             value={editing.full_name}
                             onChange={(e) => setEditing({ ...editing, full_name: e.target.value })}
                           />
                           <input
                             type="email"
-                            aria-label="Email đăng nhập"
+                            aria-label={t('Email đăng nhập')}
                             value={editing.email}
                             onChange={(e) => setEditing({ ...editing, email: e.target.value })}
                           />
                           <div className="row">
                             <button type="button" className="primary" disabled={busy === user.id} onClick={saveEdit}>
-                              {busy === user.id ? 'Đang lưu…' : 'Lưu'}
+                              {busy === user.id ? t('Đang lưu…') : t('Lưu')}
                             </button>
                             <button type="button" onClick={() => setEditing(null)} disabled={busy === user.id}>
-                              Huỷ
+                              {t('Huỷ')}
                             </button>
                           </div>
                         </div>
                       ) : (
                         <>
-                          {user.full_name || '(chưa có tên)'}
+                          {user.full_name || t('(chưa có tên)')}
                           {isAdminRow && <span className="badge badge-ok"> admin</span>}
                           <br />
                           <small className="muted">{user.email}</small>
                           <br />
-                          <small className="muted">Đăng nhập gần nhất: {formatDateTime(user.last_sign_in_at)}</small>
+                          <small className="muted">
+                            {t('Đăng nhập gần nhất: {time}', {
+                              time: formatDateTime(user.last_sign_in_at, locale) ?? t('Chưa đăng nhập'),
+                            })}
+                          </small>
                         </>
                       )}
                     </td>
@@ -241,11 +248,11 @@ export function StaffPage() {
                       return (
                         <td key={s.id}>
                           {isAdminRow ? (
-                            <small className="muted">Tất cả</small>
+                            <small className="muted">{t('Tất cả')}</small>
                           ) : (
                             <input
                               type="checkbox"
-                              aria-label={`${user.full_name ?? user.email} làm tại ${s.name}`}
+                              aria-label={t('{value} làm tại {name}', { value: user.full_name ?? user.email, name: s.name })}
                               checked={member}
                               disabled={busy === user.id}
                               onChange={() => toggleStore(user, s.id, member)}
@@ -264,7 +271,7 @@ export function StaffPage() {
                           setEditing({ id: user.id, full_name: user.full_name ?? '', email: user.email })
                         }}
                       >
-                        Sửa
+                        {t('Sửa')}
                       </button>
                       {user.id !== session?.user.id && (
                         <button
@@ -273,7 +280,7 @@ export function StaffPage() {
                           disabled={busy === user.id}
                           onClick={() => resetPassword(user)}
                         >
-                          Đổi mật khẩu
+                          {t('Đổi mật khẩu')}
                         </button>
                       )}
                     </td>
@@ -285,8 +292,7 @@ export function StaffPage() {
         </div>
       )}
       <p className="muted">
-        Bỏ chọn hết cửa hàng để khoá quyền nhập liệu của nhân viên (tài khoản vẫn đăng nhập được nhưng
-        không thấy gì).
+        {t('Bỏ chọn hết cửa hàng để khoá quyền nhập liệu của nhân viên (tài khoản vẫn đăng nhập được nhưng không thấy gì).')}
       </p>
     </section>
   )

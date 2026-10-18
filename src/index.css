@@ -29,13 +29,14 @@
   --topbar-bg: #fff;
   --shadow: 0 1px 2px rgba(22, 48, 31, 0.05), 0 12px 30px -16px rgba(22, 48, 31, 0.2);
   --radius: 18px;
-  --serif: 'Lora', Georgia, serif;
+  --serif: 'Lora', Georgia, 'Noto Serif KR', 'Noto Serif SC', 'Noto Serif JP', serif;
   /* Màu biểu đồ (đã kiểm tra phân biệt được với người mù màu) */
   --chart-1: #2a78d6;
   --chart-2: #eb6834;
   --chart-3: #1baf7a;
 
-  font: 16px/1.5 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
+  font: 16px/1.5 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, 'Noto Sans KR', 'Noto Sans SC', 'Noto Sans JP',
+    'Malgun Gothic', 'Microsoft YaHei', 'Hiragino Sans', sans-serif;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -1486,4 +1487,46 @@ a.button.primary:hover {
   flex-direction: column;
   gap: 6px;
   min-width: 220px;
+}
+
+/* Chọn ngôn ngữ */
+.lang-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--accent);
+  min-height: 40px;
+}
+.lang-select select {
+  border: none;
+  background: transparent;
+  min-height: 36px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--text-h);
+  font-weight: 600;
+}
+.lang-select select:focus {
+  box-shadow: none;
+}
+.login {
+  position: relative;
+}
+.login-lang {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+.user-dropdown-lang {
+  padding: 2px 4px 6px;
+}
+.user-dropdown-lang .lang-select {
+  width: 100%;
+}
+.user-dropdown-lang select {
+  flex: 1;
 }

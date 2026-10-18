@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import {
   addDays,
@@ -41,6 +42,7 @@ export function DailyLogPage() {
 
 // Chỉ admin (route bọc RequireAdmin, hàm DB cũng chặn)
 function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }) {
+  const { t } = useI18n()
   const today = todayVN()
   const [range, setRange] = useState({ from: monthStart(today), to: today })
   const [category, setCategory] = useState('')
@@ -81,7 +83,7 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
 
   const loaded = result && result.key === key ? result : null
   const days = loaded?.summary.map((r) => r.day) ?? []
-  const rows = loaded ? buildRows(loaded.summary, loaded.products, days, category) : []
+  const rows = loaded ? buildRows(loaded.summary, loaded.products, days, category, t) : []
   const categories = loaded
     ? [...new Set(loaded.products.map((p) => p.category ?? '').filter((c) => c !== ''))].sort()
     : []
@@ -93,7 +95,7 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
       loaded.products.some((p) => p.qty_transferred > 0))
 
   const downloadCsv = () => {
-    const header = ['Hạng mục', 'TỔNG', ...days.map((d) => `${weekday(d)} ${formatDate(d)}`)]
+    const header = [t('Hạng mục'), t('TỔNG'), ...days.map((d) => `${t(weekday(d))} ${formatDate(d)}`)]
     const lines = [header]
     for (const row of rows) {
       if (row.kind === 'section') lines.push([row.label])
@@ -114,7 +116,7 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
     <section>
       <div className="card log-filters">
         <label className="field">
-          Từ ngày
+          {t('Từ ngày')}
           <input
             type="date"
             max={today}
@@ -123,7 +125,7 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
           />
         </label>
         <label className="field">
-          Đến ngày
+          {t('Đến ngày')}
           <input
             type="date"
             max={today}
@@ -133,23 +135,23 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
         </label>
         <div className="log-quick">
           <button type="button" onClick={() => setRange({ from: addDays(today, -6), to: today })}>
-            7 ngày
+            {t('7 ngày')}
           </button>
           <button type="button" onClick={() => setRange({ from: monthStart(today), to: today })}>
-            Tháng này
+            {t('Tháng này')}
           </button>
           <button
             type="button"
             onClick={() => setRange({ from: monthStart(today, -1), to: monthEnd(today, -1) })}
           >
-            Tháng trước
+            {t('Tháng trước')}
           </button>
         </div>
         {categories.length > 1 && (
           <label className="field">
-            Nhóm (khối Bán trong ngày)
+            {t('Nhóm (khối Bán trong ngày)')}
             <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="">Tất cả</option>
+              <option value="">{t('Tất cả')}</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -160,34 +162,33 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
         )}
         <span className="spacer" />
         <button type="button" className="primary" onClick={downloadCsv} disabled={!loaded || !!loaded.error}>
-          Tải CSV
+          {t('Tải CSV')}
         </button>
       </div>
 
       {!valid ? (
-        <p className="error">Khoảng ngày không hợp lệ: "Từ ngày" phải trước hoặc bằng "Đến ngày".</p>
+        <p className="error">{t('Khoảng ngày không hợp lệ: "Từ ngày" phải trước hoặc bằng "Đến ngày".')}</p>
       ) : tooLong ? (
-        <p className="error">Khoảng ngày tối đa 366 ngày.</p>
+        <p className="error">{t('Khoảng ngày tối đa 366 ngày.')}</p>
       ) : !loaded ? (
-        <p className="muted">Đang tải…</p>
+        <p className="muted">{t('Đang tải…')}</p>
       ) : loaded.error ? (
-        <p className="error">{loaded.error}</p>
+        <p className="error">{t(loaded.error)}</p>
       ) : !hasActivity ? (
         <p className="pos-empty muted">
-          Chưa có giao dịch trong khoảng này. Khi có nhập hàng, chuyển hàng, bán hàng hoặc chi phí, nhật ký
-          sẽ hiện ở đây theo từng ngày.
+          {t('Chưa có giao dịch trong khoảng này. Khi có nhập hàng, chuyển hàng, bán hàng hoặc chi phí, nhật ký sẽ hiện ở đây theo từng ngày.')}
         </p>
       ) : (
         <div className="table-wrap log-wrap">
           <table className="log-table">
             <thead>
               <tr>
-                <th className="sticky-col">Hạng mục</th>
-                <th className="num total-col">TỔNG</th>
+                <th className="sticky-col">{t('Hạng mục')}</th>
+                <th className="num total-col">{t('TỔNG')}</th>
                 {days.map((d) => (
                   <th key={d} className={`num${weekday(d) === 'CN' ? ' sunday' : ''}`}>
                     <span className="day-label">{dayMonth(d)}</span>
-                    <span className="weekday">{weekday(d)}</span>
+                    <span className="weekday">{t(weekday(d))}</span>
                   </th>
                 ))}
               </tr>
@@ -221,6 +222,8 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
 }
 
 function LogCell({ cell, format, total }: { cell: Cell; format: 'qty' | 'money' | 'text'; total?: boolean }) {
+  const { lang } = useI18n()
+  const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
   const className = [format === 'text' ? 'log-text' : 'num', total ? 'total-col' : '', cell.tone ? `tone-${cell.tone}` : '']
     .filter(Boolean)
     .join(' ')
@@ -229,7 +232,7 @@ function LogCell({ cell, format, total }: { cell: Cell; format: 'qty' | 'money' 
   if (format === 'money') {
     return (
       <td className={className} title={formatVND(cell.value)}>
-        {cell.value === 0 ? <span className="zero">0</span> : formatCompact(cell.value)}
+        {cell.value === 0 ? <span className="zero">0</span> : formatCompact(cell.value, locale)}
       </td>
     )
   }
@@ -242,6 +245,7 @@ function buildRows(
   products: DailyProductLogRow[],
   days: string[],
   category: string,
+  t: Translate,
 ): Row[] {
   const rows: Row[] = []
   const byProduct = new Map<string, { name: string; category: string | null; tracks: boolean; threshold: number; byDay: Map<string, DailyProductLogRow> }>()
@@ -325,14 +329,17 @@ function buildRows(
       total: { value: null },
       cells: days.map((d) => {
         const out = stocked.filter((p) => (p.byDay.get(d)?.shop_end ?? 0) <= 0).map((p) => p.name)
-        return { value: out.length > 0 ? `Hết: ${out.join(', ')}` : null, tone: out.length > 0 ? 'out' : undefined }
+        return {
+          value: out.length > 0 ? t('Hết: {list}', { list: out.join(', ') }) : null,
+          tone: out.length > 0 ? 'out' : undefined,
+        }
       }),
     })
 
     // Khối 5: CÒN Ở NHÀ
     rows.push({ kind: 'section', label: 'CÒN Ở NHÀ (cuối ngày)' })
     for (const p of stocked) {
-      const cell = (v: number): Cell => (v <= 0 ? { value: 'cần nhập thêm', tone: 'out' } : { value: v })
+      const cell = (v: number): Cell => (v <= 0 ? { value: t('cần nhập thêm'), tone: 'out' } : { value: v })
       rows.push({
         kind: 'data',
         label: p.name,
@@ -370,7 +377,8 @@ function buildRows(
     })
   }
 
-  return rows
+  // Dịch nhãn dòng (tên sản phẩm không có trong từ điển nên giữ nguyên)
+  return rows.map((row) => ({ ...row, label: t(row.label) }))
 }
 
 // CSV: số để nguyên (không rút gọn) để tính toán được trong Excel / Sheets

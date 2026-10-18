@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { useI18n } from '../lib/i18n'
+import { LanguageSelect } from '../components/LanguageSelect'
 import { errorMessage } from '../lib/format'
 import { useTheme, type ThemeMode } from '../lib/theme'
 
@@ -19,6 +21,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // Mỗi người tự sửa tên, email đăng nhập, mật khẩu và chọn giao diện sáng / tối
 export function AccountPage() {
   const { session, profile, isAdmin, refreshProfile } = useAuth()
+  const { t } = useI18n()
   const { mode, change } = useTheme()
   const currentEmail = session?.user.email ?? ''
   const [profileResult, setProfileResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -42,24 +45,24 @@ export function AccountPage() {
         .eq('id', session?.user.id ?? '')
       if (error) return setProfileResult({ ok: false, text: errorMessage(error) })
       refreshProfile()
-      messages.push('Đã lưu tên')
+      messages.push(t('Đã lưu tên'))
     }
 
     // Đổi email: Supabase gửi thư xác nhận, chỉ đổi sau khi bấm link trong thư
     if (email !== currentEmail.toLowerCase()) {
       const { error } = await supabase.auth.updateUser({ email })
       if (error) return setProfileResult({ ok: false, text: errorMessage(error) })
-      messages.push(`Đã gửi thư xác nhận tới ${email}, bấm link trong thư để hoàn tất đổi email`)
+      messages.push(t('Đã gửi thư xác nhận tới {email}, bấm link trong thư để hoàn tất đổi email', { email }))
     }
 
-    setProfileResult({ ok: true, text: messages.length > 0 ? messages.join('. ') : 'Không có gì thay đổi' })
+    setProfileResult({ ok: true, text: messages.length > 0 ? messages.join('. ') : t('Không có gì thay đổi') })
   }
 
   const savePassword = async (values: PasswordValues) => {
     setPasswordResult(null)
     const { error } = await supabase.auth.updateUser({ password: values.password })
     if (error) return setPasswordResult({ ok: false, text: errorMessage(error) })
-    setPasswordResult({ ok: true, text: 'Đã đổi mật khẩu' })
+    setPasswordResult({ ok: true, text: t('Đã đổi mật khẩu') })
     passwordForm.reset({ password: '', confirm: '' })
   }
 
@@ -68,13 +71,13 @@ export function AccountPage() {
 
   return (
     <section className="account">
-      <h2>Tài khoản của tôi</h2>
+      <h2>{t('Tài khoản của tôi')}</h2>
 
       <form className="card form" onSubmit={profileForm.handleSubmit(saveProfile)}>
-        <h3 className="card-title">Thông tin</h3>
+        <h3 className="card-title">{t('Thông tin')}</h3>
         <div className="row">
           <label>
-            Tên hiển thị
+            {t('Tên hiển thị')}
             <input
               type="text"
               {...profileForm.register('full_name', {
@@ -84,7 +87,7 @@ export function AccountPage() {
             />
           </label>
           <label>
-            Email đăng nhập
+            {t('Email đăng nhập')}
             <input
               type="email"
               autoComplete="email"
@@ -95,22 +98,24 @@ export function AccountPage() {
           </label>
         </div>
         <small className="muted">
-          Vai trò: {isAdmin ? 'Quản trị' : 'Nhân viên'}. Đổi email cần bấm link xác nhận gửi tới email mới.
+          {t('Vai trò: {role}. Đổi email cần bấm link xác nhận gửi tới email mới.', {
+            role: isAdmin ? t('Quản trị') : t('Nhân viên'),
+          })}
         </small>
         {(profileErrors.full_name || profileErrors.email) && (
-          <p className="error">{profileErrors.full_name?.message ?? profileErrors.email?.message}</p>
+          <p className="error">{t(profileErrors.full_name?.message ?? profileErrors.email?.message ?? '')}</p>
         )}
-        {profileResult && <p className={profileResult.ok ? 'success' : 'error'}>{profileResult.text}</p>}
+        {profileResult && <p className={profileResult.ok ? 'success' : 'error'}>{t(profileResult.text)}</p>}
         <div>
           <button type="submit" className="primary" disabled={profileForm.formState.isSubmitting}>
-            {profileForm.formState.isSubmitting ? 'Đang lưu…' : 'Lưu thông tin'}
+            {profileForm.formState.isSubmitting ? t('Đang lưu…') : t('Lưu thông tin')}
           </button>
         </div>
       </form>
 
       <div className="card form">
-        <h3 className="card-title">Giao diện</h3>
-        <div className="segmented" role="radiogroup" aria-label="Chế độ sáng tối">
+        <h3 className="card-title">{t('Giao diện')}</h3>
+        <div className="segmented" role="radiogroup" aria-label={t('Chế độ sáng tối')}>
           {THEME_OPTIONS.map((o) => (
             <button
               key={o.value}
@@ -120,18 +125,20 @@ export function AccountPage() {
               className={mode === o.value ? 'active' : undefined}
               onClick={() => change(o.value)}
             >
-              {o.label}
+              {t(o.label)}
             </button>
           ))}
         </div>
-        <small className="muted">Lựa chọn được lưu trên thiết bị này.</small>
+        <span className="field-label">{t('Ngôn ngữ')}</span>
+        <LanguageSelect />
+        <small className="muted">{t('Lựa chọn được lưu trên thiết bị này.')}</small>
       </div>
 
       <form className="card form" onSubmit={passwordForm.handleSubmit(savePassword)}>
-        <h3 className="card-title">Đổi mật khẩu</h3>
+        <h3 className="card-title">{t('Đổi mật khẩu')}</h3>
         <div className="row">
           <label>
-            Mật khẩu mới
+            {t('Mật khẩu mới')}
             <input
               type="password"
               autoComplete="new-password"
@@ -142,7 +149,7 @@ export function AccountPage() {
             />
           </label>
           <label>
-            Nhập lại mật khẩu
+            {t('Nhập lại mật khẩu')}
             <input
               type="password"
               autoComplete="new-password"
@@ -153,12 +160,12 @@ export function AccountPage() {
           </label>
         </div>
         {(passwordErrors.password || passwordErrors.confirm) && (
-          <p className="error">{passwordErrors.password?.message ?? passwordErrors.confirm?.message}</p>
+          <p className="error">{t(passwordErrors.password?.message ?? passwordErrors.confirm?.message ?? '')}</p>
         )}
-        {passwordResult && <p className={passwordResult.ok ? 'success' : 'error'}>{passwordResult.text}</p>}
+        {passwordResult && <p className={passwordResult.ok ? 'success' : 'error'}>{t(passwordResult.text)}</p>}
         <div>
           <button type="submit" className="primary" disabled={passwordForm.formState.isSubmitting}>
-            {passwordForm.formState.isSubmitting ? 'Đang lưu…' : 'Đổi mật khẩu'}
+            {passwordForm.formState.isSubmitting ? t('Đang lưu…') : t('Đổi mật khẩu')}
           </button>
         </div>
       </form>

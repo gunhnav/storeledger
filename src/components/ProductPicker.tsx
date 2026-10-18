@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { normalizeSearch } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 import type { Product } from '../types/database'
 
 type Props = {
@@ -27,6 +28,7 @@ export function ProductPicker({
   onQuickChange,
   renderQuick,
 }: Props) {
+  const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
 
@@ -57,17 +59,17 @@ export function ProductPicker({
           </svg>
           <input
             type="search"
-            placeholder="Tìm món (gõ không dấu cũng được)"
+            placeholder={t('Tìm món (gõ không dấu cũng được)')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="segmented" role="group" aria-label="Cách nhập">
+        <div className="segmented" role="group" aria-label={t('Cách nhập')}>
           <button type="button" className={quick ? 'active' : undefined} onClick={() => onQuickChange(true)}>
-            Nhập nhanh
+            {t('Nhập nhanh')}
           </button>
           <button type="button" className={quick ? undefined : 'active'} onClick={() => onQuickChange(false)}>
-            Chọn món
+            {t('Chọn món')}
           </button>
         </div>
       </div>
@@ -81,7 +83,7 @@ export function ProductPicker({
               className={`chip${category === c ? ' active' : ''}`}
               onClick={() => setCategory(c)}
             >
-              {c || 'Tất cả'}
+              {c || t('Tất cả')}
             </button>
           ))}
         </div>
@@ -89,22 +91,23 @@ export function ProductPicker({
 
       <div className="picker-meta">
         <span className="muted">
-          {visible.length} món{selectedIds.length > 0 && ` · đã chọn ${selectedIds.length}`}
+          {t('{count} món', { count: visible.length })}
+          {selectedIds.length > 0 && ` · ${t('đã chọn {count}', { count: selectedIds.length })}`}
         </span>
         {!quick && (
           <span className="picker-actions">
             <button type="button" className="link" onClick={selectVisible} disabled={visible.length === 0}>
-              Chọn tất cả
+              {t('Chọn tất cả')}
             </button>
             <button type="button" className="link" onClick={() => onChange([])} disabled={selectedIds.length === 0}>
-              Bỏ chọn
+              {t('Bỏ chọn')}
             </button>
           </span>
         )}
       </div>
 
       {visible.length === 0 ? (
-        <p className="picker-empty muted">Không có món nào khớp.</p>
+        <p className="picker-empty muted">{t('Không có món nào khớp.')}</p>
       ) : quick ? (
         <ul className="quick-list">
           {visible.map((p) => (
@@ -157,12 +160,13 @@ export function QtyStepper({
   min: number
   label: string
 }) {
+  const { t } = useI18n()
   const n = Number(value) || 0
   return (
     <div className="stepper">
       <button
         type="button"
-        aria-label={`Giảm ${label}`}
+        aria-label={t('Giảm {label}', { label })}
         onClick={() => onChange(String(Math.max(min, n - 1)))}
         disabled={n <= min}
       >
@@ -176,7 +180,7 @@ export function QtyStepper({
         placeholder="0"
         onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
       />
-      <button type="button" aria-label={`Tăng ${label}`} onClick={() => onChange(String(n + 1))}>
+      <button type="button" aria-label={t('Tăng {label}', { label })} onClick={() => onChange(String(n + 1))}>
         +
       </button>
     </div>

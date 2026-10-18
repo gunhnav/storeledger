@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { BRAND_NAME } from '../lib/brand'
+import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { useTheme, type ThemeMode } from '../lib/theme'
 import { ErrorPage } from './ErrorPage'
 import { Icon, type IconName } from './Icon'
+import { LanguageSelect } from './LanguageSelect'
 import { Logo } from './Logo'
 
 type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean }
@@ -28,9 +31,10 @@ export function AppLayout() {
   const { profile, isAdmin, signOut } = useAuth()
   const { stores, current, loading, error, select } = useStore()
   const navigate = useNavigate()
+  const { t } = useI18n()
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
-  const displayName = profile?.full_name || (isAdmin ? 'Admin' : 'Nhân viên')
+  const displayName = profile?.full_name || (isAdmin ? 'Admin' : t('Nhân viên'))
 
   return (
     <div className="layout">
@@ -39,13 +43,13 @@ export function AppLayout() {
           <div className="topbar-row">
             <span className="brand">
               <Logo size={36} />
-              <span className="brand-text">Nhập liệu</span>
+              <span className="brand-text">{BRAND_NAME}</span>
             </span>
             <span className="store-pill">
               <Icon name="store" size={16} />
               {stores.length > 1 ? (
                 <select
-                  aria-label="Cửa hàng"
+                  aria-label={t('Cửa hàng')}
                   value={current?.id ?? ''}
                   onChange={(e) => select(e.target.value)}
                 >
@@ -73,7 +77,7 @@ export function AppLayout() {
             {items.map((item) => (
               <NavLink key={item.to} to={item.to}>
                 <Icon name={item.icon} />
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
               </NavLink>
             ))}
           </nav>
@@ -81,13 +85,13 @@ export function AppLayout() {
       </header>
       <main className="content">
         {loading ? (
-          <p className="muted">Đang tải cửa hàng…</p>
+          <p className="muted">{t('Đang tải cửa hàng…')}</p>
         ) : error ? (
           <p className="error">{error}</p>
         ) : !current ? (
           <ErrorPage
             code={403}
-            title="Chưa được phân quyền cửa hàng"
+            title={t('Chưa được phân quyền cửa hàng')}
             message="Tài khoản của bạn chưa được thêm vào cửa hàng nào. Liên hệ quản trị để được cấp quyền."
           />
         ) : (
@@ -117,6 +121,7 @@ function UserMenu({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const { mode, change } = useTheme()
+  const { t } = useI18n()
   const location = useLocation()
   const [lastPath, setLastPath] = useState(location.pathname)
 
@@ -157,7 +162,7 @@ function UserMenu({
         </span>
         <span className="user-text">
           <span className="user-name">{name}</span>
-          <span className="user-role">{isAdmin ? 'Quản trị' : 'Nhân viên'}</span>
+          <span className="user-role">{isAdmin ? t('Quản trị') : t('Nhân viên')}</span>
         </span>
         <span className={`caret${open ? ' up' : ''}`} aria-hidden="true">
           ▾
@@ -167,37 +172,40 @@ function UserMenu({
         <div className="user-dropdown" role="menu">
           <div className="user-dropdown-head">
             <strong>{name}</strong>
-            <span className="muted">{isAdmin ? 'Quản trị' : 'Nhân viên'}</span>
+            <span className="muted">{isAdmin ? t('Quản trị') : t('Nhân viên')}</span>
           </div>
           <NavLink to="/account" role="menuitem" className="user-dropdown-item">
             <Icon name="user" />
-            Tài khoản của tôi
+            {t('Tài khoản của tôi')}
           </NavLink>
-          <div className="theme-switch" role="radiogroup" aria-label="Giao diện">
-            {THEME_CHOICES.map((t) => (
+          <div className="theme-switch" role="radiogroup" aria-label={t('Giao diện')}>
+            {THEME_CHOICES.map((choice) => (
               <button
-                key={t.value}
+                key={choice.value}
                 type="button"
                 role="radio"
-                aria-checked={mode === t.value}
-                className={mode === t.value ? 'active' : undefined}
-                onClick={() => change(t.value)}
-                title={t.label}
+                aria-checked={mode === choice.value}
+                className={mode === choice.value ? 'active' : undefined}
+                onClick={() => change(choice.value)}
+                title={t(choice.label)}
               >
-                <Icon name={t.icon} size={16} />
-                <span>{t.label}</span>
+                <Icon name={choice.icon} size={16} />
+                <span>{t(choice.label)}</span>
               </button>
             ))}
+          </div>
+          <div className="user-dropdown-lang">
+            <LanguageSelect />
           </div>
           {isAdmin && (
             <NavLink to="/staff" role="menuitem" className="user-dropdown-item">
               <Icon name="staff" />
-              Nhân viên
+              {t('Nhân viên')}
             </NavLink>
           )}
           <button type="button" role="menuitem" className="user-dropdown-item danger" onClick={onSignOut}>
             <Icon name="logout" />
-            Đăng xuất
+            {t('Đăng xuất')}
           </button>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { supabase } from '../lib/supabase'
+import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
 import type { Product, ProductPrice, StorePriceRow } from '../types/database'
@@ -75,6 +76,7 @@ export function ProductsPage() {
 
 // Chỉ admin (route bọc RequireAdmin, RLS cũng chặn ghi)
 function ProductsManager({ storeId }: { storeId: string }) {
+  const { t } = useI18n()
   const [catalog, setCatalog] = useState<Catalog | null>(null)
   const [version, setVersion] = useState(0)
   const [editing, setEditing] = useState<Product | null>(null)
@@ -183,19 +185,19 @@ function ProductsManager({ storeId }: { storeId: string }) {
         refresh()
         return setResult({
           ok: false,
-          text: `Đã tạo "${fields.name}" nhưng chưa lưu được giá: ${errorMessage(priceError)}. Bấm "Đổi giá" để nhập lại.`,
+          text: t('Đã tạo "{name}" nhưng chưa lưu được giá: {value}. Bấm "Đổi giá" để nhập lại.', { name: fields.name, value: errorMessage(priceError) }),
         })
       }
     }
 
-    setResult({ ok: true, text: `Đã lưu "${fields.name}"` })
+    setResult({ ok: true, text: t('Đã lưu "{name}"', { name: fields.name }) })
     setEditing(null)
     reset(EMPTY)
     refresh()
   }
 
-  if (!catalog) return <p className="muted">Đang tải…</p>
-  if (catalog.error) return <p className="error">{catalog.error}</p>
+  if (!catalog) return <p className="muted">{t('Đang tải…')}</p>
+  if (catalog.error) return <p className="error">{t(catalog.error)}</p>
 
   return (
     <section>
@@ -223,30 +225,30 @@ function ProductsManager({ storeId }: { storeId: string }) {
         />
       ) : (
         <>
-          <h2>{editing ? `Sửa sản phẩm: ${editing.name}` : 'Thêm sản phẩm'}</h2>
+          <h2>{editing ? t('Sửa sản phẩm: {name}', { name: editing.name }) : t('Thêm sản phẩm')}</h2>
           <form className="card form" onSubmit={handleSubmit(onSubmit)}>
             <div className="row">
               <label>
-                Tên sản phẩm
+                {t('Tên sản phẩm')}
                 <input
                   type="text"
                   {...register('name', { validate: productName })}
                 />
               </label>
               <label>
-                Nhóm (không bắt buộc)
+                {t('Nhóm (không bắt buộc)')}
                 <input type="text" {...register('category')} />
               </label>
             </div>
-            {errors.name && <p className="error">{errors.name.message}</p>}
+            {errors.name && <p className="error">{t(errors.name.message ?? '')}</p>}
 
             {editing ? (
-              <small className="muted">Đổi giá bằng nút "Đổi giá" trong danh sách để giữ lịch sử giá.</small>
+              <small className="muted">{t('Đổi giá bằng nút "Đổi giá" trong danh sách để giữ lịch sử giá.')}</small>
             ) : (
               <>
                 <div className="row">
                   <label>
-                    Giá bán tại quầy
+                    {t('Giá bán tại quầy')}
                     <input
                       type="number"
                       inputMode="numeric"
@@ -256,7 +258,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                     />
                   </label>
                   <label>
-                    Giá ShopeeFood (trống = giá quầy)
+                    {t('Giá ShopeeFood (trống = giá quầy)')}
                     <input
                       type="number"
                       inputMode="numeric"
@@ -266,7 +268,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                     />
                   </label>
                   <label>
-                    Giá vốn / đơn vị
+                    {t('Giá vốn / đơn vị')}
                     <input
                       type="number"
                       inputMode="numeric"
@@ -278,7 +280,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                 </div>
                 {(errors.sale_price || errors.app_price || errors.unit_cost) && (
                   <p className="error">
-                    {errors.sale_price?.message ?? errors.app_price?.message ?? errors.unit_cost?.message}
+                    {t((errors.sale_price?.message ?? errors.app_price?.message ?? errors.unit_cost?.message) ?? '')}
                   </p>
                 )}
               </>
@@ -286,16 +288,15 @@ function ProductsManager({ storeId }: { storeId: string }) {
 
             <label className="check">
               <input type="checkbox" disabled={!!editing} {...register('tracks_stock')} />
-              Đếm tồn kho: giá vốn theo từng đợt nhập hàng (bỏ chọn nếu là món làm tại chỗ, giá vốn
-              theo lịch sử giá)
+              {t('Đếm tồn kho: giá vốn theo từng đợt nhập hàng (bỏ chọn nếu là món làm tại chỗ, giá vốn theo lịch sử giá)')}
             </label>
             {editing && (
-              <small className="muted">Không đổi được cách tính giá vốn sau khi đã tạo sản phẩm.</small>
+              <small className="muted">{t('Không đổi được cách tính giá vốn sau khi đã tạo sản phẩm.')}</small>
             )}
 
             {(editing ? editing.tracks_stock : tracksStock) && (
               <label>
-                Báo sắp hết khi tổng tồn ≤
+                {t('Báo sắp hết khi tổng tồn ≤')}
                 <input
                   type="number"
                   inputMode="numeric"
@@ -309,21 +310,21 @@ function ProductsManager({ storeId }: { storeId: string }) {
               </label>
             )}
             {errors.low_stock_threshold && (
-              <p className="error">{errors.low_stock_threshold.message}</p>
+              <p className="error">{t(errors.low_stock_threshold.message ?? '')}</p>
             )}
 
             <label className="check">
               <input type="checkbox" {...register('is_active')} />
-              Đang bán (bỏ chọn để ẩn khỏi các form nhập liệu)
+              {t('Đang bán (bỏ chọn để ẩn khỏi các form nhập liệu)')}
             </label>
 
             <div className="row">
               <button type="submit" className="primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Thêm sản phẩm'}
+                {isSubmitting ? t('Đang lưu…') : editing ? t('Lưu thay đổi') : t('Thêm sản phẩm')}
               </button>
               {editing && (
                 <button type="button" onClick={cancelEdit}>
-                  Huỷ
+                  {t('Huỷ')}
                 </button>
               )}
             </div>
@@ -331,10 +332,10 @@ function ProductsManager({ storeId }: { storeId: string }) {
         </>
       )}
 
-      {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
+      {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
 
       <div className="row section-title">
-        <h2>Danh sách sản phẩm</h2>
+        <h2>{t('Danh sách sản phẩm')}</h2>
         <span className="spacer" />
         {!bulk && (
           <button
@@ -348,21 +349,21 @@ function ProductsManager({ storeId }: { storeId: string }) {
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
           >
-            Đổi giá vốn hàng loạt
+            {t('Đổi giá vốn hàng loạt')}
           </button>
         )}
       </div>
       {catalog.products.length === 0 ? (
-        <p className="muted">Chưa có sản phẩm nào. Thêm sản phẩm ở form phía trên.</p>
+        <p className="muted">{t('Chưa có sản phẩm nào. Thêm sản phẩm ở form phía trên.')}</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Sản phẩm</th>
-                <th className="num">Giá quầy</th>
-                <th className="num">Giá app</th>
-                <th className="num">Giá vốn</th>
+                <th>{t('Sản phẩm')}</th>
+                <th className="num">{t('Giá quầy')}</th>
+                <th className="num">{t('Giá app')}</th>
+                <th className="num">{t('Giá vốn')}</th>
                 <th />
               </tr>
             </thead>
@@ -375,7 +376,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                     <td>
                       {row.name}
                       {row.category && <small className="muted"> · {row.category}</small>}
-                      {!row.is_active && <small className="muted"> · ngừng bán</small>}
+                      {!row.is_active && <small className="muted"> {t('· ngừng bán')}</small>}
                     </td>
                     <td className="num">{price ? formatVND(price.sale_price) : '—'}</td>
                     <td className="num">
@@ -383,17 +384,17 @@ function ProductsManager({ storeId }: { storeId: string }) {
                     </td>
                     <td className="num">
                       {cost === null ? (
-                        <span className="badge badge-out">Thiếu giá vốn</span>
+                        <span className="badge badge-out">{t('Thiếu giá vốn')}</span>
                       ) : (
                         formatVND(cost)
                       )}
                     </td>
                     <td className="actions">
                       <button type="button" className="link" onClick={() => startPricing(row)}>
-                        Đổi giá
+                        {t('Đổi giá')}
                       </button>
                       <button type="button" className="link" onClick={() => startEdit(row)}>
-                        Sửa
+                        {t('Sửa')}
                       </button>
                     </td>
                   </tr>
@@ -422,6 +423,7 @@ function PriceEditor({
   onDone: (text: string) => void
   onCancel: () => void
 }) {
+  const { t } = useI18n()
   const today = todayVN()
   const current = history.find((r) => r.effective_from <= today) ?? history[0]
   const [error, setError] = useState<string | null>(null)
@@ -450,24 +452,23 @@ function PriceEditor({
       p_note: values.note.trim() || null,
     })
     if (error) return setError(errorMessage(error))
-    onDone(`Đã lưu giá "${product.name}" áp dụng từ ${formatDate(values.effective_from)}`)
+    onDone(t('Đã lưu giá "{name}" áp dụng từ {value}', { name: product.name, value: formatDate(values.effective_from) }))
   }
 
   return (
     <>
-      <h2>Đổi giá: {product.name}</h2>
+      <h2>{t('Đổi giá: {name}', { name: product.name })}</h2>
       <form className="card form" onSubmit={handleSubmit(onSubmit)}>
         <label>
-          Ngày áp dụng
+          {t('Ngày áp dụng')}
           <input type="date" {...register('effective_from', { required: 'Chọn ngày áp dụng' })} />
         </label>
         <small className="muted">
-          Chọn được ngày quá khứ hoặc tương lai. Trùng ngày đã có thì ghi đè dòng giá ngày đó. Đơn bán,
-          đợt nhập đã lưu không bị tính lại.
+          {t('Chọn được ngày quá khứ hoặc tương lai. Trùng ngày đã có thì ghi đè dòng giá ngày đó. Đơn bán, đợt nhập đã lưu không bị tính lại.')}
         </small>
         <div className="row">
           <label>
-            Giá bán tại quầy
+            {t('Giá bán tại quầy')}
             <input
               type="number"
               inputMode="numeric"
@@ -477,7 +478,7 @@ function PriceEditor({
             />
           </label>
           <label>
-            Giá ShopeeFood (trống = giá quầy)
+            {t('Giá ShopeeFood (trống = giá quầy)')}
             <input
               type="number"
               inputMode="numeric"
@@ -487,7 +488,7 @@ function PriceEditor({
             />
           </label>
           <label>
-            Giá vốn / đơn vị
+            {t('Giá vốn / đơn vị')}
             <input
               type="number"
               inputMode="numeric"
@@ -499,40 +500,40 @@ function PriceEditor({
         </div>
         {(errors.effective_from || errors.sale_price || errors.app_price || errors.unit_cost) && (
           <p className="error">
-            {errors.effective_from?.message ??
+            {t((errors.effective_from?.message ??
               errors.sale_price?.message ??
               errors.app_price?.message ??
-              errors.unit_cost?.message}
+              errors.unit_cost?.message) ?? '')}
           </p>
         )}
         <label>
-          Ghi chú (ví dụ: NCC giảm giá)
+          {t('Ghi chú (ví dụ: NCC giảm giá)')}
           <input type="text" {...register('note')} />
         </label>
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error">{t(error)}</p>}
         <div className="row">
           <button type="submit" className="primary" disabled={isSubmitting}>
-            {isSubmitting ? 'Đang lưu…' : 'Lưu giá'}
+            {isSubmitting ? t('Đang lưu…') : t('Lưu giá')}
           </button>
           <button type="button" onClick={onCancel}>
-            Huỷ
+            {t('Huỷ')}
           </button>
         </div>
       </form>
 
-      <h2 className="section-title">Lịch sử giá</h2>
+      <h2 className="section-title">{t('Lịch sử giá')}</h2>
       {history.length === 0 ? (
-        <p className="muted">Chưa có dòng giá nào.</p>
+        <p className="muted">{t('Chưa có dòng giá nào.')}</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Áp dụng từ</th>
-                <th className="num">Giá quầy</th>
-                <th className="num">Giá app</th>
-                <th className="num">Giá vốn</th>
-                <th>Ghi chú</th>
+                <th>{t('Áp dụng từ')}</th>
+                <th className="num">{t('Giá quầy')}</th>
+                <th className="num">{t('Giá app')}</th>
+                <th className="num">{t('Giá vốn')}</th>
+                <th>{t('Ghi chú')}</th>
               </tr>
             </thead>
             <tbody>
@@ -568,6 +569,7 @@ function BulkCostEditor({
   onDone: (text: string, ok: boolean) => void
   onCancel: () => void
 }) {
+  const { t } = useI18n()
   const [category, setCategory] = useState('')
   const [date, setDate] = useState(todayVN)
   const [note, setNote] = useState('')
@@ -610,8 +612,8 @@ function BulkCostEditor({
   const save = async () => {
     setError(null)
     const chosen = products.filter((p) => selected.has(p.id))
-    if (chosen.length === 0) return setError('Chưa chọn món nào')
-    if (!date) return setError('Chọn ngày áp dụng')
+    if (chosen.length === 0) return setError(t('Chưa chọn món nào'))
+    if (!date) return setError(t('Chọn ngày áp dụng'))
 
     // Kiểm tra hết trước khi ghi
     const plans: { product: Product; sale: number; app: number | null; cost: number }[] = []
@@ -619,11 +621,11 @@ function BulkCostEditor({
       const text = costText(product.id).trim()
       const cost = Number(text)
       if (text === '' || !Number.isFinite(cost) || cost < 0 || cost > MAX_MONEY) {
-        return setError(`Giá vốn của "${product.name}" chưa hợp lệ`)
+        return setError(t('Giá vốn của "{name}" chưa hợp lệ', { name: product.name }))
       }
       const base = effectiveAt(history, product.id, date)
       if (!base) {
-        return setError(`"${product.name}" chưa có giá bán vào ngày ${formatDate(date)}, đổi giá riêng món này`)
+        return setError(t('"{name}" chưa có giá bán vào ngày {value}, đổi giá riêng món này', { name: product.name, value: formatDate(date) }))
       }
       plans.push({ product, sale: base.sale_price, app: base.app_price, cost })
     }
@@ -645,21 +647,21 @@ function BulkCostEditor({
 
     const okCount = plans.length - failed.length
     if (failed.length > 0) {
-      onDone(`Đã lưu ${okCount}/${plans.length} món. Lỗi: ${failed.join('; ')}`, false)
+      onDone(t('Đã lưu {okCount}/{count} món. Lỗi: {list}', { okCount, count: plans.length, list: failed.join('; ') }), false)
     } else {
-      onDone(`Đã lưu giá vốn ${okCount} món, áp dụng từ ${formatDate(date)}`, true)
+      onDone(t('Đã lưu giá vốn {okCount} món, áp dụng từ {value}', { okCount, value: formatDate(date) }), true)
     }
   }
 
   return (
     <>
-      <h2>Đổi giá vốn hàng loạt</h2>
+      <h2>{t('Đổi giá vốn hàng loạt')}</h2>
       <div className="card form">
         <div className="row">
           <label>
-            Nhóm
+            {t('Nhóm')}
             <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="">Tất cả</option>
+              <option value="">{t('Tất cả')}</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -668,17 +670,16 @@ function BulkCostEditor({
             </select>
           </label>
           <label>
-            Ngày áp dụng
+            {t('Ngày áp dụng')}
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
         </div>
         <label>
-          Ghi chú chung
+          {t('Ghi chú chung')}
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
         <small className="muted">
-          Giá bán và giá app giữ nguyên theo giá đang hiệu lực vào ngày áp dụng. Ô giá vốn điền sẵn giá
-          vốn hiện hành, trống là món chưa có giá vốn.
+          {t('Giá bán và giá app giữ nguyên theo giá đang hiệu lực vào ngày áp dụng. Ô giá vốn điền sẵn giá vốn hiện hành, trống là món chưa có giá vốn.')}
         </small>
 
         <div className="table-wrap">
@@ -688,13 +689,13 @@ function BulkCostEditor({
                 <th>
                   <input
                     type="checkbox"
-                    aria-label="Chọn tất cả món đang lọc"
+                    aria-label={t('Chọn tất cả món đang lọc')}
                     checked={allVisibleSelected}
                     onChange={toggleAll}
                   />
                 </th>
-                <th>Sản phẩm</th>
-                <th className="num">Giá vốn mới</th>
+                <th>{t('Sản phẩm')}</th>
+                <th className="num">{t('Giá vốn mới')}</th>
               </tr>
             </thead>
             <tbody>
@@ -703,7 +704,7 @@ function BulkCostEditor({
                   <td>
                     <input
                       type="checkbox"
-                      aria-label={`Chọn ${p.name}`}
+                      aria-label={t('Chọn {name}', { name: p.name })}
                       checked={selected.has(p.id)}
                       onChange={() => toggle(p.id)}
                     />
@@ -719,7 +720,7 @@ function BulkCostEditor({
                       min={0}
                       step="any"
                       className="cost-input"
-                      aria-label={`Giá vốn mới của ${p.name}`}
+                      aria-label={t('Giá vốn mới của {name}', { name: p.name })}
                       value={costText(p.id)}
                       onChange={(e) => {
                         const value = e.target.value
@@ -734,13 +735,13 @@ function BulkCostEditor({
           </table>
         </div>
 
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error">{t(error)}</p>}
         <div className="row">
           <button type="button" className="primary" disabled={saving} onClick={save}>
-            {saving ? 'Đang lưu…' : `Lưu giá vốn (${selected.size} món)`}
+            {saving ? t('Đang lưu…') : t('Lưu giá vốn ({size} món)', { size: selected.size })}
           </button>
           <button type="button" onClick={onCancel} disabled={saving}>
-            Huỷ
+            {t('Huỷ')}
           </button>
         </div>
       </div>

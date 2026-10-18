@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
+import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_QTY, errorMessage, notFuture, todayVN } from '../lib/format'
@@ -19,6 +20,7 @@ export function TransferPage() {
 }
 
 function TransferForm({ storeId }: { storeId: string }) {
+  const { t } = useI18n()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
   const [lines, setLines] = useState<Line[]>([])
   const [quickMode, setQuickMode] = useState<boolean | null>(null)
@@ -39,7 +41,7 @@ function TransferForm({ storeId }: { storeId: string }) {
   const overHome = (line: Line) => {
     const home = stock.get(line.product_id)?.qty_home ?? 0
     if ((Number(line.qty) || 0) <= home) return null
-    return home === 0 ? 'Ở nhà hết hàng: nhập hàng trước' : `Vượt số ở nhà (còn ${home})`
+    return home === 0 ? t('Ở nhà hết hàng: nhập hàng trước') : t('Vượt số ở nhà (còn {home})', { home })
   }
 
   const onPick = (ids: string[]) => {
@@ -68,14 +70,14 @@ function TransferForm({ storeId }: { storeId: string }) {
   const onSubmit = async (values: FormValues) => {
     setResult(null)
     setFormError(null)
-    if (lines.length === 0) return setFormError('Chưa chọn món nào')
+    if (lines.length === 0) return setFormError(t('Chưa chọn món nào'))
     for (const line of lines) {
       const name = byId.get(line.product_id)?.name ?? ''
       const quantity = Number(line.qty)
       if (!Number.isInteger(quantity) || quantity <= 0) {
-        return setFormError(`Số lượng của "${name}" phải là số nguyên > 0`)
+        return setFormError(t('Số lượng của "{name}" phải là số nguyên > 0', { name }))
       }
-      if (quantity > MAX_QTY) return setFormError(`Số lượng của "${name}" quá lớn, kiểm tra lại`)
+      if (quantity > MAX_QTY) return setFormError(t('Số lượng của "{name}" quá lớn, kiểm tra lại', { name }))
       const warn = overHome(line)
       if (warn) return setFormError(`"${name}": ${warn}`)
     }
@@ -97,7 +99,7 @@ function TransferForm({ storeId }: { storeId: string }) {
 
     reload()
     if (failed.length === 0) {
-      setResult({ ok: true, text: `Đã chuyển ra quầy: ${done.join(', ')}` })
+      setResult({ ok: true, text: t('Đã chuyển ra quầy: {list}', { list: done.join(', ') }) })
       reset({ transfer_date: values.transfer_date, note: '' })
       setLines([])
       return
@@ -106,24 +108,24 @@ function TransferForm({ storeId }: { storeId: string }) {
     setResult({
       ok: false,
       text:
-        (done.length > 0 ? `Đã chuyển: ${done.join(', ')}. ` : '') +
-        `Chưa chuyển (còn trong form để lưu lại): ${failed.map((f) => f.message).join('; ')}`,
+        (done.length > 0 ? t('Đã chuyển: {list}. ', { list: done.join(', ') }) : '') +
+        t('Chưa chuyển (còn trong form để lưu lại): {list}', { list: failed.map((f) => f.message).join('; ') }),
     })
   }
 
-  if (loading) return <p className="muted">Đang tải sản phẩm…</p>
-  if (error) return <p className="error">{error}</p>
+  if (loading) return <p className="muted">{t('Đang tải sản phẩm…')}</p>
+  if (error) return <p className="error">{t(error)}</p>
 
   const info = (p: Product) => {
     const row = stock.get(p.id)
-    return `Ở nhà: ${row?.qty_home ?? 0} · Ở quầy: ${row?.qty_shop ?? 0}`
+    return t('Ở nhà: {value} · Ở quầy: {value2}', { value: row?.qty_home ?? 0, value2: row?.qty_shop ?? 0 })
   }
-  const badge = (p: Product) => ((stock.get(p.id)?.qty_home ?? 0) === 0 ? 'Ở nhà hết' : null)
+  const badge = (p: Product) => ((stock.get(p.id)?.qty_home ?? 0) === 0 ? t('Ở nhà hết') : null)
   const lineFor = (id: string) => lines.find((l) => l.product_id === id)
   const hasWarning = lines.some((l) => overHome(l) !== null)
   const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
 
-  const submitLabel = isSubmitting ? 'Đang lưu…' : 'Chuyển ra quầy'
+  const submitLabel = isSubmitting ? t('Đang lưu…') : t('Chuyển ra quầy')
   const canSubmit = !isSubmitting && !hasWarning && lines.length > 0
 
   return (
@@ -131,17 +133,17 @@ function TransferForm({ storeId }: { storeId: string }) {
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
           <label className="field">
-            Ngày chuyển
+            {t('Ngày chuyển')}
             <input
               type="date"
               max={todayVN()}
               {...register('transfer_date', { required: 'Chọn ngày chuyển', validate: notFuture })}
             />
           </label>
-          {errors.transfer_date && <p className="error">{errors.transfer_date.message}</p>}
+          {errors.transfer_date && <p className="error">{t(errors.transfer_date.message ?? '')}</p>}
 
           {stocked.length === 0 ? (
-            <p className="pos-empty muted">Cửa hàng chưa có món nào đếm tồn kho.</p>
+            <p className="pos-empty muted">{t('Cửa hàng chưa có món nào đếm tồn kho.')}</p>
           ) : (
             <ProductPicker
               products={stocked}
@@ -161,7 +163,7 @@ function TransferForm({ storeId }: { storeId: string }) {
                       value={line?.qty ?? ''}
                       onChange={(v) => setQty(p.id, v)}
                       min={0}
-                      label={`số lượng chuyển ${p.name}`}
+                      label={t('số lượng chuyển {name}', { name: p.name })}
                     />
                   </div>
                 )
@@ -172,13 +174,13 @@ function TransferForm({ storeId }: { storeId: string }) {
 
         <aside className="pos-side card">
           <div className="pos-side-head">
-            <h3>Mang ra quầy</h3>
-            <span className="count-pill">{lines.length} món</span>
+            <h3>{t('Mang ra quầy')}</h3>
+            <span className="count-pill">{t('{count} món', { count: lines.length })}</span>
           </div>
 
           {lines.length === 0 ? (
             <p className="pos-empty muted">
-              {quick ? 'Nhập số lượng ở danh sách món bên cạnh.' : 'Chạm vào món ở bên cạnh để chọn.'}
+              {quick ? t('Nhập số lượng ở danh sách món bên cạnh.') : t('Chạm vào món ở bên cạnh để chọn.')}
             </p>
           ) : (
             <div className="order-lines">
@@ -192,7 +194,7 @@ function TransferForm({ storeId }: { storeId: string }) {
                       <button
                         type="button"
                         className="remove"
-                        aria-label={`Xoá ${name}`}
+                        aria-label={t('Xoá {name}', { name })}
                         onClick={() => removeLine(line.product_id)}
                       >
                         ×
@@ -203,9 +205,9 @@ function TransferForm({ storeId }: { storeId: string }) {
                         value={line.qty}
                         onChange={(v) => setQty(line.product_id, v)}
                         min={1}
-                        label={`số lượng chuyển ${name}`}
+                        label={t('số lượng chuyển {name}', { name })}
                       />
-                      <span className="subtotal">Ở nhà còn {stock.get(line.product_id)?.qty_home ?? 0}</span>
+                      <span className="subtotal">{t('Ở nhà còn {count}', { count: stock.get(line.product_id)?.qty_home ?? 0 })}</span>
                     </div>
                     {warn && <small className="warn">{warn}</small>}
                   </div>
@@ -215,17 +217,17 @@ function TransferForm({ storeId }: { storeId: string }) {
           )}
 
           <label className="field">
-            Ghi chú
-            <input type="text" placeholder="Không bắt buộc" {...register('note')} />
+            {t('Ghi chú')}
+            <input type="text" placeholder={t('Không bắt buộc')} {...register('note')} />
           </label>
 
           <div className="pos-total">
-            <span>Tổng số lượng</span>
+            <span>{t('Tổng số lượng')}</span>
             <strong>{totalQty}</strong>
           </div>
 
-          {formError && <p className="error">{formError}</p>}
-          {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
+          {formError && <p className="error">{t(formError)}</p>}
+          {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
           <button type="submit" className="primary block" disabled={!canSubmit}>
             {submitLabel}
           </button>
@@ -233,8 +235,8 @@ function TransferForm({ storeId }: { storeId: string }) {
 
         <div className="pos-mobilebar">
           <div>
-            <small>{lines.length} món</small>
-            <strong>{totalQty} hộp/phần</strong>
+            <small>{t('{count} món', { count: lines.length })}</small>
+            <strong>{t('{count} hộp/phần', { count: totalQty })}</strong>
           </div>
           <button type="submit" className="primary" disabled={!canSubmit}>
             {submitLabel}

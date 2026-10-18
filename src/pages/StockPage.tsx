@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { errorMessage } from '../lib/format'
 import type { StockStatus, StockStatusRow } from '../types/database'
@@ -12,6 +13,7 @@ const STATUS_LABEL: Record<StockStatus, string> = {
 
 export function StockPage() {
   const { current } = useStore()
+  const { t } = useI18n()
   const storeId = current?.id
   const [result, setResult] = useState<{
     storeId: string
@@ -31,22 +33,22 @@ export function StockPage() {
     }
   }, [storeId])
 
-  if (!result || result.storeId !== storeId) return <p className="muted">Đang tải tồn kho…</p>
-  if (result.error) return <p className="error">{result.error}</p>
+  if (!result || result.storeId !== storeId) return <p className="muted">{t('Đang tải tồn kho…')}</p>
+  if (result.error) return <p className="error">{t(result.error)}</p>
 
   return (
     <section>
       {result.rows.length === 0 ? (
-        <p className="muted">Chưa có sản phẩm nào quản lý tồn kho.</p>
+        <p className="muted">{t('Chưa có sản phẩm nào quản lý tồn kho.')}</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Sản phẩm</th>
-                <th className="num">Ở nhà</th>
-                <th className="num">Ở quầy</th>
-                <th>Trạng thái</th>
+                <th>{t('Sản phẩm')}</th>
+                <th className="num">{t('Ở nhà')}</th>
+                <th className="num">{t('Ở quầy')}</th>
+                <th>{t('Trạng thái')}</th>
               </tr>
             </thead>
             <tbody>
@@ -56,7 +58,7 @@ export function StockPage() {
                   <td className="num">{row.qty_home}</td>
                   <td className="num">{row.qty_shop}</td>
                   <td>
-                    <span className={`badge badge-${row.status}`}>{STATUS_LABEL[row.status]}</span>
+                    <span className={`badge badge-${row.status}`}>{t(STATUS_LABEL[row.status])}</span>
                   </td>
                 </tr>
               ))}
