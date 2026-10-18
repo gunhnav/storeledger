@@ -1647,8 +1647,9 @@ select option {
 }
 .date-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  grid-template-columns: repeat(7, 36px);
+  justify-content: space-between;
+  row-gap: 2px;
 }
 .date-weekday {
   text-align: center;
@@ -1658,8 +1659,13 @@ select option {
   padding: 4px 0 6px;
 }
 .date-day {
-  min-height: 36px;
+  width: 36px;
+  height: 36px;
+  min-height: 0;
   padding: 0;
+  display: grid;
+  place-items: center;
+  line-height: 1;
   border: none;
   border-radius: 10px;
   background: none;
@@ -1753,4 +1759,14 @@ select option {
 }
 .price-input::placeholder {
   font-size: 14px;
+}
+
+/* Ô ngày không dịch chuyển khi nhấn (tránh cảm giác nhảy ô) */
+.date-day:active:not(:disabled),
+.date-nav:active:not(:disabled) {
+  transform: none;
+}
+.date-day:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }

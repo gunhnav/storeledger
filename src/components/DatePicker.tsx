@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { addDays, monthStart, todayVN } from '../lib/format'
 import { LANGUAGES, useI18n } from '../lib/i18n'
 import { Icon } from './Icon'
@@ -54,6 +54,17 @@ export function DatePicker({
     new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(asDate(iso))
 
   const disabled = (iso: string) => (!!max && iso > max) || (!!min && iso < min)
+
+  // Bàn phím: mũi tên di chuyển giữa các ngày (sang tháng khác nếu cần), Enter để chọn
+  const onGridKey = (e: ReactKeyboardEvent) => {
+    const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key]
+    const current = (document.activeElement as HTMLElement | null)?.dataset.date
+    if (!step || !current) return
+    e.preventDefault()
+    const next = addDays(current, step)
+    if (next.slice(0, 7) !== month.slice(0, 7)) setMonth(monthStart(next))
+    requestAnimationFrame(() => ref.current?.querySelector<HTMLElement>(`[data-date="${next}"]`)?.focus())
+  }
   const choose = (iso: string) => {
     if (disabled(iso)) return
     onChange(iso)
@@ -99,7 +110,7 @@ export function DatePicker({
               ›
             </button>
           </div>
-          <div className="date-grid">
+          <div className="date-grid" onKeyDown={onGridKey}>
             {weekdays.map((w, i) => (
               <span key={i} className="date-weekday">
                 {w}
@@ -121,6 +132,7 @@ export function DatePicker({
                   className={classes}
                   disabled={disabled(iso)}
                   aria-pressed={iso === value}
+                  data-date={iso}
                   aria-label={fmt(iso, { dateStyle: 'full' })}
                   onClick={() => choose(iso)}
                 >
