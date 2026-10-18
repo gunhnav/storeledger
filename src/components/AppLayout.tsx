@@ -195,7 +195,8 @@ function UserMenu({
             ))}
           </div>
           <div className="user-dropdown-lang">
-            <LanguageSelect />
+            <Icon name="globe" size={16} />
+            <LanguageSelect variant="pills" />
           </div>
           {isAdmin && (
             <NavLink to="/staff" role="menuitem" className="user-dropdown-item">

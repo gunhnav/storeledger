@@ -11,7 +11,7 @@ export type Lang = 'vi' | 'en' | 'ko' | 'zh' | 'ja'
 export const LANGUAGES: { code: Lang; label: string; short: string; locale: string }[] = [
   { code: 'vi', label: 'Tiếng Việt', short: 'VI', locale: 'vi-VN' },
   { code: 'en', label: 'English', short: 'EN', locale: 'en-US' },
-  { code: 'ko', label: '한국어', short: 'KO', locale: 'ko-KR' },
+  { code: 'ko', label: '한국어', short: '한', locale: 'ko-KR' },
   { code: 'zh', label: '中文', short: '中', locale: 'zh-CN' },
   { code: 'ja', label: '日本語', short: '日', locale: 'ja-JP' },
 ]
