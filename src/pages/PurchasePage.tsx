@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth'
 import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
-import { MAX_MONEY, MAX_QTY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
+import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import type { Product, ProductPrice } from '../types/database'
 
 type FormValues = { purchase_date: string; note: string }
@@ -63,15 +63,35 @@ function PurchaseForm({ storeId }: { storeId: string }) {
     }
   }, [isAdmin, stockedKey])
 
-  // Giá vốn có hiệu lực vào ngày nhập (lịch sử đã sắp mới nhất trước). Nhân viên: luôn trống.
-  const currentCost = (id: string): number | null =>
-    costHistory.find((r) => r.product_id === id && r.effective_from <= purchaseDate)?.unit_cost ??
-    null
+  // Giá vốn dùng để điền sẵn (chỉ admin; nhân viên luôn trống, DB tự lấy giá vốn).
+  // exact: có giá vốn hiệu lực vào ngày nhập. Không có thì lấy giá vốn gần nhất áp dụng sau
+  // ngày nhập (ví dụ vừa nhập giá vốn hôm nay nhưng ghi đợt nhập lùi ngày) và gửi rõ con số đó.
+  const currentCost = (id: string): { cost: number; from: string; exact: boolean } | null => {
+    const effective = costHistory.find((r) => r.product_id === id && r.effective_from <= purchaseDate)
+    if (effective && effective.unit_cost !== null) {
+      return { cost: effective.unit_cost, from: effective.effective_from, exact: true }
+    }
+    const later = costHistory
+      .filter((r) => r.product_id === id && r.effective_from > purchaseDate && r.unit_cost !== null)
+      .at(-1)
+    return later && later.unit_cost !== null
+      ? { cost: later.unit_cost, from: later.effective_from, exact: false }
+      : null
+  }
   const costText = (line: Line) => {
     if (line.cost !== null) return line.cost
-    const cost = currentCost(line.product_id)
-    return cost === null ? '' : String(cost)
+    const current = currentCost(line.product_id)
+    return current === null ? '' : String(current.cost)
   }
+  // Nhắc khi giá điền sẵn là giá áp dụng sau ngày nhập
+  const costHint = (line: Line) => {
+    if (line.cost !== null) return null
+    const current = currentCost(line.product_id)
+    return current && !current.exact
+      ? t('Dùng giá vốn áp dụng từ {date}', { date: formatDate(current.from) })
+      : null
+  }
+  const blankCostLabel = isAdmin ? t('Chưa có giá vốn') : t('Giá vốn hiện hành')
   const total = lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(costText(l)) || 0), 0)
   const hasBlankCost = lines.some((l) => costText(l) === '')
 
@@ -118,8 +138,11 @@ function PurchaseForm({ storeId }: { storeId: string }) {
         return setFormError(t('"{name}" chưa có giá vốn: nhập giá nhập cho món này', { name }))
       }
       // Chỉ gửi giá khi người dùng tự gõ; còn lại để DB lấy giá vốn hiện hành
+      // Gửi giá khi người dùng tự gõ, hoặc khi giá điền sẵn là giá áp dụng sau ngày nhập
       const typed = line.cost?.trim() ?? ''
-      const unitCost = typed === '' ? null : Number(typed)
+      const prefilled = currentCost(line.product_id)
+      const unitCost =
+        typed !== '' ? Number(typed) : isAdmin && prefilled && !prefilled.exact ? prefilled.cost : null
       if (unitCost !== null && (!Number.isFinite(unitCost) || unitCost < 0)) {
         return setFormError(t('Giá nhập của "{name}" không hợp lệ', { name }))
       }
@@ -156,7 +179,8 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       type="text"
       inputMode="numeric"
       className="price-input"
-      placeholder={t('Tự động')}
+      placeholder={blankCostLabel}
+      title={costHint(line) ?? undefined}
       aria-label={t('Giá nhập {name}', { name })}
       value={costText(line)}
       onChange={(e) => setCost(line.product_id, e.target.value.replace(/[^0-9.]/g, ''))}
@@ -203,6 +227,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
                 const line = lineFor(p.id)
                 return (
                   <div className="quick-inputs">
+                    {line && costHint(line) && <small className="warn">{costHint(line)}</small>}
                     {line && costInput(line, p.name)}
                     <QtyStepper
                       value={line?.qty ?? ''}
@@ -234,7 +259,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
                 <li key={line.product_id}>
                   <span className="summary-name">{byId.get(line.product_id)?.name}</span>
                   <span className="summary-qty">
-                    {line.qty || 0} × {costText(line) === '' ? t('Tự động') : formatVND(Number(costText(line)) || 0)}
+                    {line.qty || 0} × {costText(line) === '' ? blankCostLabel : formatVND(Number(costText(line)) || 0)}
                   </span>
                   <strong>
                     {costText(line) === '' ? '—' : formatVND((Number(line.qty) || 0) * (Number(costText(line)) || 0))}
@@ -273,13 +298,16 @@ function PurchaseForm({ storeId }: { storeId: string }) {
                         {costText(line) === '' ? '—' : formatVND((Number(line.qty) || 0) * (cost || 0))}
                       </span>
                     </div>
+                    {costHint(line) && <small className="warn">{costHint(line)}</small>}
                   </div>
                 )
               })}
             </div>
           )}
 
-          <small className="muted">{t('Ô giá nhập để trống thì dùng giá vốn hiện hành của món.')}</small>
+          <small className="muted">
+            {t('Ô giá nhập để trống thì dùng giá vốn đang áp dụng vào ngày nhập (đặt ở Quản lý → Sản phẩm).')}
+          </small>
 
           <label className="field">
             {t('Ghi chú')}
