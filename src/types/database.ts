@@ -36,17 +36,24 @@ export type Product = {
   store_id: string
   name: string
   category: string | null
-  sale_price: number
-  app_price: number | null
   tracks_stock: boolean
   low_stock_threshold: number
   is_active: boolean
   created_at: string
 }
 
-export type ProductFixedCost = {
+// Lịch sử giá theo ngày áp dụng (chỉ admin đọc). unit_cost null = chưa có giá vốn.
+// supabase/migrations/20261018032417_product_price_history.sql
+export type ProductPrice = {
+  id: string
   product_id: string
-  unit_cost: number
+  effective_from: string
+  sale_price: number
+  app_price: number | null
+  unit_cost: number | null
+  note: string | null
+  created_by: string | null
+  created_at: string
 }
 
 export type Purchase = {
@@ -140,17 +147,12 @@ export type ProductInsert = {
   store_id: string
   name: string
   category?: string | null
-  sale_price?: number
-  app_price?: number | null
   tracks_stock?: boolean
   low_stock_threshold?: number
   is_active?: boolean
   created_at?: string
 }
 export type ProductUpdate = Partial<ProductInsert>
-
-export type ProductFixedCostInsert = ProductFixedCost
-export type ProductFixedCostUpdate = Partial<ProductFixedCost>
 
 export type ExpenseInsert = {
   id?: string
@@ -172,10 +174,11 @@ export type ProfileUpdate = {
 // Hàm RPC
 // ---------------------------------------------------------------------------
 
+// unit_cost null: DB lấy giá vốn có hiệu lực vào ngày nhập
 export type PurchaseItemInput = {
   product_id: string
   quantity: number
-  unit_cost: number
+  unit_cost: number | null
 }
 
 export type SaleItemInput = {
@@ -235,6 +238,61 @@ export type PnlRow = {
   net_profit: number
 }
 
+// Giá bán có hiệu lực vào một ngày — KHÔNG có giá vốn
+export type StorePriceRow = {
+  product_id: string
+  sale_price: number
+  app_price: number | null
+  effective_from: string
+}
+
+export type SetProductPriceArgs = {
+  p_product_id: string
+  p_effective_from: string
+  p_sale_price: number
+  p_app_price: number | null
+  p_unit_cost: number
+  p_note: string | null
+}
+
+// Nhật ký ngày (chỉ admin) — supabase/migrations/20261018041617_daily_log_report.sql
+export type DailyRangeArgs = { p_store_id: string; p_from: string; p_to: string }
+
+// Một dòng (ngày, sản phẩm). shop_end / home_end = null với món không đếm tồn.
+export type DailyProductLogRow = {
+  day: string
+  product_id: string
+  product_name: string
+  category: string | null
+  tracks_stock: boolean
+  qty_transferred: number
+  qty_sold: number
+  gross_revenue: number
+  cogs: number
+  shop_end: number | null
+  home_end: number | null
+  low_stock_threshold: number
+}
+
+// Một dòng mỗi ngày; các cột cum_* luỹ kế từ giao dịch đầu tiên của cửa hàng
+export type DailySummaryRow = {
+  day: string
+  qty_sold: number
+  gross_revenue: number
+  commission: number
+  net_revenue: number
+  expenses: number
+  cogs: number
+  gross_profit: number
+  net_profit: number
+  purchase_cost: number
+  cum_invested: number
+  cum_net_revenue: number
+  cum_cash_flow: number
+  is_break_even: boolean
+  price_notes: string | null
+}
+
 export type BreakEvenRow = {
   total_purchase_cost: number
   total_expenses: number
@@ -245,6 +303,17 @@ export type BreakEvenRow = {
   break_even_date: string | null
   avg_daily_net_revenue: number
   remaining_stock_value: number
+}
+
+// admin_list_users (chỉ admin) — supabase/migrations/20261018020118_staff_management.sql
+export type AdminUserRow = {
+  id: string
+  email: string
+  full_name: string | null
+  role: UserRole
+  created_at: string
+  last_sign_in_at: string | null
+  store_ids: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -299,14 +368,11 @@ export type Database = {
           { foreignKeyName: 'products_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
         ]
       }
-      product_fixed_costs: {
-        Row: ProductFixedCost
-        Insert: ProductFixedCostInsert
-        Update: ProductFixedCostUpdate
-        Relationships: [
-          { foreignKeyName: 'product_fixed_costs_product_id_fkey'; columns: ['product_id']; isOneToOne: true; referencedRelation: 'products'; referencedColumns: ['id'] },
-        ]
-      }
+      // Ghi qua set_product_price
+      product_prices: ReadOnlyTable<ProductPrice, [
+        { foreignKeyName: 'product_prices_product_id_fkey'; columns: ['product_id']; isOneToOne: false; referencedRelation: 'products'; referencedColumns: ['id'] },
+        { foreignKeyName: 'product_prices_created_by_fkey'; columns: ['created_by']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+      ]>
       purchases: ReadOnlyTable<Purchase, [
         { foreignKeyName: 'purchases_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
         { foreignKeyName: 'purchases_created_by_fkey'; columns: ['created_by']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
@@ -353,6 +419,11 @@ export type Database = {
       get_stock_status: { Args: { p_store_id: string }; Returns: StockStatusRow[] }
       get_pnl: { Args: GetPnlArgs; Returns: PnlRow[] }
       get_break_even: { Args: { p_store_id: string }; Returns: BreakEvenRow[] }
+      admin_list_users: { Args: Record<never, never>; Returns: AdminUserRow[] }
+      get_store_prices: { Args: { p_store_id: string; p_date: string | null }; Returns: StorePriceRow[] }
+      set_product_price: { Args: SetProductPriceArgs; Returns: string }
+      get_daily_product_log: { Args: DailyRangeArgs; Returns: DailyProductLogRow[] }
+      get_daily_summary: { Args: DailyRangeArgs; Returns: DailySummaryRow[] }
     }
     Enums: Record<never, never>
     CompositeTypes: Record<never, never>
