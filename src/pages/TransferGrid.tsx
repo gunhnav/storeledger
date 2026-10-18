@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
-import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { addDays, errorMessage, formatDate, todayVN } from '../lib/format'
 import {
@@ -27,14 +26,9 @@ const REASONS: Record<CellError['reason'], string> = {
   future: 'Không chọn ngày trong tương lai',
 }
 
-export function TransferGridPage() {
-  const { current } = useStore()
-  return current ? <TransferGrid key={current.id} storeId={current.id} /> : null
-}
-
 // Nhập "Mang ra quán" như bảng Excel: cột là ngày, hàng là món đếm tồn, ô là số hũ mang thêm ra quầy.
 // Mỗi ô lưu bằng create_transfer có sẵn (FIFO theo lô, chặn vượt tồn ở nhà / ngày tương lai / lô nhập sau ngày chuyển).
-function TransferGrid({ storeId }: { storeId: string }) {
+export function TransferGrid({ storeId }: { storeId: string }) {
   const { t } = useI18n()
   const toast = useToast()
   const today = todayVN()

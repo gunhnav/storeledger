@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Controller, useForm } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
@@ -9,6 +10,7 @@ import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_QTY, errorMessage, formatDate, notFuture, todayVN } from '../lib/format'
 import type { Product } from '../types/database'
+import { TransferGrid } from './TransferGrid'
 
 type FormValues = { transfer_date: string; note: string }
 type Line = { product_id: string; qty: string }
@@ -16,9 +18,41 @@ type Line = { product_id: string; qty: string }
 // Cửa hàng ít món thì mặc định nhập nhanh
 const QUICK_MAX = 10
 
+// Một tab "Chuyển ra quầy", hai cách nhập: theo đơn (chọn món, một ngày) hoặc dạng lưới (nhiều ngày như Excel)
 export function TransferPage() {
+  const { t } = useI18n()
   const { current } = useStore()
-  return current ? <TransferForm key={current.id} storeId={current.id} /> : null
+  const [params, setParams] = useSearchParams()
+  const view = params.get('view') === 'grid' ? 'grid' : 'form'
+  if (!current) return null
+  return (
+    <>
+      <div className="segmented transfer-view" role="radiogroup" aria-label={t('Cách nhập')}>
+        {(
+          [
+            ['form', 'Theo đơn'],
+            ['grid', 'Dạng lưới theo ngày'],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={view === value}
+            className={view === value ? 'active' : undefined}
+            onClick={() => setParams(value === 'grid' ? { view: 'grid' } : {}, { replace: true })}
+          >
+            {t(label)}
+          </button>
+        ))}
+      </div>
+      {view === 'grid' ? (
+        <TransferGrid key={current.id} storeId={current.id} />
+      ) : (
+        <TransferForm key={current.id} storeId={current.id} />
+      )}
+    </>
+  )
 }
 
 function TransferForm({ storeId }: { storeId: string }) {

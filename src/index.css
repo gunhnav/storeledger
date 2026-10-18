@@ -1528,6 +1528,11 @@ a.button.primary:hover {
   stroke-linejoin: round;
 }
 
+/* Chuyển ra quầy: chọn cách nhập */
+.segmented.transfer-view {
+  margin-bottom: 14px;
+}
+
 /* Lưới Mang ra quán: ô nhập như Excel */
 .grid-nav {
   align-items: center;
