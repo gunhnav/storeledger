@@ -1515,6 +1515,110 @@ a.button.primary:hover {
   background: var(--accent-soft);
 }
 
+/* Chi phí: nhiều dòng cùng ngày */
+.expense-date {
+  max-width: 320px;
+}
+.expense-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.expense-line {
+  display: grid;
+  grid-template-columns: 170px minmax(160px, 1fr) 90px 130px 140px 32px;
+  gap: 8px;
+  align-items: center;
+}
+.expense-line-head span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.form .expense-line label {
+  gap: 0;
+}
+.expense-line select,
+.expense-line input {
+  width: 100%;
+  min-width: 0;
+}
+.expense-line .mobile-label {
+  display: none;
+}
+.input-action {
+  position: relative;
+  display: block;
+}
+.input-action-btn {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  translate: 0 -50%;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.input-action-btn:hover {
+  background: var(--surface-2);
+}
+.expense-line-error {
+  grid-column: 1 / -1;
+}
+.expense-line.has-error input,
+.expense-line.has-error select {
+  border-color: var(--danger);
+}
+.expense-add {
+  align-self: flex-start;
+}
+.expense-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 760px) {
+  .expense-line-head {
+    display: none;
+  }
+  .expense-line {
+    grid-template-columns: 1fr 1fr;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    position: relative;
+  }
+  .expense-line > label:nth-child(1),
+  .expense-line > label:nth-child(2),
+  .expense-line > label:nth-child(5) {
+    grid-column: 1 / -1;
+  }
+  .form .expense-line label {
+    gap: 4px;
+  }
+  .expense-line .mobile-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+  .expense-line > .remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+  }
+}
+
 /* Chi phí: đang sửa một khoản */
 .form.editing {
   border-color: var(--accent);

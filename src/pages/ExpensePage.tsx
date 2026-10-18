@@ -1,51 +1,39 @@
 import { useEffect, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, capitalizeFirst, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
-import { expenseGroupsFor, expenseLine, storedUnitPrice } from '../lib/expenses'
+import { expenseGroupsFor, expenseLine, isBlankDraft, parseDraft, type ExpenseDraft } from '../lib/expenses'
 import type { Expense } from '../types/database'
 
-type FormValues = { expense_date: string; category: string; note: string }
+type Draft = ExpenseDraft & { id: number }
 
-// Số lượng / đơn giá / thành tiền giữ dạng chuỗi để cho phép ô trống khi đang gõ
-const EMPTY_AMOUNTS = { quantity: '1', unitPrice: '', total: '' }
-const toNumber = (text: string) => (text.trim() === '' ? Number.NaN : Number(text))
 const cleanNumber = (text: string) => text.replace(/[^0-9.]/g, '')
+const toNumber = (text: string) => (text.trim() === '' ? Number.NaN : Number(text))
+let nextId = 1
 
 export function ExpensePage() {
   const { current } = useStore()
   return current ? <ExpenseForm key={current.id} storeId={current.id} groups={expenseGroupsFor(current.code)} /> : null
 }
 
-// Chỉ admin (route bọc RequireAdmin, RLS cũng chặn)
+// Chỉ admin (route bọc RequireAdmin, RLS cũng chặn).
+// Thêm mới: một ngày, nhiều dòng chi phí, lưu một lần. Sửa: form chỉ có một dòng của khoản đang sửa.
 function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly string[] }) {
   const { t } = useI18n()
   const toast = useToast()
+  const newDraft = (category = groups[0]): Draft => ({ id: nextId++, category, note: '', quantity: '1', unitPrice: '', total: '' })
   const [recent, setRecent] = useState<{ rows: Expense[]; error: string | null } | null>(null)
   const [version, setVersion] = useState(0)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  const [date, setDate] = useState(todayVN())
+  const [drafts, setDrafts] = useState<Draft[]>(() => [newDraft()])
+  const [saving, setSaving] = useState(false)
   // Đang sửa khoản chi nào (null = thêm mới)
   const [editing, setEditing] = useState<Expense | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
-  // total khác '' nghĩa là người dùng ghi đè thành tiền
-  const [amounts, setAmounts] = useState(EMPTY_AMOUNTS)
-  const quantity = toNumber(amounts.quantity)
-  const override = amounts.total.trim() === '' ? null : toNumber(amounts.total)
-  const line = expenseLine(quantity, toNumber(amounts.unitPrice) || 0, override)
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    defaultValues: { expense_date: todayVN(), category: groups[0], note: '' },
-  })
 
   useEffect(() => {
     let cancelled = false
@@ -64,49 +52,63 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
     }
   }, [storeId, version])
 
-  const onSubmit = async (values: FormValues) => {
+  const update = (id: number, change: Partial<ExpenseDraft>) =>
+    setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...change } : d)))
+  // Dòng mới lấy nhóm của dòng cuối để nhập liền nhiều món cùng nhóm
+  const addDraft = () => setDrafts((ds) => [...ds, newDraft(ds[ds.length - 1]?.category)])
+  const removeDraft = (id: number) => setDrafts((ds) => (ds.length > 1 ? ds.filter((d) => d.id !== id) : ds))
+
+  const filled = drafts.filter((d) => !isBlankDraft(d))
+  const parsed = filled.map((d) => ({ draft: d, result: parseDraft(d, MAX_MONEY) }))
+  const total = parsed.reduce((s, p) => s + (p.result.ok ? p.result.total : 0), 0)
+
+  const resetForm = () => {
+    setEditing(null)
+    setDrafts([newDraft()])
+  }
+
+  const save = async () => {
     setResult(null)
-    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1000000) {
-      return setResult({ ok: false, text: 'Số lượng phải lớn hơn 0' })
+    const dateError = notFuture(date)
+    if (dateError !== true) return setResult({ ok: false, text: dateError })
+    if (filled.length === 0) return setResult({ ok: false, text: 'Nhập ít nhất một khoản chi' })
+    const bad = parsed.findIndex((p) => !p.result.ok)
+    if (bad >= 0) {
+      const r = parsed[bad].result
+      return setResult({ ok: false, text: t('Dòng {n}: {error}', { n: drafts.indexOf(parsed[bad].draft) + 1, error: r.ok ? '' : t(r.error) }) })
     }
-    if (override === null && (!Number.isFinite(toNumber(amounts.unitPrice)) || toNumber(amounts.unitPrice) < 0)) {
-      return setResult({ ok: false, text: 'Nhập đơn giá hoặc thành tiền' })
-    }
-    if (!Number.isFinite(line.total) || line.total <= 0) return setResult({ ok: false, text: 'Số tiền phải lớn hơn 0' })
-    if (line.total > MAX_MONEY) return setResult({ ok: false, text: 'Số tiền quá lớn, kiểm tra lại' })
-    const note = capitalizeFirst(values.note.trim()) || null
-    // Sửa qua hàm update_expense (SECURITY DEFINER, chỉ admin); thêm mới vẫn insert như cũ
+    const rows = parsed.map(({ draft, result }) => {
+      const r = result as Extract<typeof result, { ok: true }>
+      return {
+        category: draft.category,
+        note: capitalizeFirst(draft.note.trim()) || null,
+        quantity: r.quantity,
+        unit_price: r.unitPrice,
+        amount: r.total,
+      }
+    })
+    setSaving(true)
+    // Sửa qua hàm update_expense (SECURITY DEFINER, chỉ admin); thêm mới: một lệnh insert nhiều dòng (cùng thành công / thất bại)
     const { error } = editing
       ? await supabase.rpc('update_expense', {
           p_expense_id: editing.id,
-          p_expense_date: values.expense_date,
-          p_category: values.category,
-          p_note: note,
-          p_quantity: quantity,
-          p_unit_price: storedUnitPrice(line.unitPrice),
-          p_amount: line.total,
+          p_expense_date: date,
+          p_category: rows[0].category,
+          p_note: rows[0].note,
+          p_quantity: rows[0].quantity,
+          p_unit_price: rows[0].unit_price,
+          p_amount: rows[0].amount,
         })
-      : await supabase.from('expenses').insert({
-          store_id: storeId,
-          expense_date: values.expense_date,
-          category: values.category,
-          quantity,
-          unit_price: storedUnitPrice(line.unitPrice),
-          amount: line.total,
-          note,
-        })
-    if (error) {
-      setResult({ ok: false, text: errorMessage(error) })
-      return
-    }
+      : await supabase.from('expenses').insert(rows.map((r) => ({ ...r, store_id: storeId, expense_date: date })))
+    setSaving(false)
+    if (error) return setResult({ ok: false, text: errorMessage(error) })
     toast.success(
       editing
-        ? t('Đã sửa chi phí {amount} ngày {date}', { amount: formatVND(line.total), date: formatDate(values.expense_date) })
-        : t('Đã lưu chi phí {amount} ngày {date}', { amount: formatVND(line.total), date: formatDate(values.expense_date) }),
+        ? t('Đã sửa chi phí {amount} ngày {date}', { amount: formatVND(total), date: formatDate(date) })
+        : t('Đã lưu {count} khoản chi {amount} ngày {date}', { count: rows.length, amount: formatVND(total), date: formatDate(date) }),
     )
-    reset({ expense_date: editing ? todayVN() : values.expense_date, category: values.category, note: '' })
-    setAmounts(EMPTY_AMOUNTS)
-    setEditing(null)
+    if (editing) setDate(todayVN())
+    resetForm()
     setVersion((v) => v + 1)
   }
 
@@ -114,17 +116,25 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
   const startEdit = (row: Expense) => {
     setResult(null)
     setEditing(row)
-    reset({ expense_date: row.expense_date, category: row.category, note: row.note ?? '' })
+    setDate(row.expense_date)
     const overridden = Math.abs(row.quantity * row.unit_price - row.amount) > 0.005
-    setAmounts({ quantity: String(row.quantity), unitPrice: String(row.unit_price), total: overridden ? String(row.amount) : '' })
+    setDrafts([
+      {
+        id: nextId++,
+        category: row.category,
+        note: row.note ?? '',
+        quantity: String(row.quantity),
+        unitPrice: String(row.unit_price),
+        total: overridden ? String(row.amount) : '',
+      },
+    ])
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const cancelEdit = () => {
-    setEditing(null)
     setResult(null)
-    reset({ expense_date: todayVN(), category: groups[0], note: '' })
-    setAmounts(EMPTY_AMOUNTS)
+    setDate(todayVN())
+    resetForm()
   }
 
   const remove = async (row: Expense) => {
@@ -139,11 +149,9 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
     setVersion((v) => v + 1)
   }
 
-  const noteField = register('note')
-
   return (
     <section>
-      <form className={editing ? 'card form editing' : 'card form'} onSubmit={handleSubmit(onSubmit)}>
+      <div className={editing ? 'card form editing' : 'card form'}>
         {editing && (
           <p className="edit-banner">
             {t('Đang sửa khoản chi ngày {date}', { date: formatDate(editing.expense_date) })}
@@ -152,104 +160,136 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
             </button>
           </p>
         )}
-        <div className="row">
-          <div className="field">
-            {t('Ngày')}
-            <Controller
-              control={control}
-              name="expense_date"
-              rules={{ required: 'Chọn ngày', validate: notFuture }}
-              render={({ field, fieldState }) => (
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  max={todayVN()}
-                  label={t('Ngày')}
-                  invalid={!!fieldState.error}
-                />
-              )}
-            />
+        <div className="field expense-date">
+          {t('Ngày')}
+          <DatePicker value={date} onChange={setDate} max={todayVN()} label={t('Ngày')} />
+        </div>
+
+        <div className="expense-lines">
+          <div className="expense-line expense-line-head" aria-hidden="true">
+            <span>{t('Nhóm chi phí')}</span>
+            <span>{t('Hạng mục / ghi chú')}</span>
+            <span>{t('Số lượng')}</span>
+            <span>{t('Đơn giá')}</span>
+            <span>{t('Thành tiền')}</span>
+            <span />
           </div>
-          <label>
-            {t('Nhóm chi phí')}
-            <select {...register('category', { required: true })}>
-              {groups.map((g) => (
-                <option key={g} value={g}>
-                  {t(g)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {drafts.map((d, i) => {
+            const line = expenseLine(toNumber(d.quantity), toNumber(d.unitPrice) || 0, d.total.trim() === '' ? null : toNumber(d.total))
+            const p = parsed.find((x) => x.draft.id === d.id)
+            const error = p && !p.result.ok ? p.result.error : null
+            return (
+              <div key={d.id} className={`expense-line${error ? ' has-error' : ''}`}>
+                <label>
+                  <span className="mobile-label">{t('Nhóm chi phí')}</span>
+                  <select value={d.category} onChange={(e) => update(d.id, { category: e.target.value })} aria-label={t('Nhóm chi phí')}>
+                    {groups.map((g) => (
+                      <option key={g} value={g}>
+                        {t(g)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span className="mobile-label">{t('Hạng mục / ghi chú')}</span>
+                  <input
+                    type="text"
+                    autoCapitalize="sentences"
+                    aria-label={t('Hạng mục / ghi chú')}
+                    placeholder={i === 0 ? t('Ví dụ: thìa, banner, thùng giữ lạnh') : undefined}
+                    value={d.note}
+                    onChange={(e) => {
+                      // Không đổi chữ khi bộ gõ tiếng Việt đang ghép dấu, viết hoa khi gõ xong
+                      const composing = (e.nativeEvent as InputEvent).isComposing
+                      update(d.id, { note: composing ? e.target.value : capitalizeFirst(e.target.value) })
+                    }}
+                    onCompositionEnd={(e) => update(d.id, { note: capitalizeFirst(e.currentTarget.value) })}
+                  />
+                </label>
+                <label>
+                  <span className="mobile-label">{t('Số lượng')}</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    aria-label={t('Số lượng')}
+                    value={d.quantity}
+                    onChange={(e) => update(d.id, { quantity: cleanNumber(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  <span className="mobile-label">{t('Đơn giá')}</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    aria-label={t('Đơn giá')}
+                    className={line.overridden ? 'computed' : undefined}
+                    readOnly={line.overridden}
+                    value={line.overridden ? (Number.isFinite(line.unitPrice) ? formatVND(line.unitPrice) : '') : d.unitPrice}
+                    onChange={(e) => update(d.id, { unitPrice: cleanNumber(e.target.value) })}
+                  />
+                </label>
+                <label>
+                  <span className="mobile-label">{t('Thành tiền')}</span>
+                  <span className="input-action">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      aria-label={t('Thành tiền')}
+                      className={line.overridden ? 'overridden' : undefined}
+                      placeholder={Number.isFinite(line.total) && line.total > 0 ? formatVND(line.total) : t('= số lượng × đơn giá')}
+                      value={d.total}
+                      onChange={(e) => update(d.id, { total: cleanNumber(e.target.value) })}
+                      onKeyDown={(e) => {
+                        // Enter ở ô cuối của dòng cuối: thêm dòng mới
+                        if (e.key === 'Enter' && !editing && i === drafts.length - 1) {
+                          e.preventDefault()
+                          addDraft()
+                        }
+                      }}
+                    />
+                    {line.overridden && (
+                      <button
+                        type="button"
+                        className="input-action-btn"
+                        title={t('Tính lại')}
+                        aria-label={t('Tính lại')}
+                        onClick={() => update(d.id, { total: '' })}
+                      >
+                        ↺
+                      </button>
+                    )}
+                  </span>
+                </label>
+                {!editing && drafts.length > 1 ? (
+                  <button type="button" className="remove" aria-label={t('Xoá dòng {n}', { n: i + 1 })} onClick={() => removeDraft(d.id)}>
+                    ×
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {error && <small className="error expense-line-error">{t(error)}</small>}
+              </div>
+            )
+          })}
         </div>
-        {errors.expense_date && <p className="error">{t(errors.expense_date.message ?? '')}</p>}
 
-        <label>
-          {t('Hạng mục / ghi chú')}
-          <input
-            type="text"
-            autoCapitalize="sentences"
-            placeholder={t('Ví dụ: thìa, banner, thùng giữ lạnh')}
-            {...noteField}
-            onChange={(e) => {
-              // Không đổi chữ khi bộ gõ tiếng Việt đang ghép dấu, viết hoa khi gõ xong
-              if (!(e.nativeEvent as InputEvent).isComposing) e.target.value = capitalizeFirst(e.target.value)
-              noteField.onChange(e)
-            }}
-            onCompositionEnd={(e) => setValue('note', capitalizeFirst(e.currentTarget.value))}
-          />
-        </label>
+        {!editing && (
+          <button type="button" className="expense-add" onClick={addDraft}>
+            + {t('Thêm dòng')}
+          </button>
+        )}
+        <small className="muted">{t('Thành tiền tự tính = số lượng × đơn giá. Gõ vào ô Thành tiền để ghi đè.')}</small>
 
-        <div className="row expense-amounts">
-          <label>
-            {t('Số lượng')}
-            <input
-              type="text"
-              inputMode="decimal"
-              value={amounts.quantity}
-              onChange={(e) => setAmounts((a) => ({ ...a, quantity: cleanNumber(e.target.value) }))}
-            />
-          </label>
-          <label>
-            {t('Đơn giá')}
-            <input
-              type="text"
-              inputMode="numeric"
-              className={line.overridden ? 'computed' : undefined}
-              readOnly={line.overridden}
-              value={line.overridden ? (Number.isFinite(line.unitPrice) ? formatVND(line.unitPrice) : '') : amounts.unitPrice}
-              onChange={(e) => setAmounts((a) => ({ ...a, unitPrice: cleanNumber(e.target.value) }))}
-            />
-          </label>
-          <label>
-            <span className="label-row">
-              {t('Thành tiền')}
-              {line.overridden && (
-                <button type="button" className="link" onClick={() => setAmounts((a) => ({ ...a, total: '' }))}>
-                  {t('Tính lại')}
-                </button>
-              )}
-            </span>
-            <input
-              type="text"
-              inputMode="numeric"
-              className={line.overridden ? 'overridden' : undefined}
-              placeholder={Number.isFinite(line.total) && line.total > 0 ? formatVND(line.total) : t('= số lượng × đơn giá')}
-              value={amounts.total}
-              onChange={(e) => setAmounts((a) => ({ ...a, total: cleanNumber(e.target.value) }))}
-            />
-          </label>
+        <div className="expense-footer">
+          <span>
+            {t('{count} khoản', { count: filled.length })} · <strong>{formatVND(total)}</strong>
+          </span>
+          <button type="button" className="primary" disabled={saving} onClick={save}>
+            {saving ? t('Đang lưu…') : editing ? t('Lưu thay đổi') : t('Lưu {count} khoản chi', { count: filled.length })}
+          </button>
         </div>
-        <small className="muted">
-          {line.overridden
-            ? t('Đang ghi đè thành tiền: đơn giá = thành tiền ÷ số lượng.')
-            : t('Thành tiền tự tính = số lượng × đơn giá. Gõ vào ô Thành tiền để ghi đè.')}
-        </small>
-
         {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
-        <button type="submit" className="primary" disabled={isSubmitting}>
-          {isSubmitting ? t('Đang lưu…') : editing ? t('Lưu thay đổi') : t('Lưu chi phí')}
-        </button>
-      </form>
+      </div>
 
       <h2 className="section-title">{t('20 chi phí gần nhất')}</h2>
       {!recent ? (
@@ -275,7 +315,7 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
             <tbody>
               {recent.rows.map((r) => (
                 <tr key={r.id} className={editing?.id === r.id ? 'row-editing' : undefined}>
-                  <td>{r.expense_date.split('-').reverse().join('/')}</td>
+                  <td>{formatDate(r.expense_date)}</td>
                   <td>{t(r.category)}</td>
                   <td>{r.note}</td>
                   <td className="num">{r.quantity}</td>

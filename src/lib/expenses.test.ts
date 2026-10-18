@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { expenseGroupsFor, expenseLine, storedUnitPrice } from './expenses'
+import { expenseGroupsFor, expenseLine, isBlankDraft, parseDraft, storedUnitPrice } from './expenses'
 
 describe('chi phí đồ dùng: thành tiền', () => {
   it('thành tiền = số lượng × đơn giá', () => {
@@ -24,5 +24,22 @@ describe('nhóm chi phí theo cửa hàng', () => {
     expect(expenseGroupsFor('bundau')).toEqual(['Đồ uống', 'Nguyên liệu', 'Dụng cụ', 'Quảng cáo', 'Khác'])
     expect(expenseGroupsFor('hogi')).toEqual(['Dụng cụ', 'Bao bì', 'In ấn - quảng cáo', 'Vận chuyển', 'Khác'])
     expect(expenseGroupsFor(undefined)).toEqual(expenseGroupsFor('hogi'))
+  })
+})
+
+describe('nhập nhiều chi phí cùng ngày', () => {
+  const base = { category: 'Nguyên liệu', note: '', quantity: '1', unitPrice: '', total: '' }
+  it('dòng hợp lệ: SL × đơn giá, hoặc ghi đè thành tiền', () => {
+    expect(parseDraft({ ...base, note: 'Xoài', quantity: '2', unitPrice: '30000' }, 1e9)).toEqual({ ok: true, quantity: 2, unitPrice: 30000, total: 60000 })
+    expect(parseDraft({ ...base, note: 'Xoài', quantity: '3', total: '100000' }, 1e9)).toEqual({ ok: true, quantity: 3, unitPrice: 33333.33, total: 100000 })
+  })
+  it('dòng lỗi: thiếu tiền, số lượng 0, quá lớn', () => {
+    expect(parseDraft({ ...base, note: 'Xoài' }, 1e9)).toEqual({ ok: false, error: 'Nhập đơn giá hoặc thành tiền' })
+    expect(parseDraft({ ...base, quantity: '0', unitPrice: '1000' }, 1e9)).toEqual({ ok: false, error: 'Số lượng phải lớn hơn 0' })
+    expect(parseDraft({ ...base, unitPrice: '2000000000' }, 1e9)).toEqual({ ok: false, error: 'Số tiền quá lớn, kiểm tra lại' })
+  })
+  it('dòng trống (chỉ có SL mặc định 1) được bỏ qua', () => {
+    expect(isBlankDraft(base)).toBe(true)
+    expect(isBlankDraft({ ...base, note: 'Đá' })).toBe(false)
   })
 })

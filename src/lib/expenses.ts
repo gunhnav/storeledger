@@ -29,3 +29,27 @@ export function expenseLine(quantity: number, unitPrice: number, overrideTotal: 
 export function storedUnitPrice(unitPrice: number): number {
   return Math.round(unitPrice * 100) / 100
 }
+
+// Một dòng trong form nhập nhiều chi phí (chuỗi để cho phép ô trống khi đang gõ)
+export type ExpenseDraft = { category: string; note: string; quantity: string; unitPrice: string; total: string }
+
+export const isBlankDraft = (d: ExpenseDraft) =>
+  d.note.trim() === '' && d.unitPrice.trim() === '' && d.total.trim() === '' && (d.quantity.trim() === '' || d.quantity.trim() === '1')
+
+const num = (text: string) => (text.trim() === '' ? Number.NaN : Number(text))
+
+// Kiểm tra một dòng và tính số lưu DB; dòng trống hoàn toàn bỏ qua ở nơi gọi
+export function parseDraft(
+  d: ExpenseDraft,
+  maxMoney: number,
+): { ok: true; quantity: number; unitPrice: number; total: number } | { ok: false; error: string } {
+  const quantity = num(d.quantity)
+  if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1000000) return { ok: false, error: 'Số lượng phải lớn hơn 0' }
+  const override = d.total.trim() === '' ? null : num(d.total)
+  const unit = num(d.unitPrice)
+  if (override === null && (!Number.isFinite(unit) || unit < 0)) return { ok: false, error: 'Nhập đơn giá hoặc thành tiền' }
+  const line = expenseLine(quantity, Number.isFinite(unit) ? unit : 0, override)
+  if (!Number.isFinite(line.total) || line.total <= 0) return { ok: false, error: 'Số tiền phải lớn hơn 0' }
+  if (line.total > maxMoney) return { ok: false, error: 'Số tiền quá lớn, kiểm tra lại' }
+  return { ok: true, quantity, unitPrice: storedUnitPrice(line.unitPrice), total: line.total }
+}
