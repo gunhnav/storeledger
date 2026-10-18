@@ -9,6 +9,7 @@ import { BatchStatsPage } from './pages/BatchStatsPage'
 import { BestSellersPage } from './pages/BestSellersPage'
 import { DailyLogPage } from './pages/DailyLogPage'
 import { ExpensePage } from './pages/ExpensePage'
+import { GuidePage } from './pages/GuidePage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProductsPage } from './pages/ProductsPage'
@@ -55,6 +56,7 @@ const LEGACY_PATHS: [string, string][] = [
   ['san-pham', '/manage/products'],
   ['chi-phi', '/manage/expenses'],
   ['nhan-vien', '/staff'],
+  ['huong-dan', '/guide'],
 ]
 
 // Mount lại StoreProvider khi đổi user để không giữ danh sách cửa hàng của user trước
@@ -82,6 +84,7 @@ function App() {
             <Route path="stock" element={<StockPage />} />
           </Route>
           <Route path="account" element={<AccountPage />} />
+            <Route path="guide" element={<GuidePage />} />
           <Route element={<RequireAdmin />}>
             <Route path="reports" element={<TabsLayout title="Báo cáo" tabs={REPORT_TABS} />}>
               <Route index element={<Navigate to="overview" replace />} />

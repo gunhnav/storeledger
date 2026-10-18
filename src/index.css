@@ -1622,6 +1622,117 @@ a.button.primary:hover {
   }
 }
 
+/* Hướng dẫn */
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0 24px;
+  padding: 0;
+  list-style: none;
+}
+.guide-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  margin: 0;
+  color: var(--accent);
+  text-decoration: none;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.guide-step:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.guide-step strong {
+  color: var(--text-h);
+  font-family: var(--serif);
+  font-size: 18px;
+}
+.guide-step .muted {
+  font-size: 14px;
+}
+.guide-step-num {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+  font-size: 14px;
+}
+.guide-steps li:not(:last-child) .guide-step::after {
+  content: '→';
+  position: absolute;
+  right: -11px;
+  top: 50%;
+  z-index: 1;
+  translate: 0 -50%;
+  color: var(--muted);
+  font-weight: 700;
+}
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.guide-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--text-h);
+  font-family: var(--serif);
+  font-size: 18px;
+}
+.guide-card h3 .icon {
+  color: var(--accent);
+}
+.guide-card ul {
+  flex: 1;
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+.guide-card li + li {
+  margin-top: 6px;
+}
+.guide-link {
+  align-self: flex-start;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.guide-link:hover {
+  text-decoration: underline;
+}
+@media (max-width: 720px) {
+  .guide-steps {
+    grid-template-columns: 1fr;
+  }
+  .guide-steps li:not(:last-child) .guide-step::after {
+    content: '↓';
+    right: 50%;
+    top: auto;
+    bottom: -17px;
+    translate: 50% 0;
+  }
+  .guide-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Chọn ngôn ngữ */
 .lang-select {
   display: inline-flex;

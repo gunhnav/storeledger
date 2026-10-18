@@ -178,6 +178,10 @@ function UserMenu({
             <Icon name="user" />
             {t('Tài khoản của tôi')}
           </NavLink>
+          <NavLink to="/guide" role="menuitem" className="user-dropdown-item">
+            <Icon name="help" />
+            {t('Hướng dẫn')}
+          </NavLink>
           <div className="theme-switch" role="radiogroup" aria-label={t('Giao diện')}>
             {THEME_CHOICES.map((choice) => (
               <button
