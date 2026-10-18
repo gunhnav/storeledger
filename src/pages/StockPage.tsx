@@ -36,7 +36,6 @@ export function StockPage() {
 
   return (
     <section>
-      <h2>Tồn kho — {current?.name}</h2>
       {result.rows.length === 0 ? (
         <p className="muted">Chưa có sản phẩm nào quản lý tồn kho.</p>
       ) : (

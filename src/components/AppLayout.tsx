@@ -6,17 +6,13 @@ import { Icon, type IconName } from './Icon'
 
 type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean }
 
-// Thứ tự theo công việc hằng ngày. Thêm mục mới ở đây khi có trang mới.
+// Menu gọn theo nhóm công việc; trang con là tab bên trong (xem App.tsx).
 // Nhân viên nằm trong menu ở tên người dùng (chỉ quản trị).
 const NAV_ITEMS: NavItem[] = [
   { to: '/ban-hang', label: 'Bán hàng', icon: 'sale' },
-  { to: '/chuyen-hang', label: 'Chuyển hàng', icon: 'transfer' },
-  { to: '/nhap-hang', label: 'Nhập hàng', icon: 'purchase' },
-  { to: '/chi-phi', label: 'Chi phí', icon: 'expense', adminOnly: true },
-  { to: '/san-pham', label: 'Sản phẩm', icon: 'product', adminOnly: true },
-  { to: '/ton-kho', label: 'Tồn kho', icon: 'stock' },
+  { to: '/kho', label: 'Kho hàng', icon: 'stock' },
   { to: '/bao-cao', label: 'Báo cáo', icon: 'report', adminOnly: true },
-  { to: '/nhat-ky', label: 'Nhật ký ngày', icon: 'log', adminOnly: true },
+  { to: '/quan-ly', label: 'Quản lý', icon: 'manage', adminOnly: true },
 ]
 
 // Chữ cái đầu của tên để làm avatar
@@ -66,7 +62,7 @@ export function AppLayout() {
           </div>
           <nav className="nav">
             {items.map((item) => (
-              <NavLink key={item.to} to={item.to} end>
+              <NavLink key={item.to} to={item.to}>
                 <Icon name={item.icon} />
                 <span>{item.label}</span>
               </NavLink>

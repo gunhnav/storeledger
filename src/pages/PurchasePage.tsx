@@ -165,7 +165,6 @@ function PurchaseForm({ storeId }: { storeId: string }) {
 
   return (
     <section>
-      <h2>Nhập hàng</h2>
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
           <label className="field">

@@ -112,7 +112,6 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
 
   return (
     <section>
-      <h2>Nhật ký ngày</h2>
       <div className="card log-filters">
         <label className="field">
           Từ ngày

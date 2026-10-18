@@ -68,7 +68,6 @@ function ExpenseForm({ storeId }: { storeId: string }) {
 
   return (
     <section>
-      <h2>Chi phí</h2>
       <form className="card form" onSubmit={handleSubmit(onSubmit)}>
         <div className="row">
           <label>
