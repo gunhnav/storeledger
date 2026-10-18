@@ -389,3 +389,12 @@ tr.inactive td {
   padding: 12px 8px 4px 0;
   margin-bottom: 12px;
 }
+
+/* Sản phẩm: lịch sử giá */
+td.actions {
+  white-space: nowrap;
+}
+.cost-input {
+  width: 110px;
+  text-align: right;
+}

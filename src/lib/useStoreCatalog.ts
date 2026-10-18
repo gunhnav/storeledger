@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { errorMessage } from './format'
-import type { Product, StockStatusRow } from '../types/database'
+import type { Product, StockStatusRow, StorePriceRow } from '../types/database'
 
 type Catalog = {
   storeId: string
@@ -50,5 +50,38 @@ export function useStoreCatalog(storeId: string) {
     products: ready ? catalog.products : [],
     stock: ready ? catalog.stock : new Map<string, StockStatusRow>(),
     reload,
+  }
+}
+
+// Giá bán / giá ShopeeFood có hiệu lực vào ngày `date` (không có giá vốn)
+export function useStorePrices(storeId: string, date: string) {
+  const [result, setResult] = useState<{
+    key: string
+    prices: Map<string, StorePriceRow>
+    error: string | null
+  } | null>(null)
+  const key = `${storeId}|${date}`
+
+  useEffect(() => {
+    if (!date) return
+    let cancelled = false
+    supabase.rpc('get_store_prices', { p_store_id: storeId, p_date: date }).then(({ data, error }) => {
+      if (cancelled) return
+      setResult({
+        key,
+        prices: new Map((data ?? []).map((row) => [row.product_id, row])),
+        error: error ? errorMessage(error) : null,
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [storeId, date, key])
+
+  const ready = result?.key === key
+  return {
+    loading: !ready,
+    error: ready ? result.error : null,
+    prices: ready ? result.prices : null,
   }
 }

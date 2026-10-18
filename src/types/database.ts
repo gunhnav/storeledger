@@ -36,17 +36,24 @@ export type Product = {
   store_id: string
   name: string
   category: string | null
-  sale_price: number
-  app_price: number | null
   tracks_stock: boolean
   low_stock_threshold: number
   is_active: boolean
   created_at: string
 }
 
-export type ProductFixedCost = {
+// Lịch sử giá theo ngày áp dụng (chỉ admin đọc). unit_cost null = chưa có giá vốn.
+// supabase/migrations/20261018032417_product_price_history.sql
+export type ProductPrice = {
+  id: string
   product_id: string
-  unit_cost: number
+  effective_from: string
+  sale_price: number
+  app_price: number | null
+  unit_cost: number | null
+  note: string | null
+  created_by: string | null
+  created_at: string
 }
 
 export type Purchase = {
@@ -140,17 +147,12 @@ export type ProductInsert = {
   store_id: string
   name: string
   category?: string | null
-  sale_price?: number
-  app_price?: number | null
   tracks_stock?: boolean
   low_stock_threshold?: number
   is_active?: boolean
   created_at?: string
 }
 export type ProductUpdate = Partial<ProductInsert>
-
-export type ProductFixedCostInsert = ProductFixedCost
-export type ProductFixedCostUpdate = Partial<ProductFixedCost>
 
 export type ExpenseInsert = {
   id?: string
@@ -172,10 +174,11 @@ export type ProfileUpdate = {
 // Hàm RPC
 // ---------------------------------------------------------------------------
 
+// unit_cost null: DB lấy giá vốn có hiệu lực vào ngày nhập
 export type PurchaseItemInput = {
   product_id: string
   quantity: number
-  unit_cost: number
+  unit_cost: number | null
 }
 
 export type SaleItemInput = {
@@ -233,6 +236,23 @@ export type PnlRow = {
   gross_profit: number
   expenses: number
   net_profit: number
+}
+
+// Giá bán có hiệu lực vào một ngày — KHÔNG có giá vốn
+export type StorePriceRow = {
+  product_id: string
+  sale_price: number
+  app_price: number | null
+  effective_from: string
+}
+
+export type SetProductPriceArgs = {
+  p_product_id: string
+  p_effective_from: string
+  p_sale_price: number
+  p_app_price: number | null
+  p_unit_cost: number
+  p_note: string | null
 }
 
 export type BreakEvenRow = {
@@ -310,14 +330,11 @@ export type Database = {
           { foreignKeyName: 'products_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
         ]
       }
-      product_fixed_costs: {
-        Row: ProductFixedCost
-        Insert: ProductFixedCostInsert
-        Update: ProductFixedCostUpdate
-        Relationships: [
-          { foreignKeyName: 'product_fixed_costs_product_id_fkey'; columns: ['product_id']; isOneToOne: true; referencedRelation: 'products'; referencedColumns: ['id'] },
-        ]
-      }
+      // Ghi qua set_product_price
+      product_prices: ReadOnlyTable<ProductPrice, [
+        { foreignKeyName: 'product_prices_product_id_fkey'; columns: ['product_id']; isOneToOne: false; referencedRelation: 'products'; referencedColumns: ['id'] },
+        { foreignKeyName: 'product_prices_created_by_fkey'; columns: ['created_by']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
+      ]>
       purchases: ReadOnlyTable<Purchase, [
         { foreignKeyName: 'purchases_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
         { foreignKeyName: 'purchases_created_by_fkey'; columns: ['created_by']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
@@ -365,6 +382,8 @@ export type Database = {
       get_pnl: { Args: GetPnlArgs; Returns: PnlRow[] }
       get_break_even: { Args: { p_store_id: string }; Returns: BreakEvenRow[] }
       admin_list_users: { Args: Record<never, never>; Returns: AdminUserRow[] }
+      get_store_prices: { Args: { p_store_id: string; p_date: string | null }; Returns: StorePriceRow[] }
+      set_product_price: { Args: SetProductPriceArgs; Returns: string }
     }
     Enums: Record<never, never>
     CompositeTypes: Record<never, never>
