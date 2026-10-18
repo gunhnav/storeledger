@@ -83,7 +83,7 @@ export default {
     const email = (body.email ?? "").trim().toLowerCase();
     const fullName = (body.full_name ?? "").trim();
     const storeIds = Array.isArray(body.store_ids) ? body.store_ids : [];
-    if (!email.includes("@")) return fail("Email không hợp lệ");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email không hợp lệ");
     if (!fullName) return fail("Nhập tên nhân viên");
 
     // Trigger handle_new_user tạo profile với role 'staff' và full_name từ metadata
@@ -100,7 +100,9 @@ export default {
 
     const userId = created.user.id;
     if (storeIds.length > 0) {
-      const { error } = await ctx.supabaseAdmin
+      // Ghi bằng client của admin đang gọi: RLS store_members_insert_admin cho phép,
+      // service_role của project không có quyền ghi bảng public
+      const { error } = await ctx.supabase
         .from("store_members")
         .insert(storeIds.map((store_id) => ({ store_id, user_id: userId })));
       if (error) {

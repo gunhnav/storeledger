@@ -1504,6 +1504,46 @@ a.button.primary:hover {
   min-width: 220px;
 }
 
+/* Ô mật khẩu có nút hiện / ẩn */
+.password-input {
+  position: relative;
+  display: block;
+}
+.password-input input {
+  width: 100%;
+  padding-right: 44px;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  translate: 0 -50%;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.password-toggle:hover {
+  color: var(--accent);
+  background: var(--surface-2);
+}
+input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+input[aria-invalid='true']:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--out-bg);
+}
+.form label small.error {
+  font-size: 13px;
+}
+
 /* Chọn quán dạng thẻ (trang Nhân viên) */
 .store-picker {
   display: flex;

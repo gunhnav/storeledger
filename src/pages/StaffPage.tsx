@@ -9,6 +9,7 @@ import { useStore } from '../lib/store'
 import { errorMessage } from '../lib/format'
 import type { AdminUserRow } from '../types/database'
 import { StorePicker } from '../components/StorePicker'
+import { PasswordInput } from '../components/PasswordInput'
 
 type FormValues = { full_name: string; email: string; password: string; store_ids: string[] }
 
@@ -56,7 +57,7 @@ export function StaffPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ defaultValues: EMPTY })
+  } = useForm<FormValues>({ defaultValues: EMPTY, mode: 'onTouched' })
 
   useEffect(() => {
     let cancelled = false
@@ -137,36 +138,46 @@ export function StaffPage() {
   return (
     <section>
       <h2>{t('Thêm nhân viên')}</h2>
-      <form className="card form" onSubmit={handleSubmit(onCreate)}>
+      <form className="card form" noValidate onSubmit={handleSubmit(onCreate)}>
         <div className="row">
           <label>
             {t('Tên nhân viên')}
             <input
               type="text"
-              {...register('full_name', { validate: (v) => v.trim() !== '' || 'Nhập tên nhân viên' })}
+              aria-invalid={errors.full_name ? true : undefined}
+              {...register('full_name', {
+                validate: (v) => v.trim() !== '' || 'Nhập tên nhân viên',
+                maxLength: { value: 100, message: 'Tên tối đa 100 ký tự' },
+              })}
             />
+            {errors.full_name && <small className="error">{t(errors.full_name.message ?? '')}</small>}
           </label>
           <label>
             {t('Email đăng nhập')}
-            <input type="email" autoComplete="off" {...register('email', { required: 'Nhập email' })} />
+            <input
+              type="email"
+              autoComplete="off"
+              aria-invalid={errors.email ? true : undefined}
+              {...register('email', {
+                required: 'Nhập email',
+                validate: (v) => EMAIL_PATTERN.test(v.trim()) || 'Email không hợp lệ',
+              })}
+            />
+            {errors.email && <small className="error">{t(errors.email.message ?? '')}</small>}
           </label>
           <label>
             {t('Mật khẩu')}
-            <input
-              type="text"
+            <PasswordInput
               autoComplete="new-password"
+              aria-invalid={errors.password ? true : undefined}
               {...register('password', {
                 minLength: { value: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
                 required: 'Nhập mật khẩu',
               })}
             />
+            {errors.password && <small className="error">{t(errors.password.message ?? '')}</small>}
           </label>
         </div>
-        {(errors.full_name || errors.email || errors.password) && (
-          <p className="error">
-            {t((errors.full_name?.message ?? errors.email?.message ?? errors.password?.message) ?? '')}
-          </p>
-        )}
 
         <div>
           <span className="field-label">{t('Làm việc tại')}</span>
