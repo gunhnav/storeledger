@@ -1,0 +1,34 @@
+# Giữ project Supabase (gói miễn phí) không bị tạm dừng vì 7 ngày không hoạt động:
+# cứ 2 ngày gửi một truy vấn nhỏ tới database qua REST API.
+# Cần 2 secret của repo: SUPABASE_URL và SUPABASE_ANON_KEY (Settings → Secrets → Actions).
+name: Keep Supabase alive
+
+on:
+  schedule:
+    - cron: '0 1 */2 * *' # 01:00 UTC (08:00 giờ Việt Nam), 2 ngày một lần
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Query the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Thiếu secret SUPABASE_URL hoặc SUPABASE_ANON_KEY"
+            exit 1
+          fi
+          # PostgREST chạy câu SELECT trong Postgres với role anon. Role này không có quyền đọc bảng,
+          # nên 401/403 vẫn có nghĩa là database đã nhận và xử lý truy vấn (vẫn tính là hoạt động).
+          code=$(curl -sS -o /tmp/body.txt -w '%{http_code}' --max-time 30 \
+            "$SUPABASE_URL/rest/v1/stores?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" || echo 000)
+          echo "HTTP $code"
+          case "$code" in
+            200|401|403) echo "Database đang hoạt động" ;;
+            *) echo "::error::Database không phản hồi bình thường (HTTP $code). Project có thể đã bị tạm dừng."; cat /tmp/body.txt; exit 1 ;;
+          esac
