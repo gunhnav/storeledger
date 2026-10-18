@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
+import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
@@ -185,14 +186,26 @@ function SaleForm({ storeId }: { storeId: string }) {
                 <option value="shopeefood">ShopeeFood</option>
               </select>
             </label>
-            <label className="field">
+            <div className="field">
               {t('Ngày bán')}
-              <input
-                type="date"
-                max={todayVN()}
-                {...register('sale_date', { required: 'Chọn ngày bán', validate: notFuture, onChange: resetPrices })}
+              <Controller
+                control={control}
+                name="sale_date"
+                rules={{ required: 'Chọn ngày bán', validate: notFuture }}
+                render={({ field, fieldState }) => (
+                  <DatePicker
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v)
+                      resetPrices()
+                    }}
+                    max={todayVN()}
+                    label={t('Ngày bán')}
+                    invalid={!!fieldState.error}
+                  />
+                )}
               />
-            </label>
+            </div>
           </div>
           {errors.sale_date && <p className="error">{t(errors.sale_date.message ?? '')}</p>}
           {pricesError && <p className="error">{t('Không tải được giá: {error}', { error: pricesError })}</p>}
@@ -234,6 +247,22 @@ function SaleForm({ storeId }: { storeId: string }) {
             <p className="pos-empty muted">
               {quick ? t('Nhập số lượng ở danh sách món bên cạnh.') : t('Chạm vào món ở bên cạnh để thêm vào đơn.')}
             </p>
+          ) : quick ? (
+            // Nhập nhanh: sửa ở danh sách bên trái, bên này chỉ tóm tắt
+            <ul className="order-summary">
+              {lines.map((line) => {
+                const warn = overStock(line)
+                return (
+                  <li key={line.product_id} className={warn ? 'has-warn' : undefined}>
+                    <span className="summary-name">{byId.get(line.product_id)?.name}</span>
+                    <span className="summary-qty">
+                      {line.qty || 0} × {formatVND(Number(priceText(line)) || 0)}
+                    </span>
+                    <strong>{formatVND((Number(line.qty) || 0) * (Number(priceText(line)) || 0))}</strong>
+                  </li>
+                )
+              })}
+            </ul>
           ) : (
             <div className="order-lines">
               {lines.map((line) => {

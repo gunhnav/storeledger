@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
@@ -254,22 +255,14 @@ function PnlBlock({ storeId }: { storeId: string }) {
             <option value="month">{t('Tháng')}</option>
           </select>
         </label>
-        <label>
+        <div className="field">
           {t('Từ ngày')}
-          <input
-            type="date"
-            value={range.from}
-            onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
-          />
-        </label>
-        <label>
+          <DatePicker value={range.from} onChange={(v) => setRange((r) => ({ ...r, from: v }))} label={t('Từ ngày')} />
+        </div>
+        <div className="field">
           {t('Đến ngày')}
-          <input
-            type="date"
-            value={range.to}
-            onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
-          />
-        </label>
+          <DatePicker value={range.to} onChange={(v) => setRange((r) => ({ ...r, to: v }))} label={t('Đến ngày')} />
+        </div>
         <button type="button" onClick={() => setRange({ from: monthStart(today), to: today })}>
           {t('Tháng này')}
         </button>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
+import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
@@ -429,6 +430,7 @@ function PriceEditor({
   const [error, setError] = useState<string | null>(null)
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<PriceValues>({
@@ -459,10 +461,17 @@ function PriceEditor({
     <>
       <h2>{t('Đổi giá: {name}', { name: product.name })}</h2>
       <form className="card form" onSubmit={handleSubmit(onSubmit)}>
-        <label>
+        <div className="field">
           {t('Ngày áp dụng')}
-          <input type="date" {...register('effective_from', { required: 'Chọn ngày áp dụng' })} />
-        </label>
+          <Controller
+            control={control}
+            name="effective_from"
+            rules={{ required: 'Chọn ngày áp dụng' }}
+            render={({ field, fieldState }) => (
+              <DatePicker value={field.value} onChange={field.onChange} label={t('Ngày áp dụng')} invalid={!!fieldState.error} />
+            )}
+          />
+        </div>
         <small className="muted">
           {t('Chọn được ngày quá khứ hoặc tương lai. Trùng ngày đã có thì ghi đè dòng giá ngày đó. Đơn bán, đợt nhập đã lưu không bị tính lại.')}
         </small>
@@ -669,10 +678,10 @@ function BulkCostEditor({
               ))}
             </select>
           </label>
-          <label>
+          <div className="field">
             {t('Ngày áp dụng')}
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
+            <DatePicker value={date} onChange={setDate} label={t('Ngày áp dụng')} />
+          </div>
         </div>
         <label>
           {t('Ghi chú chung')}

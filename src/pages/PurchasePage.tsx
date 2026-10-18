@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
+import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -155,7 +156,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       type="text"
       inputMode="numeric"
       className="price-input"
-      placeholder={t('Giá hiện hành')}
+      placeholder={t('Tự động')}
       aria-label={t('Giá nhập {name}', { name })}
       value={costText(line)}
       onChange={(e) => setCost(line.product_id, e.target.value.replace(/[^0-9.]/g, ''))}
@@ -169,14 +170,23 @@ function PurchaseForm({ storeId }: { storeId: string }) {
     <section>
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
-          <label className="field">
+          <div className="field">
             {t('Ngày nhập')}
-            <input
-              type="date"
-              max={todayVN()}
-              {...register('purchase_date', { required: 'Chọn ngày nhập', validate: notFuture })}
+            <Controller
+              control={control}
+              name="purchase_date"
+              rules={{ required: 'Chọn ngày nhập', validate: notFuture }}
+              render={({ field, fieldState }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  max={todayVN()}
+                  label={t('Ngày nhập')}
+                  invalid={!!fieldState.error}
+                />
+              )}
             />
-          </label>
+          </div>
           {errors.purchase_date && <p className="error">{t(errors.purchase_date.message ?? '')}</p>}
 
           {stocked.length === 0 ? (
@@ -217,6 +227,21 @@ function PurchaseForm({ storeId }: { storeId: string }) {
             <p className="pos-empty muted">
               {quick ? t('Nhập số lượng ở danh sách món bên cạnh.') : t('Chạm vào món ở bên cạnh để thêm vào đợt nhập.')}
             </p>
+          ) : quick ? (
+            // Nhập nhanh: sửa ở danh sách bên trái, bên này chỉ tóm tắt
+            <ul className="order-summary">
+              {lines.map((line) => (
+                <li key={line.product_id}>
+                  <span className="summary-name">{byId.get(line.product_id)?.name}</span>
+                  <span className="summary-qty">
+                    {line.qty || 0} × {costText(line) === '' ? t('Tự động') : formatVND(Number(costText(line)) || 0)}
+                  </span>
+                  <strong>
+                    {costText(line) === '' ? '—' : formatVND((Number(line.qty) || 0) * (Number(costText(line)) || 0))}
+                  </strong>
+                </li>
+              ))}
+            </ul>
           ) : (
             <div className="order-lines">
               {lines.map((line) => {
@@ -262,7 +287,10 @@ function PurchaseForm({ storeId }: { storeId: string }) {
           </label>
 
           <div className="pos-total">
-            <span>{t('Tổng tiền nhập')}{hasBlankCost && <small> {t('(chưa gồm món để trống giá)')}</small>}</span>
+            <span className="pos-total-label">
+              {t('Tổng tiền nhập')}
+              {hasBlankCost && <small>{t('(chưa gồm món để trống giá)')}</small>}
+            </span>
             <strong>{formatVND(total)}</strong>
           </div>
 

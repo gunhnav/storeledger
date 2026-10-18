@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
@@ -115,24 +116,14 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
   return (
     <section>
       <div className="card log-filters">
-        <label className="field">
+        <div className="field">
           {t('Từ ngày')}
-          <input
-            type="date"
-            max={today}
-            value={range.from}
-            onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
-          />
-        </label>
-        <label className="field">
+          <DatePicker value={range.from} onChange={(v) => setRange((r) => ({ ...r, from: v }))} max={today} label={t('Từ ngày')} />
+        </div>
+        <div className="field">
           {t('Đến ngày')}
-          <input
-            type="date"
-            max={today}
-            value={to}
-            onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
-          />
-        </label>
+          <DatePicker value={to} onChange={(v) => setRange((r) => ({ ...r, to: v }))} max={today} label={t('Đến ngày')} />
+        </div>
         <div className="log-quick">
           <button type="button" onClick={() => setRange({ from: addDays(today, -6), to: today })}>
             {t('7 ngày')}

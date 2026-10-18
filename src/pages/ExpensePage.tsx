@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
+import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
@@ -24,6 +25,7 @@ function ExpenseForm({ storeId }: { storeId: string }) {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -72,14 +74,23 @@ function ExpenseForm({ storeId }: { storeId: string }) {
     <section>
       <form className="card form" onSubmit={handleSubmit(onSubmit)}>
         <div className="row">
-          <label>
+          <div className="field">
             {t('Ngày')}
-            <input
-              type="date"
-              max={todayVN()}
-              {...register('expense_date', { required: 'Chọn ngày', validate: notFuture })}
+            <Controller
+              control={control}
+              name="expense_date"
+              rules={{ required: 'Chọn ngày', validate: notFuture }}
+              render={({ field, fieldState }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  max={todayVN()}
+                  label={t('Ngày')}
+                  invalid={!!fieldState.error}
+                />
+              )}
             />
-          </label>
+          </div>
           <label>
             {t('Số tiền')}
             <input

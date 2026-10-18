@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
+import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
@@ -28,6 +29,7 @@ function TransferForm({ storeId }: { storeId: string }) {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -132,14 +134,23 @@ function TransferForm({ storeId }: { storeId: string }) {
     <section>
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
-          <label className="field">
+          <div className="field">
             {t('Ngày chuyển')}
-            <input
-              type="date"
-              max={todayVN()}
-              {...register('transfer_date', { required: 'Chọn ngày chuyển', validate: notFuture })}
+            <Controller
+              control={control}
+              name="transfer_date"
+              rules={{ required: 'Chọn ngày chuyển', validate: notFuture }}
+              render={({ field, fieldState }) => (
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  max={todayVN()}
+                  label={t('Ngày chuyển')}
+                  invalid={!!fieldState.error}
+                />
+              )}
             />
-          </label>
+          </div>
           {errors.transfer_date && <p className="error">{t(errors.transfer_date.message ?? '')}</p>}
 
           {stocked.length === 0 ? (
@@ -182,6 +193,19 @@ function TransferForm({ storeId }: { storeId: string }) {
             <p className="pos-empty muted">
               {quick ? t('Nhập số lượng ở danh sách món bên cạnh.') : t('Chạm vào món ở bên cạnh để chọn.')}
             </p>
+          ) : quick ? (
+            // Nhập nhanh: sửa ở danh sách bên trái, bên này chỉ tóm tắt
+            <ul className="order-summary">
+              {lines.map((line) => {
+                const warn = overHome(line)
+                return (
+                  <li key={line.product_id} className={warn ? 'has-warn' : undefined}>
+                    <span className="summary-name">{byId.get(line.product_id)?.name}</span>
+                    <strong>{line.qty || 0}</strong>
+                  </li>
+                )
+              })}
+            </ul>
           ) : (
             <div className="order-lines">
               {lines.map((line) => {

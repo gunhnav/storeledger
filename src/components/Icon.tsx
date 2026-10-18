@@ -17,6 +17,7 @@ const PATHS = {
   moon: 'M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z',
   monitor: 'M3 4h18v12H3V4zm5 16h8m-4-4v4',
   globe: 'M12 22a10 10 0 100-20 10 10 0 000 20zM2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20',
+  calendar: 'M8 2v4m8-4v4M3 9h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   store: 'M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6',
 } as const
 
