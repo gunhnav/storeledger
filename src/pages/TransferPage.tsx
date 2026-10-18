@@ -4,9 +4,10 @@ import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
+import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
-import { MAX_QTY, errorMessage, notFuture, todayVN } from '../lib/format'
+import { MAX_QTY, errorMessage, formatDate, notFuture, todayVN } from '../lib/format'
 import type { Product } from '../types/database'
 
 type FormValues = { transfer_date: string; note: string }
@@ -22,6 +23,7 @@ export function TransferPage() {
 
 function TransferForm({ storeId }: { storeId: string }) {
   const { t } = useI18n()
+  const toast = useToast()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
   const [lines, setLines] = useState<Line[]>([])
   const [quickMode, setQuickMode] = useState<boolean | null>(null)
@@ -101,7 +103,9 @@ function TransferForm({ storeId }: { storeId: string }) {
 
     reload()
     if (failed.length === 0) {
-      setResult({ ok: true, text: t('Đã chuyển ra quầy: {list}', { list: done.join(', ') }) })
+      toast.success(
+        t('Đã chuyển ra quầy ngày {date}: {list}', { date: formatDate(values.transfer_date), list: done.join(', ') }),
+      )
       reset({ transfer_date: values.transfer_date, note: '' })
       setLines([])
       return

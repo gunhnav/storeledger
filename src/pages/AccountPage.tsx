@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { useI18n } from '../lib/i18n'
+import { useToast } from '../lib/toast'
 import { LanguageSelect } from '../components/LanguageSelect'
 import { errorMessage } from '../lib/format'
 import { useTheme, type ThemeMode } from '../lib/theme'
@@ -22,6 +23,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export function AccountPage() {
   const { session, profile, isAdmin, refreshProfile } = useAuth()
   const { t } = useI18n()
+  const toast = useToast()
   const { mode, change } = useTheme()
   const currentEmail = session?.user.email ?? ''
   const [profileResult, setProfileResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -62,7 +64,7 @@ export function AccountPage() {
     setPasswordResult(null)
     const { error } = await supabase.auth.updateUser({ password: values.password })
     if (error) return setPasswordResult({ ok: false, text: errorMessage(error) })
-    setPasswordResult({ ok: true, text: t('Đã đổi mật khẩu') })
+    toast.success(t('Đã đổi mật khẩu'))
     passwordForm.reset({ password: '', confirm: '' })
   }
 

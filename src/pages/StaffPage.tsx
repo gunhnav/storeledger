@@ -4,6 +4,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { LANGUAGES, useI18n } from '../lib/i18n'
+import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { errorMessage } from '../lib/format'
 import type { AdminUserRow } from '../types/database'
@@ -39,6 +40,7 @@ function formatDateTime(value: string | null, locale: string): string | null {
 export function StaffPage() {
   const { session, refreshProfile } = useAuth()
   const { t, lang } = useI18n()
+  const toast = useToast()
   const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
   const { stores } = useStore()
   const [list, setList] = useState<{ rows: AdminUserRow[]; error: string | null } | null>(null)
@@ -76,7 +78,7 @@ export function StaffPage() {
         password: values.password,
         store_ids: values.store_ids,
       })
-      setResult({ ok: true, text: t('Đã tạo tài khoản cho {value}', { value: values.full_name.trim() }) })
+      toast.success(t('Đã tạo tài khoản cho {value}', { value: values.full_name.trim() }))
       reset(EMPTY)
       reload()
     } catch (e) {
@@ -102,7 +104,7 @@ export function StaffPage() {
     setBusy(user.id)
     try {
       await callAdminUsers({ action: 'set_password', user_id: user.id, password })
-      setResult({ ok: true, text: t('Đã đổi mật khẩu cho {value}', { value: user.full_name || user.email }) })
+      toast.success(t('Đã đổi mật khẩu cho {value}', { value: user.full_name || user.email }))
     } catch (e) {
       setResult({ ok: false, text: errorMessage(e) })
     }
@@ -120,7 +122,7 @@ export function StaffPage() {
     setBusy(editing.id)
     try {
       await callAdminUsers({ action: 'update', user_id: editing.id, full_name: fullName, email })
-      setResult({ ok: true, text: t('Đã lưu thông tin {fullName}', { fullName }) })
+      toast.success(t('Đã lưu thông tin {fullName}', { fullName }))
       if (editing.id === session?.user.id) refreshProfile()
       setEditing(null)
       reload()

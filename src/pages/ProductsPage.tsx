@@ -3,6 +3,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
+import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
 import type { Product, ProductPrice, StorePriceRow } from '../types/database'
@@ -78,6 +79,7 @@ export function ProductsPage() {
 // Chỉ admin (route bọc RequireAdmin, RLS cũng chặn ghi)
 function ProductsManager({ storeId }: { storeId: string }) {
   const { t } = useI18n()
+  const toast = useToast()
   const [catalog, setCatalog] = useState<Catalog | null>(null)
   const [version, setVersion] = useState(0)
   const [editing, setEditing] = useState<Product | null>(null)
@@ -191,7 +193,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
       }
     }
 
-    setResult({ ok: true, text: t('Đã lưu "{name}"', { name: fields.name }) })
+    toast.success(t('Đã lưu "{name}"', { name: fields.name }))
     setEditing(null)
     reset(EMPTY)
     refresh()
@@ -208,7 +210,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
           history={catalog.history.filter((r) => r.product_id === pricing.id)}
           onDone={(text) => {
             setPricing(null)
-            setResult({ ok: true, text })
+            toast.success(text)
             refresh()
           }}
           onCancel={() => setPricing(null)}
@@ -219,7 +221,8 @@ function ProductsManager({ storeId }: { storeId: string }) {
           history={catalog.history}
           onDone={(text, ok) => {
             setBulk(false)
-            setResult({ ok, text })
+            if (ok) toast.success(text)
+            else setResult({ ok, text })
             refresh()
           }}
           onCancel={() => setBulk(false)}

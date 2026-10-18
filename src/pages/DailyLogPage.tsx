@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
@@ -84,6 +84,15 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
 
   const loaded = result && result.key === key ? result : null
   const days = loaded?.summary.map((r) => r.day) ?? []
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  // Cuộn ngang để cột hôm nay nằm giữa tầm nhìn khi dữ liệu tải xong
+  useEffect(() => {
+    const wrap = wrapRef.current
+    const th = wrap?.querySelector<HTMLElement>('th.today-col')
+    if (!wrap || !th) return
+    wrap.scrollLeft = Math.max(0, th.offsetLeft - wrap.clientWidth / 2 + th.offsetWidth / 2)
+  }, [loaded?.key])
   const rows = loaded ? buildRows(loaded.summary, loaded.products, days, category, t) : []
   const categories = loaded
     ? [...new Set(loaded.products.map((p) => p.category ?? '').filter((c) => c !== ''))].sort()
@@ -170,16 +179,20 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
           {t('Chưa có giao dịch trong khoảng này. Khi có nhập hàng, chuyển hàng, bán hàng hoặc chi phí, nhật ký sẽ hiện ở đây theo từng ngày.')}
         </p>
       ) : (
-        <div className="table-wrap log-wrap">
+        <div className="table-wrap log-wrap" ref={wrapRef}>
           <table className="log-table">
             <thead>
               <tr>
                 <th className="sticky-col">{t('Hạng mục')}</th>
                 <th className="num total-col">{t('TỔNG')}</th>
                 {days.map((d) => (
-                  <th key={d} className={`num${weekday(d) === 'CN' ? ' sunday' : ''}`}>
+                  <th
+                    key={d}
+                    className={`num${weekday(d) === 'CN' ? ' sunday' : ''}${d === today ? ' today-col' : ''}`}
+                    aria-current={d === today ? 'date' : undefined}
+                  >
                     <span className="day-label">{dayMonth(d)}</span>
-                    <span className="weekday">{t(weekday(d))}</span>
+                    <span className="weekday">{d === today ? t('Hôm nay') : t(weekday(d))}</span>
                   </th>
                 ))}
               </tr>
@@ -199,7 +212,7 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
                     </td>
                     <LogCell cell={row.total} format={row.format} total />
                     {row.cells.map((cell, j) => (
-                      <LogCell key={j} cell={cell} format={row.format} />
+                      <LogCell key={j} cell={cell} format={row.format} today={days[j] === today} />
                     ))}
                   </tr>
                 ),
@@ -212,10 +225,25 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
   )
 }
 
-function LogCell({ cell, format, total }: { cell: Cell; format: 'qty' | 'money' | 'text'; total?: boolean }) {
+function LogCell({
+  cell,
+  format,
+  total,
+  today,
+}: {
+  cell: Cell
+  format: 'qty' | 'money' | 'text'
+  total?: boolean
+  today?: boolean
+}) {
   const { lang } = useI18n()
   const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
-  const className = [format === 'text' ? 'log-text' : 'num', total ? 'total-col' : '', cell.tone ? `tone-${cell.tone}` : '']
+  const className = [
+    format === 'text' ? 'log-text' : 'num',
+    total ? 'total-col' : '',
+    today ? 'today-col' : '',
+    cell.tone ? `tone-${cell.tone}` : '',
+  ]
     .filter(Boolean)
     .join(' ')
   if (cell.value === null || cell.value === '') return <td className={className} />

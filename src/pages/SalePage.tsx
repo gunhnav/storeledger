@@ -4,9 +4,10 @@ import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
+import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog, useStorePrices } from '../lib/useStoreCatalog'
-import { MAX_MONEY, MAX_QTY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
+import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import type { Product, SaleChannel, StorePriceRow } from '../types/database'
 
 type FormValues = { channel: SaleChannel; sale_date: string; note: string }
@@ -30,6 +31,7 @@ export function SalePage() {
 
 function SaleForm({ storeId }: { storeId: string }) {
   const { t } = useI18n()
+  const toast = useToast()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
   const [lines, setLines] = useState<Line[]>([])
   const [quickMode, setQuickMode] = useState<boolean | null>(null)
@@ -53,6 +55,7 @@ function SaleForm({ storeId }: { storeId: string }) {
 
   const suggested = (id: string) => priceFor(prices?.get(id), channel)
   const priceText = (line: Line) => line.price ?? String(suggested(line.product_id))
+  const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
   const total = lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(priceText(l)) || 0), 0)
 
   // Món đếm tồn chỉ bán được hàng đã chuyển ra quầy (server vẫn chặn cuối cùng)
@@ -135,7 +138,9 @@ function SaleForm({ storeId }: { storeId: string }) {
       setResult({ ok: false, text: errorMessage(error) })
       return
     }
-    setResult({ ok: true, text: t('Đã lưu đơn bán {amount}', { amount: formatVND(total) }) })
+    toast.success(
+      t('Đã lưu đơn bán {amount} ngày {date}', { amount: formatVND(total), date: formatDate(values.sale_date) }),
+    )
     reset({ channel: values.channel, sale_date: values.sale_date, note: '' })
     setLines([])
     reload()
@@ -240,7 +245,9 @@ function SaleForm({ storeId }: { storeId: string }) {
         <aside className="pos-side card">
           <div className="pos-side-head">
             <h3>{t('Đơn hàng')}</h3>
-            <span className="count-pill">{t('{count} món', { count: lines.length })}</span>
+            <span className="count-pill">
+              {t('{count} món · SL {qty}', { count: lines.length, qty: totalQty })}
+            </span>
           </div>
 
           {lines.length === 0 ? (
@@ -305,6 +312,10 @@ function SaleForm({ storeId }: { storeId: string }) {
             <input type="text" placeholder={t('Không bắt buộc')} {...register('note')} />
           </label>
 
+          <div className="pos-qty">
+            <span>{t('Tổng số lượng')}</span>
+            <strong>{totalQty}</strong>
+          </div>
           <div className="pos-total">
             <span>{t('Tổng tiền')}</span>
             <strong>{formatVND(total)}</strong>
@@ -323,7 +334,7 @@ function SaleForm({ storeId }: { storeId: string }) {
         {/* Điện thoại: tổng tiền + nút lưu luôn ở đáy màn hình */}
         <div className="pos-mobilebar">
           <div>
-            <small>{t('{count} món', { count: lines.length })}</small>
+            <small>{t('{count} món · SL {qty}', { count: lines.length, qty: totalQty })}</small>
             <strong>{formatVND(total)}</strong>
           </div>
           <button type="submit" className="primary" disabled={!canSubmit}>

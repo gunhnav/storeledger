@@ -5,6 +5,7 @@ import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { useI18n } from '../lib/i18n'
+import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
@@ -26,6 +27,7 @@ export function PurchasePage() {
 // thì DB dùng giá vốn hiện hành. Chỉ admin được điền sẵn giá vốn (đọc product_prices).
 function PurchaseForm({ storeId }: { storeId: string }) {
   const { t } = useI18n()
+  const toast = useToast()
   const { isAdmin } = useAuth()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
   const [lines, setLines] = useState<Line[]>([])
@@ -92,6 +94,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       : null
   }
   const blankCostLabel = isAdmin ? t('Chưa có giá vốn') : t('Giá vốn hiện hành')
+  const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
   const total = lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(costText(l)) || 0), 0)
   const hasBlankCost = lines.some((l) => costText(l) === '')
 
@@ -162,7 +165,9 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       setResult({ ok: false, text: errorMessage(error) })
       return
     }
-    setResult({ ok: true, text: t('Đã lưu đợt nhập {count} món', { count: lines.length }) })
+    toast.success(
+      t('Đã lưu đợt nhập {count} món ngày {date}', { count: lines.length, date: formatDate(values.purchase_date) }),
+    )
     reset({ purchase_date: values.purchase_date, note: '' })
     setLines([])
     reload()
@@ -245,7 +250,9 @@ function PurchaseForm({ storeId }: { storeId: string }) {
         <aside className="pos-side card">
           <div className="pos-side-head">
             <h3>{t('Đợt nhập')}</h3>
-            <span className="count-pill">{t('{count} món', { count: lines.length })}</span>
+            <span className="count-pill">
+              {t('{count} món · SL {qty}', { count: lines.length, qty: totalQty })}
+            </span>
           </div>
 
           {lines.length === 0 ? (
@@ -314,6 +321,10 @@ function PurchaseForm({ storeId }: { storeId: string }) {
             <input type="text" placeholder={t('Không bắt buộc')} {...register('note')} />
           </label>
 
+          <div className="pos-qty">
+            <span>{t('Tổng số lượng')}</span>
+            <strong>{totalQty}</strong>
+          </div>
           <div className="pos-total">
             <span className="pos-total-label">
               {t('Tổng tiền nhập')}
@@ -331,7 +342,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
 
         <div className="pos-mobilebar">
           <div>
-            <small>{t('{count} món', { count: lines.length })}</small>
+            <small>{t('{count} món · SL {qty}', { count: lines.length, qty: totalQty })}</small>
             <strong>{formatVND(total)}</strong>
           </div>
           <button type="submit" className="primary" disabled={!canSubmit}>

@@ -3,8 +3,9 @@ import { Controller, useForm } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
+import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
-import { MAX_MONEY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
+import { MAX_MONEY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import type { Expense } from '../types/database'
 
 type FormValues = { expense_date: string; category: string; amount: number; note: string }
@@ -20,6 +21,7 @@ export function ExpensePage() {
 // Chỉ admin (route bọc RequireAdmin, RLS cũng chặn)
 function ExpenseForm({ storeId }: { storeId: string }) {
   const { t } = useI18n()
+  const toast = useToast()
   const [recent, setRecent] = useState<{ rows: Expense[]; error: string | null } | null>(null)
   const [version, setVersion] = useState(0)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -65,7 +67,9 @@ function ExpenseForm({ storeId }: { storeId: string }) {
       setResult({ ok: false, text: errorMessage(error) })
       return
     }
-    setResult({ ok: true, text: t('Đã lưu chi phí {amount}', { amount: formatVND(values.amount) }) })
+    toast.success(
+      t('Đã lưu chi phí {amount} ngày {date}', { amount: formatVND(values.amount), date: formatDate(values.expense_date) }),
+    )
     reset({ expense_date: values.expense_date, category: '', amount: Number.NaN, note: '' })
     setVersion((v) => v + 1)
   }

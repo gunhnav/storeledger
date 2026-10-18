@@ -1770,3 +1770,157 @@ select option {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* Tổng số lượng trong khung đơn */
+.pos-qty {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+.pos-qty strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Thông báo nổi (toast) */
+.toasts {
+  position: fixed;
+  top: 76px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.toast {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 14px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  animation: toast-in 0.2s ease-out;
+}
+.toast-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 14px;
+}
+.toast-success .toast-icon {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.toast-error .toast-icon {
+  background: var(--danger);
+  color: #fff;
+}
+.toast-text {
+  flex: 1;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.toast-close {
+  flex: none;
+  min-height: 28px;
+  width: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font-size: 18px;
+  box-shadow: none;
+}
+.toast-close:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+/* Vạch đếm ngược 3 giây */
+.toast-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  transform-origin: left;
+  animation: toast-timer linear forwards;
+}
+.toast-success .toast-timer {
+  background: var(--accent);
+}
+.toast-error .toast-timer {
+  background: var(--danger);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes toast-timer {
+  to {
+    transform: scaleX(0);
+  }
+}
+@media (max-width: 520px) {
+  .toasts {
+    top: 12px;
+    right: 50%;
+    transform: translateX(50%);
+  }
+}
+
+/* Khung đơn: không cho các phần co lại (danh sách bị cắt), khung tự cuộn khi dài */
+.pos-side > * {
+  flex-shrink: 0;
+}
+
+/* Nhật ký ngày: cột hôm nay */
+.log-table td.today-col {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  font-weight: 700;
+  color: var(--text-h);
+  box-shadow: inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent);
+}
+.log-table thead th.today-col {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent);
+}
+.log-table thead th.today-col .day-label,
+.log-table thead th.today-col .weekday {
+  color: var(--accent-text);
+}
+.log-table thead th.today-col .weekday {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Ô ngày luôn trên một dòng */
+.date-field span {
+  white-space: nowrap;
+}
+.log-filters .field {
+  flex: 0 0 auto;
+  min-width: 190px;
+}
