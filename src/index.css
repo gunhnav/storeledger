@@ -2116,3 +2116,31 @@ td.actions {
 .overview-extras .stock-banner {
   margin: 0;
 }
+
+/* Chi phí: số lượng × đơn giá = thành tiền */
+.expense-amounts > label {
+  flex: 1 1 140px;
+}
+input.computed {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+input.overridden {
+  border-color: var(--low-fg);
+  background: var(--low-bg);
+  color: var(--text-h);
+  font-weight: 700;
+}
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.label-row .link {
+  font-size: 13px;
+}
+.label-row .link {
+  padding: 0;
+  line-height: inherit;
+}

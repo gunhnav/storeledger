@@ -122,7 +122,10 @@ export type Expense = {
   store_id: string
   expense_date: string
   category: string
+  // Thành tiền (mặc định = quantity × unit_price, cho phép ghi đè)
   amount: number
+  quantity: number
+  unit_price: number
   note: string | null
   created_by: string | null
   created_at: string
@@ -160,6 +163,8 @@ export type ExpenseInsert = {
   expense_date?: string
   category: string
   amount: number
+  quantity?: number
+  unit_price: number
   note?: string | null
   created_by?: string | null
   created_at?: string
