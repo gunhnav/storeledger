@@ -51,7 +51,7 @@ export function LoginPage() {
           </div>
         </div>
         <label>
-          Email
+          {t('Email')}
           <input type="email" autoComplete="username" required {...register('email')} />
         </label>
         <label>
