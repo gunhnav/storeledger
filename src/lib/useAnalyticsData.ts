@@ -15,6 +15,7 @@ export type AnalyticsData = {
 
 type SaleRow = {
   sale_date: string
+  channel: string
   commission_rate: number
   sale_items: {
     product_id: string
@@ -35,10 +36,10 @@ export function useAnalyticsData(storeId: string) {
         supabase.from('products').select('*').eq('store_id', storeId),
         supabase.from('purchases').select('id, purchase_date, note').eq('store_id', storeId).order('purchase_date').order('created_at'),
         supabase.from('stock_batches').select('id, purchase_id, product_id, received_date, initial_qty, unit_cost').eq('store_id', storeId),
-        supabase.from('stock_transfers').select('product_id, quantity, transfer_date').eq('store_id', storeId),
+        supabase.from('stock_transfers').select('product_id, quantity, transfer_date, destination').eq('store_id', storeId),
         supabase
           .from('sales')
-          .select('sale_date, commission_rate, sale_items(product_id, quantity, unit_price, sale_item_cost_lines(batch_id, quantity, unit_cost))')
+          .select('sale_date, channel, commission_rate, sale_items(product_id, quantity, unit_price, sale_item_cost_lines(batch_id, quantity, unit_cost))')
           .eq('store_id', storeId),
         supabase.from('expenses').select('expense_date, amount').eq('store_id', storeId),
       ])
@@ -77,10 +78,11 @@ export function useAnalyticsData(storeId: string) {
             qty: i.quantity,
             unitPrice: i.unit_price,
             commissionRate: s.commission_rate,
+            channel: s.channel,
             cost: i.sale_item_cost_lines.reduce((total, c) => total + c.quantity * c.unit_cost, 0),
           })),
         ),
-        transfers: (transfers.data ?? []).map((t) => ({ date: t.transfer_date, productId: t.product_id, qty: t.quantity })),
+        transfers: (transfers.data ?? []).map((t) => ({ date: t.transfer_date, productId: t.product_id, qty: t.quantity, destination: t.destination })),
         expenses: (expenses.data ?? []).map((e) => ({ date: e.expense_date, amount: e.amount })),
         prices: (prices.data ?? []).map((p) => ({ productId: p.product_id, effectiveFrom: p.effective_from, salePrice: p.sale_price })),
       }

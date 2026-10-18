@@ -26,10 +26,15 @@ export type StockRow = {
   name: string
   threshold: number
   purchased: number
+  // Tổng đã mang khỏi nhà (ra quán + cho công ty)
   moved: number
+  // Phần ra quán và bán tại quán / ShopeeFood
+  movedShop: number
   sold: number
   home: number
   shop: number
+  // Hàng đã phân phối cho công ty, chưa bán
+  company: number
   homeStatus: StockStatus
   shopStatus: StockStatus
 }
@@ -40,10 +45,15 @@ export function stockRows(input: AnalyticsInput): StockRow[] {
     .filter((p) => p.tracksStock)
     .map((p) => {
       const purchased = sum(input.batchLines.filter((b) => b.productId === p.id).map((b) => b.qty))
-      const moved = sum(input.transfers.filter((t) => t.productId === p.id).map((t) => t.qty))
-      const sold = sum(input.sales.filter((s) => s.productId === p.id).map((s) => s.qty))
+      const transfers = input.transfers.filter((t) => t.productId === p.id)
+      const sales = input.sales.filter((s) => s.productId === p.id)
+      const isCompany = (x: { destination?: string; channel?: string }) => x.destination === 'company' || x.channel === 'company'
+      const moved = sum(transfers.map((t) => t.qty))
+      const movedShop = sum(transfers.filter((t) => !isCompany(t)).map((t) => t.qty))
+      const sold = sum(sales.filter((s) => !isCompany(s)).map((s) => s.qty))
+      const company = moved - movedShop - sum(sales.filter(isCompany).map((s) => s.qty))
       const home = purchased - moved
-      const shop = moved - sold
+      const shop = movedShop - sold
       // Mang ra nhiều hơn đã nhập: số liệu vô lý cho cả hai phía
       const movedTooMuch = moved > purchased
       return {
@@ -52,11 +62,13 @@ export function stockRows(input: AnalyticsInput): StockRow[] {
         threshold: p.threshold,
         purchased,
         moved,
+        movedShop,
         sold,
         home,
         shop,
+        company,
         homeStatus: homeStatusOf(home, p.threshold),
-        shopStatus: movedTooMuch ? 'check' : shopStatusOf(shop, moved > 0 || sold > 0, p.threshold),
+        shopStatus: movedTooMuch ? 'check' : shopStatusOf(shop, movedShop > 0 || sold > 0, p.threshold),
       }
     })
 }

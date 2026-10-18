@@ -23,7 +23,7 @@ import { TransferPage } from './pages/TransferPage'
 // Menu đã gộp: mỗi nhóm một trang có tab
 const STOCK_TABS: Tab[] = [
   { to: '/inventory/purchases', label: 'Nhập hàng', icon: 'purchase' },
-  { to: '/inventory/transfers', label: 'Chuyển ra quầy', icon: 'transfer' },
+  { to: '/inventory/transfers', label: 'Phân phối', icon: 'transfer' },
   { to: '/inventory/stock', label: 'Tồn kho', icon: 'stock' },
 ]
 const REPORT_TABS: Tab[] = [

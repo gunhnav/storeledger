@@ -36,12 +36,16 @@ export type ASaleLine = {
   commissionRate: number
   // Giá vốn đã chụp lúc bán (tổng các dòng giá vốn); dùng cho món không đếm tồn
   cost?: number
+  // Kênh bán; 'company' trừ hàng đã phân phối cho công ty thay vì tồn quán
+  channel?: string
 }
 
 export type ATransfer = {
   date: string
   productId: string
   qty: number
+  // Nơi nhận: quán (mặc định) hoặc công ty
+  destination?: 'shop' | 'company'
 }
 
 export type AExpense = {

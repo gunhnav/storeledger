@@ -51,6 +51,7 @@ export function TransferGrid({ storeId }: { storeId: string }) {
       .from('stock_transfers')
       .select('product_id, quantity, transfer_date')
       .eq('store_id', storeId)
+      .eq('destination', 'shop')
       .gte('transfer_date', from)
       .lte('transfer_date', end)
       .then(({ data, error }) => {
@@ -126,6 +127,7 @@ export function TransferGrid({ storeId }: { storeId: string }) {
         p_quantity: entry.qty,
         p_transfer_date: entry.date,
         p_note: null,
+        p_destination: 'shop',
       })
       if (error) failed[cellKey(entry.productId, entry.date)] = errorMessage(error)
       else done.push(cellKey(entry.productId, entry.date))

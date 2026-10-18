@@ -11,6 +11,7 @@ import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_QTY, errorMessage, formatDate, notFuture, todayVN } from '../lib/format'
 import type { Product } from '../types/database'
 import { TransferGrid } from './TransferGrid'
+import { CompanyDistribution } from './CompanyDistribution'
 
 type FormValues = { transfer_date: string; note: string }
 type Line = { product_id: string; qty: string }
@@ -18,35 +19,53 @@ type Line = { product_id: string; qty: string }
 // Cửa hàng ít món thì mặc định nhập nhanh
 const QUICK_MAX = 10
 
-// Một tab "Chuyển ra quầy", hai cách nhập: theo đơn (chọn món, một ngày) hoặc dạng lưới (nhiều ngày như Excel)
+// Tab "Phân phối": hàng từ nhà ra Quán (theo đơn hoặc dạng lưới) hoặc cho Công ty (theo set 4 / set 6)
 export function TransferPage() {
   const { t } = useI18n()
   const { current } = useStore()
   const [params, setParams] = useSearchParams()
+  const to = params.get('to') === 'company' ? 'company' : 'shop'
   const view = params.get('view') === 'grid' ? 'grid' : 'form'
   if (!current) return null
+  const go = (next: { to?: string; view?: string }) => {
+    const merged = { to, view, ...next }
+    const search: Record<string, string> = {}
+    if (merged.to === 'company') search.to = 'company'
+    else if (merged.view === 'grid') search.view = 'grid'
+    setParams(search, { replace: true })
+  }
+  const segmented = (label: string, value: string, options: [string, string][], onPick: (v: string) => void) => (
+    <div className="segmented" role="radiogroup" aria-label={t(label)}>
+      {options.map(([v, text]) => (
+        <button
+          key={v}
+          type="button"
+          role="radio"
+          aria-checked={value === v}
+          className={value === v ? 'active' : undefined}
+          onClick={() => onPick(v)}
+        >
+          {t(text)}
+        </button>
+      ))}
+    </div>
+  )
   return (
     <>
-      <div className="segmented transfer-view" role="radiogroup" aria-label={t('Cách nhập')}>
-        {(
-          [
+      <div className="transfer-view">
+        {segmented('Nơi nhận', to, [
+          ['shop', 'Ra quán'],
+          ['company', 'Cho công ty'],
+        ], (v) => go({ to: v }))}
+        {to === 'shop' &&
+          segmented('Cách nhập', view, [
             ['form', 'Theo đơn'],
             ['grid', 'Dạng lưới theo ngày'],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={view === value}
-            className={view === value ? 'active' : undefined}
-            onClick={() => setParams(value === 'grid' ? { view: 'grid' } : {}, { replace: true })}
-          >
-            {t(label)}
-          </button>
-        ))}
+          ], (v) => go({ view: v }))}
       </div>
-      {view === 'grid' ? (
+      {to === 'company' ? (
+        <CompanyDistribution key={current.id} storeId={current.id} />
+      ) : view === 'grid' ? (
         <TransferGrid key={current.id} storeId={current.id} />
       ) : (
         <TransferForm key={current.id} storeId={current.id} />
@@ -129,6 +148,7 @@ function TransferForm({ storeId }: { storeId: string }) {
         p_quantity: Number(line.qty),
         p_transfer_date: values.transfer_date || null,
         p_note: values.note.trim() || null,
+        p_destination: 'shop',
       })
       const name = byId.get(line.product_id)?.name ?? ''
       if (error) failed.push({ line, message: `${name}: ${errorMessage(error)}` })
@@ -138,7 +158,7 @@ function TransferForm({ storeId }: { storeId: string }) {
     reload()
     if (failed.length === 0) {
       toast.success(
-        t('Đã chuyển ra quầy ngày {date}: {list}', { date: formatDate(values.transfer_date), list: done.join(', ') }),
+        t('Đã phân phối ngày {date}: {list}', { date: formatDate(values.transfer_date), list: done.join(', ') }),
       )
       reset({ transfer_date: values.transfer_date, note: '' })
       setLines([])
@@ -148,8 +168,8 @@ function TransferForm({ storeId }: { storeId: string }) {
     setResult({
       ok: false,
       text:
-        (done.length > 0 ? t('Đã chuyển: {list}. ', { list: done.join(', ') }) : '') +
-        t('Chưa chuyển (còn trong form để lưu lại): {list}', { list: failed.map((f) => f.message).join('; ') }),
+        (done.length > 0 ? t('Đã phân phối: {list}. ', { list: done.join(', ') }) : '') +
+        t('Chưa phân phối (còn trong form để lưu lại): {list}', { list: failed.map((f) => f.message).join('; ') }),
     })
   }
 
@@ -158,14 +178,14 @@ function TransferForm({ storeId }: { storeId: string }) {
 
   const info = (p: Product) => {
     const row = stock.get(p.id)
-    return t('Ở nhà: {value} · Ở quầy: {value2}', { value: row?.qty_home ?? 0, value2: row?.qty_shop ?? 0 })
+    return t('Ở nhà: {value} · Ở quán: {value2}', { value: row?.qty_home ?? 0, value2: row?.qty_shop ?? 0 })
   }
   const badge = (p: Product) => ((stock.get(p.id)?.qty_home ?? 0) === 0 ? t('Ở nhà hết') : null)
   const lineFor = (id: string) => lines.find((l) => l.product_id === id)
   const hasWarning = lines.some((l) => overHome(l) !== null)
   const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
 
-  const submitLabel = isSubmitting ? t('Đang lưu…') : t('Chuyển ra quầy')
+  const submitLabel = isSubmitting ? t('Đang lưu…') : t('Phân phối')
   const canSubmit = !isSubmitting && !hasWarning && lines.length > 0
 
   return (
@@ -173,17 +193,17 @@ function TransferForm({ storeId }: { storeId: string }) {
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
           <div className="field">
-            {t('Ngày chuyển')}
+            {t('Ngày phân phối')}
             <Controller
               control={control}
               name="transfer_date"
-              rules={{ required: 'Chọn ngày chuyển', validate: notFuture }}
+              rules={{ required: 'Chọn ngày phân phối', validate: notFuture }}
               render={({ field, fieldState }) => (
                 <DatePicker
                   value={field.value}
                   onChange={field.onChange}
                   max={todayVN()}
-                  label={t('Ngày chuyển')}
+                  label={t('Ngày phân phối')}
                   invalid={!!fieldState.error}
                 />
               )}
@@ -212,7 +232,7 @@ function TransferForm({ storeId }: { storeId: string }) {
                       value={line?.qty ?? ''}
                       onChange={(v) => setQty(p.id, v)}
                       min={0}
-                      label={t('số lượng chuyển {name}', { name: p.name })}
+                      label={t('số lượng phân phối {name}', { name: p.name })}
                     />
                   </div>
                 )
@@ -223,7 +243,7 @@ function TransferForm({ storeId }: { storeId: string }) {
 
         <aside className="pos-side card">
           <div className="pos-side-head">
-            <h3>{t('Mang ra quầy')}</h3>
+            <h3>{t('Phân phối')}</h3>
             <span className="count-pill">{t('{count} món', { count: lines.length })}</span>
           </div>
 
@@ -267,7 +287,7 @@ function TransferForm({ storeId }: { storeId: string }) {
                         value={line.qty}
                         onChange={(v) => setQty(line.product_id, v)}
                         min={1}
-                        label={t('số lượng chuyển {name}', { name })}
+                        label={t('số lượng phân phối {name}', { name })}
                       />
                       <span className="subtotal">{t('Ở nhà còn {count}', { count: stock.get(line.product_id)?.qty_home ?? 0 })}</span>
                     </div>

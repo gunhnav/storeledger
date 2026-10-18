@@ -75,6 +75,7 @@ export type StockBatch = {
   unit_cost: number
   qty_home: number
   qty_shop: number
+  qty_company: number
   created_at: string
 }
 
@@ -85,6 +86,7 @@ export type StockTransfer = {
   quantity: number
   transfer_date: string
   note: string | null
+  destination: TransferDestination
   created_by: string | null
   created_at: string
 }
@@ -205,7 +207,11 @@ export type CreateTransferArgs = {
   p_quantity: number
   p_transfer_date: string | null
   p_note: string | null
+  // Nơi nhận: quán (mặc định) hoặc công ty
+  p_destination?: TransferDestination
 }
+
+export type TransferDestination = 'shop' | 'company'
 
 export type CreateSaleArgs = {
   p_store_id: string
@@ -223,6 +229,8 @@ export type StockStatusRow = {
   qty_shop: number
   low_stock_threshold: number
   status: StockStatus
+  // Hàng đã phân phối cho công ty, chưa bán (20261018163845_company_stock_destination.sql)
+  qty_company: number
 }
 
 export type GetPnlArgs = {

@@ -12,7 +12,7 @@ export function useStockAlerts(storeId: string, version = 0): StockAlerts | null
     let cancelled = false
     Promise.all([
       supabase.rpc('get_stock_status', { p_store_id: storeId }),
-      supabase.from('stock_transfers').select('product_id').eq('store_id', storeId),
+      supabase.from('stock_transfers').select('product_id').eq('store_id', storeId).eq('destination', 'shop'),
     ]).then(([status, transfers]) => {
       if (cancelled || status.error) return
       const moved = new Set((transfers.data ?? []).map((t) => t.product_id))

@@ -15,8 +15,8 @@ type Section = {
 
 const STEPS: { icon: IconName; title: string; text: string; to: string }[] = [
   { icon: 'purchase', title: 'Nhập hàng', text: 'Ghi số hũ mỗi loại vừa mua về. Hàng vào kho ở nhà.', to: '/inventory/purchases' },
-  { icon: 'transfer', title: 'Chuyển ra quầy', text: 'Ghi số hũ mang từ nhà ra quán. Hàng chuyển sang tồn tại quầy.', to: '/inventory/transfers' },
-  { icon: 'sale', title: 'Bán hàng', text: 'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quầy.', to: '/sales' },
+  { icon: 'transfer', title: 'Phân phối', text: 'Ghi số hũ mang từ nhà ra quán hoặc cho công ty. Hàng chuyển sang tồn tại quán / công ty.', to: '/inventory/transfers' },
+  { icon: 'sale', title: 'Bán hàng', text: 'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quán.', to: '/sales' },
 ]
 
 const SECTIONS: Section[] = [
@@ -24,9 +24,9 @@ const SECTIONS: Section[] = [
     icon: 'sale',
     title: 'Bán hàng',
     items: [
-      'Chọn kênh “Tại quầy” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.',
-      'Kênh “Công ty”: bán set mix theo giá thoả thuận. Nhập số set và giá 1 set, rồi nhập tổng số hũ từng loại của cả đơn.',
-      'Món nào chưa mang ra quầy thì chuyển hàng trước rồi mới bán, để tồn tại quầy không bị âm.',
+      'Chọn kênh “Tại quán” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.',
+      'Kênh “Công ty”: trước tiên vào Kho hàng → Phân phối → Cho công ty, nhập theo set 4 / set 6 (mỗi set mix nhiều vị). Khi bán, nhập số set, giá 1 set và tổng số hũ từng vị; hàng trừ vào phần đã phân phối cho công ty.',
+      'Món nào chưa có ở quán thì phân phối trước rồi mới bán, để tồn tại quán không bị âm.',
       'Ghi đơn ngay khi bán. Nếu quên, đổi ngày bán sang đúng ngày rồi lưu.',
     ],
     link: { to: '/sales', label: 'Mở Bán hàng' },
@@ -35,10 +35,10 @@ const SECTIONS: Section[] = [
     icon: 'stock',
     title: 'Cảnh báo hết / sắp hết',
     items: [
-      'Đỏ “HẾT HÀNG TẠI CỬA HÀNG”: quầy còn 0 hũ → mang thêm từ nhà ra quán ngay.',
-      'Cam “SẮP HẾT”: tồn tại quầy đã chạm ngưỡng báo của món (mặc định 3 hũ).',
+      'Đỏ “HẾT HÀNG TẠI CỬA HÀNG”: quán còn 0 hũ → phân phối thêm từ nhà ra quán ngay.',
+      'Cam “SẮP HẾT”: tồn tại quán đã chạm ngưỡng báo của món (mặc định 3 hũ).',
       'Đỏ “KIỂM TRA số liệu”: tồn bị âm, thường do bán khi chưa ghi chuyển hàng hoặc nhập sai số. Báo admin để sửa.',
-      '“Chưa mang ra”: món đã nhập nhưng chưa chuyển hũ nào ra quầy.',
+      '“Chưa mang ra”: món đã nhập nhưng chưa phân phối hũ nào ra quán.',
     ],
     link: { to: '/inventory/stock', label: 'Mở Tồn kho' },
   },

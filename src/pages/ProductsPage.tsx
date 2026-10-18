@@ -252,7 +252,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
               <>
                 <div className="row">
                   <label>
-                    {t('Giá bán tại quầy')}
+                    {t('Giá bán tại quán')}
                     <input
                       type="number"
                       inputMode="numeric"
@@ -262,7 +262,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                     />
                   </label>
                   <label>
-                    {t('Giá ShopeeFood (trống = giá quầy)')}
+                    {t('Giá ShopeeFood (trống = giá quán)')}
                     <input
                       type="number"
                       inputMode="numeric"
@@ -364,7 +364,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
             <thead>
               <tr>
                 <th>{t('Sản phẩm')}</th>
-                <th className="num">{t('Giá quầy')}</th>
+                <th className="num">{t('Giá quán')}</th>
                 <th className="num">{t('Giá app')}</th>
                 <th className="num">{t('Giá vốn')}</th>
                 <th />
@@ -479,7 +479,7 @@ function PriceEditor({
         </small>
         <div className="row">
           <label>
-            {t('Giá bán tại quầy')}
+            {t('Giá bán tại quán')}
             <input
               type="number"
               inputMode="numeric"
@@ -489,7 +489,7 @@ function PriceEditor({
             />
           </label>
           <label>
-            {t('Giá ShopeeFood (trống = giá quầy)')}
+            {t('Giá ShopeeFood (trống = giá quán)')}
             <input
               type="number"
               inputMode="numeric"
@@ -541,7 +541,7 @@ function PriceEditor({
             <thead>
               <tr>
                 <th>{t('Áp dụng từ')}</th>
-                <th className="num">{t('Giá quầy')}</th>
+                <th className="num">{t('Giá quán')}</th>
                 <th className="num">{t('Giá app')}</th>
                 <th className="num">{t('Giá vốn')}</th>
                 <th>{t('Ghi chú')}</th>

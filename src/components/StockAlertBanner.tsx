@@ -11,7 +11,7 @@ export function StockAlertBanner({ alerts }: { alerts: StockAlerts }) {
       )}
       {alerts.check.length > 0 && <p>⚠ {t('KIỂM TRA số liệu: {list}', { list: alerts.check.join(', ') })}</p>}
       {alerts.low.length > 0 && <p>{t('SẮP HẾT: {list}', { list: alerts.low.join(', ') })}</p>}
-      {alerts.level === 'green' && <p>✓ {t('Tồn tại quầy ổn')}</p>}
+      {alerts.level === 'green' && <p>✓ {t('Tồn tại quán ổn')}</p>}
     </div>
   )
 }

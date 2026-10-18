@@ -1529,8 +1529,80 @@ a.button.primary:hover {
 }
 
 /* Chuyển ra quầy: chọn cách nhập */
-.segmented.transfer-view {
+.transfer-view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 14px;
+}
+
+/* Phân phối cho Công ty theo set */
+.company-dist {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.set-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+  gap: 14px;
+}
+.set-group {
+  margin: 0;
+  border-left: 4px solid var(--border);
+}
+.set-group.ok {
+  border-left-color: var(--accent);
+}
+.set-group.has-issue {
+  border-left-color: var(--low-fg);
+}
+.set-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.set-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.set-group-head .remove {
+  margin-left: auto;
+}
+.set-fill {
+  margin: 10px 0 6px;
+  font-weight: 700;
+}
+.set-fill.warn {
+  color: var(--low-fg);
+}
+.set-mix {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.set-mix li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.set-mix li.picked span {
+  color: var(--text-h);
+  font-weight: 700;
+}
+.set-summary {
+  margin: 0;
+  max-width: 520px;
+}
+.company-dist > button {
+  align-self: flex-start;
 }
 
 /* Lưới Mang ra quán: ô nhập như Excel */

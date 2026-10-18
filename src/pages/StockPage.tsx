@@ -39,6 +39,8 @@ export function StockPage() {
   if (!result || result.storeId !== storeId) return <p className="muted">{t('Đang tải tồn kho…')}</p>
   if (result.error) return <p className="error">{t(result.error)}</p>
 
+  const hasCompany = result.rows.some((r) => (r.qty_company ?? 0) > 0)
+
   return (
     <section>
       {alerts && <StockAlertBanner alerts={alerts} />}
@@ -51,7 +53,8 @@ export function StockPage() {
               <tr>
                 <th>{t('Sản phẩm')}</th>
                 <th className="num">{t('Ở nhà')}</th>
-                <th className="num">{t('Ở quầy')}</th>
+                <th className="num">{t('Ở quán')}</th>
+                {hasCompany && <th className="num">{t('Ở công ty')}</th>}
                 <th>{t('Trạng thái')}</th>
               </tr>
             </thead>
@@ -61,6 +64,7 @@ export function StockPage() {
                   <td>{row.product_name}</td>
                   <td className="num">{row.qty_home}</td>
                   <td className="num">{row.qty_shop}</td>
+                  {hasCompany && <td className="num">{row.qty_company ?? 0}</td>}
                   <td>
                     <span className={`badge badge-${row.status}`}>{t(STATUS_LABEL[row.status])}</span>
                   </td>

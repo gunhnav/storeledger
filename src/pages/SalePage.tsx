@@ -81,12 +81,20 @@ function SaleForm({ storeId }: { storeId: string }) {
     const product = byId.get(line.product_id)
     if (!product?.tracks_stock) return null
     const row = stock.get(product.id)
+    // Kênh Công ty bán từ hàng đã phân phối cho công ty
+    if (isCompany) {
+      const company = row?.qty_company ?? 0
+      if ((Number(line.qty) || 0) <= company) return null
+      return company === 0
+        ? t('Chưa phân phối món này cho công ty')
+        : t('Công ty chỉ còn {count}', { count: company })
+    }
     const shop = row?.qty_shop ?? 0
     const home = row?.qty_home ?? 0
     if ((Number(line.qty) || 0) <= shop) return null
-    if (shop === 0 && home === 0) return t('Chưa có hàng: nhập hàng rồi chuyển ra quầy trước')
-    if (home > 0) return t('Ở quầy còn {shop}, ở nhà còn {home}: chuyển thêm ra quầy trước', { shop, home })
-    return t('Ở quầy chỉ còn {shop}', { shop })
+    if (shop === 0 && home === 0) return t('Chưa có hàng: nhập hàng rồi phân phối ra quán trước')
+    if (home > 0) return t('Ở quán còn {shop}, ở nhà còn {home}: phân phối thêm ra quán trước', { shop, home })
+    return t('Ở quán chỉ còn {shop}', { shop })
   }
   const hasStockProblem = lines.some((l) => overStock(l) !== null)
 
@@ -187,14 +195,19 @@ function SaleForm({ storeId }: { storeId: string }) {
   const info = (p: Product) => {
     const parts: string[] = []
     if (prices && !isCompany) parts.push(prices.has(p.id) ? formatVND(suggested(p.id)) : t('chưa có giá'))
-    if (p.tracks_stock) {
+    if (p.tracks_stock && isCompany) {
+      parts.push(t('Công ty còn {count}', { count: stock.get(p.id)?.qty_company ?? 0 }))
+    } else if (p.tracks_stock) {
       const shop = stock.get(p.id)?.qty_shop ?? 0
       if (shop > 0) parts.push(t('Còn {shop}', { shop }))
     }
     return parts.join(' · ')
   }
-  const badge = (p: Product) =>
-    p.tracks_stock && (stock.get(p.id)?.qty_shop ?? 0) === 0 ? t('Hết ở quầy') : null
+  const badge = (p: Product) => {
+    if (!p.tracks_stock) return null
+    if (isCompany) return (stock.get(p.id)?.qty_company ?? 0) === 0 ? t('Chưa có ở công ty') : null
+    return (stock.get(p.id)?.qty_shop ?? 0) === 0 ? t('Hết ở quán') : null
+  }
 
   const lineFor = (id: string) => lines.find((l) => l.product_id === id)
 
@@ -222,7 +235,7 @@ function SaleForm({ storeId }: { storeId: string }) {
             <label className="field">
               {t('Kênh bán')}
               <select {...register('channel', { onChange: resetPrices })}>
-                <option value="in_store">{t('Tại quầy')}</option>
+                <option value="in_store">{t('Tại quán')}</option>
                 <option value="shopeefood">ShopeeFood</option>
                 <option value="company">{t('Công ty')}</option>
               </select>
@@ -262,7 +275,7 @@ function SaleForm({ storeId }: { storeId: string }) {
                 </label>
               </div>
               <small className="muted">
-                {t('Bán set mix theo giá thoả thuận, không dùng giá tại quầy. Nhập tổng số hũ từng loại của cả đơn bên dưới (ví dụ 10 set × 2 cacao = 20 cacao).')}
+                {t('Bán set mix theo giá thoả thuận, không dùng giá tại quán. Nhập tổng số hũ từng loại của cả đơn bên dưới (ví dụ 10 set × 2 cacao = 20 cacao).')}
               </small>
             </div>
           )}
@@ -386,7 +399,11 @@ function SaleForm({ storeId }: { storeId: string }) {
 
           {formError && <p className="error">{t(formError)}</p>}
           {hasStockProblem && (
-            <p className="error">{t('Có món chưa đủ hàng ở quầy. Sửa số lượng hoặc chuyển hàng ra quầy trước.')}</p>
+            <p className="error">
+              {isCompany
+                ? t('Có món chưa đủ hàng đã phân phối cho công ty. Sửa số lượng hoặc phân phối cho công ty trước.')
+                : t('Có món chưa đủ hàng ở quán. Sửa số lượng hoặc phân phối ra quán trước.')}
+            </p>
           )}
           {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
           <button type="submit" className="primary block" disabled={!canSubmit}>

@@ -196,6 +196,19 @@ describe('tổng quan & banner (phần 3)', () => {
     expect(stockRows(input).find((r) => r.productId === 'pm')!.shopStatus).toBe('check')
   })
 
+  it('phân phối cho công ty: trừ ở nhà, không cộng vào tồn quán; bán kênh Công ty trừ phần công ty', () => {
+    const input = sampleInput()
+    input.transfers.push({ date: '2026-10-17', productId: 'tt', qty: 8, destination: 'company' })
+    input.sales.push({ date: '2026-10-17', productId: 'tt', qty: 6, unitPrice: 14000, commissionRate: 0, channel: 'company' })
+    const tt = stockRows(input).find((r) => r.productId === 'tt')!
+    expect(tt.home).toBe(17)
+    expect(tt.shop).toBe(23)
+    expect(tt.company).toBe(2)
+    expect(tt.movedShop).toBe(25)
+    expect(tt.moved).toBe(33)
+    expect(tt.sold).toBe(2)
+  })
+
   it('chưa mang ra quầy', () => {
     const input = sampleInput()
     input.transfers = input.transfers.filter((t) => t.productId !== 'cc')

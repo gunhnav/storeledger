@@ -17,6 +17,7 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
   if (!data) return null
 
   const rows = stockRows(data.input)
+  const hasCompany = rows.some((r) => r.company !== 0)
   const results = productResults(data.input, data.allocations, data.currentPrice)
   const s = financialSummary(data.input, data.allocations, data.currentPrice)
   const money = (v: number) => <span className={v < 0 ? 'negative' : undefined}>{formatVND(v)}</span>
@@ -44,6 +45,7 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
                     <th className="num">{t('Đã nhập')}</th>
                     <th className="num">{t('Đã mang ra')}</th>
                     <th className="num">{t('Còn ở nhà')}</th>
+                    {hasCompany && <th className="num">{t('Ở công ty')}</th>}
                     <th>{t('Trạng thái')}</th>
                   </tr>
                 </thead>
@@ -54,6 +56,7 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
                       <td className="num">{r.purchased}</td>
                       <td className="num">{r.moved}</td>
                       <td className="num">{r.home}</td>
+                      {hasCompany && <td className="num">{r.company}</td>}
                       <td>
                         <StockStatusBadge status={r.homeStatus} />
                       </td>
@@ -64,7 +67,7 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
             </div>
           </div>
           <div>
-            <h2>{t('Tồn tại quầy')}</h2>
+            <h2>{t('Tồn tại quán')}</h2>
             <div className="table-wrap">
               <table>
                 <thead>
@@ -72,7 +75,7 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
                     <th>{t('Loại')}</th>
                     <th className="num">{t('Đã mang ra')}</th>
                     <th className="num">{t('Đã bán')}</th>
-                    <th className="num">{t('Còn tại quầy')}</th>
+                    <th className="num">{t('Còn tại quán')}</th>
                     <th className="num">{t('Ngưỡng')}</th>
                     <th>{t('Trạng thái')}</th>
                   </tr>
@@ -81,7 +84,7 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
                   {rows.map((r) => (
                     <tr key={r.productId}>
                       <td>{r.name}</td>
-                      <td className="num">{r.moved}</td>
+                      <td className="num">{r.movedShop}</td>
                       <td className="num">{r.sold}</td>
                       <td className="num">{r.shop}</td>
                       <td className="num">{r.threshold}</td>
