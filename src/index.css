@@ -2030,3 +2030,35 @@ td.actions {
   color: var(--highlight-text);
   font-size: 15px;
 }
+
+/* Bán chạy & gợi ý */
+.report-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.report-stack h2 {
+  margin-bottom: 8px;
+}
+.batch-table td.heat {
+  color: var(--text-h);
+  font-weight: 600;
+}
+.batch-table td.heat-strong {
+  color: var(--accent-text);
+  font-weight: 800;
+}
+.suggest-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 20px;
+  margin-bottom: 12px;
+  padding: 16px 18px;
+}
+.suggest-controls .field {
+  flex: 0 1 260px;
+}
+.suggest-controls .segmented {
+  align-self: flex-start;
+}

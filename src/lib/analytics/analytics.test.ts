@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { allocateFifo, dailyResults, priceOn } from './core'
 import { batchStats } from './batches'
+import { salesPeriods, sellThrough, suggestNextBatch } from './bestSellers'
 import type { AnalyticsInput, ASaleLine } from './types'
 
 // Dữ liệu mẫu từ Google Sheet (chỉ dùng trong test)
@@ -122,5 +123,46 @@ describe('thống kê theo đợt (phần 1)', () => {
     expect(batches[0].firstOutProductId).toBe('nc')
     expect(batches[0].lastOutProductId).toBeNull()
     expect(batches[0].soldOutDate).toBeNull()
+  })
+})
+
+describe('bán chạy & gợi ý nhập (phần 2)', () => {
+  const price = new Map(IDS.map((id, i) => [id, BASE_PRICE[i]]))
+  const withBatch2 = () => {
+    const input = sampleInput()
+    input.purchases.push({ id: 'b2', date: '2026-10-16', note: null })
+    input.batchLines.push({ id: 'b2-tt', purchaseId: 'b2', date: '2026-10-16', productId: 'tt', qty: 10, unitCost: 10000 })
+    return input
+  }
+
+  it('kỳ bán của đợt 1 = 15/10 đến 15/10 khi đợt 2 nhập 16/10', () => {
+    const periods = salesPeriods(withBatch2(), '2026-10-16')
+    expect(periods[0]).toMatchObject({ from: '2026-10-15', to: '2026-10-15', total: 2 })
+    expect(periods[1]).toMatchObject({ from: '2026-10-16', to: '2026-10-16', total: 19 })
+    expect(periods[1].topProductId).toBe('nc')
+    expect(periods[1].topQty).toBe(7)
+  })
+
+  it('gợi ý theo tất cả các đợt: tỷ trọng [2:7:5:3:4]/21', () => {
+    const periods = salesPeriods(sampleInput(), '2026-10-16')
+    const rows = suggestNextBatch(periods, IDS, 100, 'all')!
+    const byId = Object.fromEntries(rows.map((r) => [r.productId, r.suggested]))
+    expect(IDS.map((id) => byId[id])).toEqual([2, 7, 5, 3, 4].map((n) => Math.round((100 * n) / 21)))
+    expect(rows[0]).toMatchObject({ productId: 'nc', rank: 1 })
+  })
+
+  it('chưa có số liệu bán thì không gợi ý', () => {
+    const input = sampleInput()
+    input.sales = []
+    expect(suggestNextBatch(salesPeriods(input, '2026-10-16'), IDS, 100, 'all')).toBeNull()
+  })
+
+  it('tỷ lệ bán hết từng loại trong đợt và loại bán hết nhanh nhất', () => {
+    const input = sampleInput()
+    const { batches } = batchStats(input, allocateFifo(input).allocations, price, '2026-10-16')
+    const [st] = sellThrough(batches)
+    expect(st.rates.nc).toBeCloseTo(7 / 20)
+    expect(st.rates.mt).toBeCloseTo(5 / 10)
+    expect(st.fastestProductId).toBe('mt')
   })
 })
