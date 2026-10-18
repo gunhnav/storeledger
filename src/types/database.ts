@@ -436,6 +436,20 @@ export type Database = {
       // supabase/migrations/20261018145530_admin_accounts.sql
       admin_set_role: { Args: { p_user_id: string; p_role: UserRole }; Returns: undefined }
       admin_set_full_name: { Args: { p_user_id: string; p_full_name: string }; Returns: undefined }
+      // supabase/migrations/20261018165937_admin_edit_expense.sql
+      update_expense: {
+        Args: {
+          p_expense_id: string
+          p_expense_date: string
+          p_category: string
+          p_note: string | null
+          p_quantity: number
+          p_unit_price: number
+          p_amount: number
+        }
+        Returns: undefined
+      }
+      delete_expense: { Args: { p_expense_id: string }; Returns: undefined }
       get_store_prices: { Args: { p_store_id: string; p_date: string | null }; Returns: StorePriceRow[] }
       set_product_price: { Args: SetProductPriceArgs; Returns: string }
       get_daily_product_log: { Args: DailyRangeArgs; Returns: DailyProductLogRow[] }

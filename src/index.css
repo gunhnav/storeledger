@@ -1515,6 +1515,27 @@ a.button.primary:hover {
   background: var(--accent-soft);
 }
 
+/* Chi phí: đang sửa một khoản */
+.form.editing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.edit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+tr.row-editing td {
+  background: var(--accent-soft);
+}
+
 /* Số trên biểu đồ */
 .chart-label {
   font-size: 11px;

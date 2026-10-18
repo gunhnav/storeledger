@@ -81,3 +81,10 @@ export function formatCompact(value: number, locale = 'vi-VN'): string {
   if (abs >= 1e3) return `${compact.format(value / 1e3)}k`
   return compact.format(value)
 }
+
+// Viết hoa chữ cái đầu tiên (bỏ qua khoảng trắng đầu), giữ nguyên phần còn lại: "tắc tươi" → "Tắc tươi"
+export function capitalizeFirst(text: string): string {
+  const i = text.search(/\S/)
+  if (i < 0) return text
+  return text.slice(0, i) + text[i].toLocaleUpperCase('vi') + text.slice(i + 1)
+}
