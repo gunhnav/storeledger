@@ -101,10 +101,12 @@ export function translate(lang: Lang, key: string, params?: Record<string, strin
 
 export type I18nState = { lang: Lang; setLang: (lang: Lang) => void; t: Translate }
 
-export const I18nContext = createContext<I18nState | null>(null)
+// Mặc định tiếng Việt: không ném lỗi khi thiếu provider (ví dụ lúc Vite nạp lại nóng
+// file này tạo context mới) để không làm trắng cả màn hình
+const FALLBACK: I18nState = { lang: 'vi', setLang: () => {}, t: (key, params) => translate('vi', key, params) }
+
+export const I18nContext = createContext<I18nState>(FALLBACK)
 
 export function useI18n(): I18nState {
-  const ctx = useContext(I18nContext)
-  if (!ctx) throw new Error('useI18n phải dùng bên trong <I18nProvider>')
-  return ctx
+  return useContext(I18nContext)
 }
