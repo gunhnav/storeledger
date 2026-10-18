@@ -2062,3 +2062,57 @@ td.actions {
 .suggest-controls .segmented {
   align-self: flex-start;
 }
+
+/* Banner tồn tại quầy */
+.stock-banner {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+.stock-banner p {
+  margin: 0;
+}
+.stock-banner p + p {
+  margin-top: 4px;
+}
+.stock-banner-red {
+  background: var(--out-bg);
+  color: var(--out-fg);
+  border-color: color-mix(in srgb, var(--out-fg) 30%, transparent);
+}
+.stock-banner-orange {
+  background: var(--low-bg);
+  color: var(--low-fg);
+  border-color: color-mix(in srgb, var(--low-fg) 30%, transparent);
+}
+.stock-banner-green {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  border-color: color-mix(in srgb, var(--ok-fg) 25%, transparent);
+}
+.badge-muted {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.positive {
+  color: var(--ok-fg);
+}
+/* Tổng quan: 2 bảng tồn cạnh nhau trên màn hình rộng */
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 520px) {
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+}
+.overview-extras {
+  margin-bottom: 28px;
+}
+.overview-extras .stock-banner {
+  margin: 0;
+}

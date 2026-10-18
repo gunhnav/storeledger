@@ -15,6 +15,7 @@ import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
+import { OverviewExtras } from './OverviewExtras'
 import {
   addDays,
   errorMessage,
@@ -36,6 +37,7 @@ export function ReportsPage() {
 function Reports({ storeId }: { storeId: string }) {
   return (
     <>
+      <OverviewExtras storeId={storeId} />
       <BreakEvenBlock storeId={storeId} />
       <PnlBlock storeId={storeId} />
     </>

@@ -77,6 +77,7 @@ export function useAnalyticsData(storeId: string) {
             qty: i.quantity,
             unitPrice: i.unit_price,
             commissionRate: s.commission_rate,
+            cost: i.sale_item_cost_lines.reduce((total, c) => total + c.quantity * c.unit_cost, 0),
           })),
         ),
         transfers: (transfers.data ?? []).map((t) => ({ date: t.transfer_date, productId: t.product_id, qty: t.quantity })),

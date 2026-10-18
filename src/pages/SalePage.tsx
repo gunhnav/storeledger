@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
+import { StockAlertBanner } from '../components/StockAlertBanner'
+import { useStockAlerts } from '../lib/useStockAlerts'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
@@ -33,6 +35,9 @@ function SaleForm({ storeId }: { storeId: string }) {
   const { t } = useI18n()
   const toast = useToast()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
+  // Banner hết / sắp hết tại quầy (chỉ số lượng); làm mới sau mỗi lần lưu đơn
+  const [alertVersion, setAlertVersion] = useState(0)
+  const alerts = useStockAlerts(storeId, alertVersion)
   const [lines, setLines] = useState<Line[]>([])
   const [quickMode, setQuickMode] = useState<boolean | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -144,6 +149,7 @@ function SaleForm({ storeId }: { storeId: string }) {
     reset({ channel: values.channel, sale_date: values.sale_date, note: '' })
     setLines([])
     reload()
+    setAlertVersion((v) => v + 1)
   }
 
   if (loading) return <p className="muted">{t('Đang tải sản phẩm…')}</p>
@@ -181,6 +187,7 @@ function SaleForm({ storeId }: { storeId: string }) {
   return (
     <section>
       <h2>{t('Bán hàng')}</h2>
+      {alerts && <StockAlertBanner alerts={alerts} />}
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
           <div className="row">

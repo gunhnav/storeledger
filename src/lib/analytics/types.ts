@@ -34,6 +34,8 @@ export type ASaleLine = {
   unitPrice: number
   // Hoa hồng ShopeeFood (0 nếu bán tại quầy)
   commissionRate: number
+  // Giá vốn đã chụp lúc bán (tổng các dòng giá vốn); dùng cho món không đếm tồn
+  cost?: number
 }
 
 export type ATransfer = {

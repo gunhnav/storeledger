@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { allocateFifo, dailyResults, priceOn } from './core'
 import { batchStats } from './batches'
 import { salesPeriods, sellThrough, suggestNextBatch } from './bestSellers'
+import { financialSummary, productResults, stockAlerts, stockRows } from './overview'
 import type { AnalyticsInput, ASaleLine } from './types'
 
 // Dữ liệu mẫu từ Google Sheet (chỉ dùng trong test)
@@ -164,5 +165,67 @@ describe('bán chạy & gợi ý nhập (phần 2)', () => {
     expect(st.rates.nc).toBeCloseTo(7 / 20)
     expect(st.rates.mt).toBeCloseTo(5 / 10)
     expect(st.fastestProductId).toBe('mt')
+  })
+})
+
+describe('tổng quan & banner (phần 3)', () => {
+  const price = new Map(IDS.map((id, i) => [id, BASE_PRICE[i]]))
+
+  it('tồn ở nhà / tại quầy và trạng thái', () => {
+    const rows = stockRows(sampleInput())
+    expect(rows.map((r) => r.home)).toEqual([25, 10, 2, 2, 2])
+    expect(rows.map((r) => r.shop)).toEqual([23, 3, 3, 5, 4])
+    expect(rows.map((r) => r.shopStatus)).toEqual(['ok', 'low', 'low', 'ok', 'ok'])
+    const alerts = stockAlerts(rows)
+    expect(alerts.level).toBe('orange')
+    expect(alerts.low).toEqual(['Nếp cẩm', 'Matcha'])
+  })
+
+  it('bán hết tại quầy → banner đỏ; bán vượt số mang ra → KIỂM TRA, không crash', () => {
+    const input = sampleInput()
+    input.sales.push({ date: '2026-10-16', productId: 'mt', qty: 3, unitPrice: 15000, commissionRate: 0 })
+    let rows = stockRows(input)
+    expect(rows.find((r) => r.productId === 'mt')!.shopStatus).toBe('out')
+    expect(stockAlerts(rows)).toMatchObject({ level: 'red', out: ['Matcha'] })
+    input.sales.push({ date: '2026-10-16', productId: 'mt', qty: 2, unitPrice: 15000, commissionRate: 0 })
+    rows = stockRows(input)
+    expect(rows.find((r) => r.productId === 'mt')!.shopStatus).toBe('check')
+    // Mang ra nhiều hơn đã nhập
+    input.transfers.push({ date: '2026-10-16', productId: 'pm', qty: 50 })
+    expect(stockRows(input).find((r) => r.productId === 'pm')!.homeStatus).toBe('check')
+    expect(stockRows(input).find((r) => r.productId === 'pm')!.shopStatus).toBe('check')
+  })
+
+  it('chưa mang ra quầy', () => {
+    const input = sampleInput()
+    input.transfers = input.transfers.filter((t) => t.productId !== 'cc')
+    input.sales = input.sales.filter((s) => s.productId !== 'cc')
+    expect(stockRows(input).find((r) => r.productId === 'cc')!.shopStatus).toBe('not_moved')
+  })
+
+  it('kết quả theo loại', () => {
+    const input = sampleInput()
+    const results = productResults(input, allocateFifo(input).allocations, price)
+    const nc = results.find((r) => r.productId === 'nc')!
+    expect(nc).toMatchObject({ sold: 7, revenue: 105000, cogs: 77000, grossProfit: 28000, avgCost: 11000, profitPerUnit: 4000 })
+  })
+
+  it('lãi lỗ, dòng tiền và dự báo hoà vốn', () => {
+    const input = sampleInput()
+    const s = financialSummary(input, allocateFifo(input).allocations, price)
+    expect(s.revenue).toBe(309000)
+    expect(s.cogs).toBe(227000)
+    expect(s.expenses).toBe(128480)
+    expect(s.netProfit).toBe(309000 - 227000 - 128480)
+    expect(s.totalSpent).toBe(1128480)
+    expect(s.cashFlow).toBe(309000 - 1128480)
+    expect(s.remainingToRecover).toBe(1128480 - 309000)
+    expect(s.stockValue).toBe(773000)
+    expect(s.revenueIfSellAll).toBe(309000 + 48 * 12000 + 31 * 15000)
+    expect(s.finalProjected).toBe(309000 + 48 * 12000 + 31 * 15000 - 1128480)
+    expect(s.avgDailyRevenue).toBe(154500)
+    expect(s.breakEvenDate).toBeNull()
+    // 16/10 + ceil(819.480 / 154.500) = 16/10 + 6 ngày
+    expect(s.projectedBreakEven).toBe('2026-10-22')
   })
 })

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
+import { StockAlertBanner } from '../components/StockAlertBanner'
+import { useStockAlerts } from '../lib/useStockAlerts'
 import { errorMessage } from '../lib/format'
 import type { StockStatus, StockStatusRow } from '../types/database'
 
@@ -14,6 +16,7 @@ const STATUS_LABEL: Record<StockStatus, string> = {
 export function StockPage() {
   const { current } = useStore()
   const { t } = useI18n()
+  const alerts = useStockAlerts(current?.id ?? '')
   const storeId = current?.id
   const [result, setResult] = useState<{
     storeId: string
@@ -38,6 +41,7 @@ export function StockPage() {
 
   return (
     <section>
+      {alerts && <StockAlertBanner alerts={alerts} />}
       {result.rows.length === 0 ? (
         <p className="muted">{t('Chưa có sản phẩm nào quản lý tồn kho.')}</p>
       ) : (
