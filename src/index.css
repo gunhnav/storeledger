@@ -1536,6 +1536,43 @@ tr.row-editing td {
   background: var(--accent-soft);
 }
 
+/* Bán kênh Công ty: chọn set đã phân phối */
+.sale-sets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sale-sets li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.sale-sets li.picked .sale-set-info > span:nth-child(2) {
+  color: var(--text-h);
+  font-weight: 700;
+}
+.sale-set-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.sale-set-info .badge {
+  align-self: flex-start;
+}
+.sale-set-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sale-set-inputs .price-input {
+  width: 110px;
+}
+
 /* Số trên biểu đồ */
 .chart-label {
   font-size: 11px;

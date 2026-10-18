@@ -57,3 +57,48 @@ export function overHomeSets(totals: Map<string, number>, home: Map<string, numb
     .map(([productId, want]) => ({ productId, want, home: home.get(productId) ?? 0 }))
     .filter((r) => r.want > r.home)
 }
+
+// ---- Bán kênh Công ty theo các set đã phân phối ----
+
+export type CompanySetRow = { set_size: number; set_count: number; mix: Record<string, number> }
+export type SetKind = { key: string; size: number; mix: Record<string, number>; distributed: number }
+
+// Khoá của một loại set: cỡ + thành phần (bỏ vị 0, sắp theo mã món) để gộp các lần phân phối giống nhau
+export function setKey(size: number, mix: Record<string, number>): string {
+  const parts = Object.entries(mix)
+    .filter(([, n]) => n > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([id, n]) => `${id}:${n}`)
+  return `${size}|${parts.join(',')}`
+}
+
+// Gộp các nhóm set đã phân phối thành từng loại set, kèm tổng số set đã phân phối
+export function setKinds(rows: CompanySetRow[]): SetKind[] {
+  const kinds = new Map<string, SetKind>()
+  for (const r of rows) {
+    const key = setKey(r.set_size, r.mix)
+    const kind = kinds.get(key)
+    if (kind) kind.distributed += r.set_count
+    else kinds.set(key, { key, size: r.set_size, mix: r.mix, distributed: r.set_count })
+  }
+  return [...kinds.values()]
+}
+
+export type SetPick = { count: number; price: number }
+
+// Đơn bán theo set: số hũ từng vị, tổng tiền (Σ số set × giá 1 set), tổng số set
+export function saleFromSets(kinds: SetKind[], picks: Record<string, SetPick>) {
+  const jars = new Map<string, number>()
+  let total = 0
+  let sets = 0
+  for (const kind of kinds) {
+    const pick = picks[kind.key]
+    if (!pick || pick.count <= 0) continue
+    sets += pick.count
+    total += pick.count * pick.price
+    for (const [productId, n] of Object.entries(kind.mix)) {
+      if (n > 0) jars.set(productId, (jars.get(productId) ?? 0) + n * pick.count)
+    }
+  }
+  return { jars, total, sets }
+}

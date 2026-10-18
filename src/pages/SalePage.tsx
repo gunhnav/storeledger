@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
@@ -11,11 +11,13 @@ import { useStore } from '../lib/store'
 import { useStoreCatalog, useStorePrices } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import { usesDistribution } from '../lib/storeFeatures'
-import { allocateSetTotal, allocatedTotal, setTotal } from '../lib/companySale'
-import type { Product, SaleChannel, StorePriceRow } from '../types/database'
+import { allocateSetTotal, allocatedTotal } from '../lib/companySale'
+import { saleFromSets, setKinds } from '../lib/companySets'
+import type { CompanySetDbRow, Product, SaleChannel, StorePriceRow } from '../types/database'
 
-// sets / set_price: chỉ dùng cho kênh Công ty (bán set mix theo giá thoả thuận)
-type FormValues = { channel: SaleChannel; sale_date: string; note: string; sets: string; set_price: string }
+type FormValues = { channel: SaleChannel; sale_date: string; note: string }
+// Kênh Công ty: số set bán và giá 1 set của từng loại set đã phân phối (chuỗi để cho phép ô trống)
+type Picks = Record<string, { count: string; price: string }>
 // price null = dùng giá gợi ý theo kênh và ngày bán
 type Line = { product_id: string; qty: string; price: string | null }
 
@@ -41,7 +43,10 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
   // Banner hết / sắp hết tại quầy (chỉ số lượng); làm mới sau mỗi lần lưu đơn
   const [alertVersion, setAlertVersion] = useState(0)
   const alerts = useStockAlerts(storeId, alertVersion)
-  const [lines, setLines] = useState<Line[]>([])
+  // Dòng nhập tay (tại quán / ShopeeFood); kênh Công ty lấy dòng từ các set đã chọn
+  const [shopLines, setLines] = useState<Line[]>([])
+  const [picks, setPicks] = useState<Picks>({})
+  const [setRows, setSetRows] = useState<{ version: number; rows: CompanySetDbRow[]; error: string | null } | null>(null)
   const [quickMode, setQuickMode] = useState<boolean | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -52,14 +57,32 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { channel: 'in_store', sale_date: todayVN(), note: '', sets: '1', set_price: '' },
+    defaultValues: { channel: 'in_store', sale_date: todayVN(), note: '' },
   })
 
   const channel = useWatch({ control, name: 'channel' })
   const saleDate = useWatch({ control, name: 'sale_date' })
   const isCompany = channel === 'company'
-  const sets = Number(useWatch({ control, name: 'sets' })) || 0
-  const pricePerSet = Number(useWatch({ control, name: 'set_price' })) || 0
+
+  // Các set đã phân phối cho công ty (tải lại sau mỗi lần lưu đơn)
+  useEffect(() => {
+    if (!isCompany) return
+    let cancelled = false
+    supabase.rpc('get_company_sets', { p_store_id: storeId }).then(({ data, error }) => {
+      if (!cancelled) setSetRows({ version: alertVersion, rows: data ?? [], error: error ? errorMessage(error) : null })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isCompany, storeId, alertVersion])
+  const kinds = setKinds(setRows?.rows ?? [])
+  const numericPicks = Object.fromEntries(
+    Object.entries(picks).map(([key, p]) => [key, { count: Number(p.count) || 0, price: Number(p.price) || 0 }]),
+  )
+  const setSale = saleFromSets(kinds, numericPicks)
+  const lines: Line[] = isCompany
+    ? [...setSale.jars].map(([product_id, qty]) => ({ product_id, qty: String(qty), price: null }))
+    : shopLines
   const { prices, error: pricesError } = useStorePrices(storeId, saleDate)
   const quick = quickMode ?? products.length <= QUICK_MAX
   const byId = new Map(products.map((p) => [p.id, p]))
@@ -68,7 +91,7 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
   const priceText = (line: Line) => line.price ?? String(suggested(line.product_id))
   const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
   const total = isCompany
-    ? setTotal(sets, pricePerSet)
+    ? setSale.total
     : lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(priceText(l)) || 0), 0)
   // Kênh Công ty: chia tổng tiền set cho từng loại theo giá tại quầy (chỉ để báo cáo theo loại)
   const companyLines = lines.map((l) => ({
@@ -126,6 +149,20 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
     setLines((ls) => ls.map((l) => (l.product_id === id ? { ...l, price } : l)))
   }
 
+  // Ghi chú đơn Công ty (lưu DB, tiếng Việt): "1 set 4 (2 Truyền thống + 1 Matcha + 1 Phô mai) × 55.000 ₫ + ..."
+  const setNote = () =>
+    kinds
+      .filter((k) => (numericPicks[k.key]?.count ?? 0) > 0)
+      .map((k) => `${numericPicks[k.key].count} set ${k.size} (${mixText(k.mix)}) × ${formatVND(numericPicks[k.key].price)}`)
+      .join(' + ')
+  const mixText = (mix: Record<string, number>) =>
+    Object.entries(mix)
+      .filter(([, n]) => n > 0)
+      .map(([id, n]) => `${n} ${byId.get(id)?.name ?? '?'}`)
+      .join(' + ')
+  const setPick = (key: string, change: Partial<{ count: string; price: string }>) =>
+    setPicks((ps) => ({ ...ps, [key]: { count: ps[key]?.count ?? '', price: ps[key]?.price ?? '', ...change } }))
+
   const removeLine = (id: string) => setLines((ls) => ls.filter((l) => l.product_id !== id))
 
   const onSubmit = async (values: FormValues) => {
@@ -134,8 +171,9 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
     if (lines.length === 0) return setFormError(t('Đơn bán phải có ít nhất một món'))
     if (!prices) return setFormError(t('Đang tải giá, thử lại sau giây lát'))
     if (isCompany) {
-      if (!Number.isInteger(sets) || sets <= 0) return setFormError(t('Số set phải là số nguyên > 0'))
-      if (!(pricePerSet > 0)) return setFormError(t('Nhập giá 1 set'))
+      const picked = kinds.filter((k) => (numericPicks[k.key]?.count ?? 0) > 0)
+      if (picked.some((k) => !Number.isInteger(numericPicks[k.key].count))) return setFormError(t('Số set phải là số nguyên > 0'))
+      if (picked.some((k) => !(numericPicks[k.key].price > 0))) return setFormError(t('Nhập giá 1 set'))
       if (total > MAX_MONEY) return setFormError(t('Tổng tiền quá lớn, kiểm tra lại'))
     }
     const companyPrices = isCompany ? allocateSetTotal(total, companyLines) : null
@@ -168,9 +206,7 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
       p_store_id: storeId,
       p_sale_date: values.sale_date || null,
       p_channel: values.channel,
-      p_note: isCompany
-        ? [`${sets} set × ${formatVND(pricePerSet)}`, values.note.trim()].filter(Boolean).join(' · ')
-        : values.note.trim() || null,
+      p_note: isCompany ? [setNote(), values.note.trim()].filter(Boolean).join(' · ') : values.note.trim() || null,
       p_items: items,
     })
     if (error) {
@@ -183,8 +219,9 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
         date: formatDate(values.sale_date),
       }),
     )
-    reset({ channel: values.channel, sale_date: values.sale_date, note: '', sets: '1', set_price: '' })
+    reset({ channel: values.channel, sale_date: values.sale_date, note: '' })
     setLines([])
+    setPicks({})
     reload()
     setAlertVersion((v) => v + 1)
   }
@@ -265,48 +302,74 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
           {errors.sale_date && <p className="error">{t(errors.sale_date.message ?? '')}</p>}
           {isCompany && (
             <div className="company-set">
-              <div className="row">
-                <label className="field">
-                  {t('Số set')}
-                  <input type="text" inputMode="numeric" {...register('sets')} />
-                </label>
-                <label className="field">
-                  {t('Giá 1 set')}
-                  <input type="text" inputMode="numeric" placeholder={t('Ví dụ: 50000')} {...register('set_price')} />
-                </label>
-              </div>
-              <small className="muted">
-                {t('Bán set mix theo giá thoả thuận, không dùng giá tại quán. Nhập tổng số hũ từng loại của cả đơn bên dưới (ví dụ 10 set × 2 cacao = 20 cacao).')}
-              </small>
+              <strong>{t('Set đã phân phối cho công ty')}</strong>
+              {!setRows ? (
+                <p className="muted">{t('Đang tải…')}</p>
+              ) : setRows.error ? (
+                <p className="error">{t(setRows.error)}</p>
+              ) : kinds.length === 0 ? (
+                <p className="muted">{t('Chưa phân phối set nào cho công ty. Vào Kho hàng → Phân phối → Cho công ty.')}</p>
+              ) : (
+                <ul className="sale-sets">
+                  {kinds.map((k) => (
+                    <li key={k.key} className={(Number(picks[k.key]?.count) || 0) > 0 ? 'picked' : undefined}>
+                      <div className="sale-set-info">
+                        <span className="badge badge-ok">{t('Set {size}', { size: k.size })}</span>
+                        <span>{mixText(k.mix)}</span>
+                        <small className="muted">{t('Đã phân phối {count} set', { count: k.distributed })}</small>
+                      </div>
+                      <div className="sale-set-inputs">
+                        <QtyStepper
+                          value={picks[k.key]?.count ?? ''}
+                          onChange={(v) => setPick(k.key, { count: v })}
+                          min={0}
+                          label={t('Số set bán: {name}', { name: mixText(k.mix) })}
+                        />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          className="price-input"
+                          placeholder={t('Giá 1 set')}
+                          aria-label={t('Giá 1 set: {name}', { name: mixText(k.mix) })}
+                          value={picks[k.key]?.price ?? ''}
+                          onChange={(e) => setPick(k.key, { price: e.target.value.replace(/[^0-9]/g, '') })}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
           {pricesError && <p className="error">{t('Không tải được giá: {error}', { error: pricesError })}</p>}
 
-          <ProductPicker
-            products={products}
-            selectedIds={lines.map((l) => l.product_id)}
-            onChange={onPick}
-            renderInfo={info}
-            renderBadge={badge}
-            quick={quick}
-            onQuickChange={setQuickMode}
-            renderQuick={(p) => {
-              const line = lineFor(p.id)
-              const warn = line && overStock(line)
-              return (
-                <div className="quick-inputs">
-                  {warn && <small className="warn">{warn}</small>}
-                  {line && !isCompany && priceInput(line, p.name)}
-                  <QtyStepper
-                    value={line?.qty ?? ''}
-                    onChange={(v) => setQty(p.id, v)}
-                    min={0}
-                    label={t('số lượng {name}', { name: p.name })}
-                  />
-                </div>
-              )
-            }}
-          />
+          {!isCompany && (
+            <ProductPicker
+              products={products}
+              selectedIds={lines.map((l) => l.product_id)}
+              onChange={onPick}
+              renderInfo={info}
+              renderBadge={badge}
+              quick={quick}
+              onQuickChange={setQuickMode}
+              renderQuick={(p) => {
+                const line = lineFor(p.id)
+                const warn = line && overStock(line)
+                return (
+                  <div className="quick-inputs">
+                    {warn && <small className="warn">{warn}</small>}
+                    {line && !isCompany && priceInput(line, p.name)}
+                    <QtyStepper
+                      value={line?.qty ?? ''}
+                      onChange={(v) => setQty(p.id, v)}
+                      min={0}
+                      label={t('số lượng {name}', { name: p.name })}
+                    />
+                  </div>
+                )
+              }}
+            />
+          )}
         </div>
 
         <aside className="pos-side card">

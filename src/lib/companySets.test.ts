@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { describeSets, groupIssue, overHomeSets, setTotals, type SetGroup } from './companySets'
+import {
+  describeSets,
+  groupIssue,
+  overHomeSets,
+  saleFromSets,
+  setKey,
+  setKinds,
+  setTotals,
+  type CompanySetRow,
+  type SetGroup,
+} from './companySets'
 
 const names = new Map([
   ['tt', 'Truyền thống'],
@@ -40,5 +50,35 @@ describe('phân phối cho Công ty theo set', () => {
       ['mt', 2],
     ])
     expect(overHomeSets(totals, home)).toEqual([{ productId: 'mt', want: 6, home: 2 }])
+  })
+})
+
+describe('bán kênh Công ty theo set đã phân phối', () => {
+  const rows: CompanySetRow[] = [
+    { set_size: 4, set_count: 1, mix: { mt: 1, pm: 1, nc: 1, tt: 1 } },
+    { set_size: 4, set_count: 1, mix: { tt: 2, nc: 1, pm: 1 } },
+    { set_size: 4, set_count: 2, mix: { pm: 1, nc: 1, tt: 2, mt: 0 } },
+  ]
+
+  it('gộp các lần phân phối cùng thành phần (không phụ thuộc thứ tự vị, bỏ vị 0)', () => {
+    const kinds = setKinds(rows)
+    expect(kinds).toHaveLength(2)
+    expect(kinds[1].distributed).toBe(3)
+    expect(setKey(4, { tt: 2, nc: 1, pm: 1 })).toBe(setKey(4, { pm: 1, nc: 1, tt: 2, mt: 0 }))
+  })
+
+  it('đơn bán: số hũ từng vị và tổng tiền theo số set × giá 1 set', () => {
+    const kinds = setKinds(rows)
+    const sale = saleFromSets(kinds, {
+      [kinds[0].key]: { count: 1, price: 55000 },
+      [kinds[1].key]: { count: 2, price: 50000 },
+    })
+    expect(sale.sets).toBe(3)
+    expect(sale.total).toBe(155000)
+    expect(Object.fromEntries(sale.jars)).toEqual({ mt: 1, pm: 3, nc: 3, tt: 5 })
+  })
+
+  it('không chọn set nào thì đơn trống', () => {
+    expect(saleFromSets(setKinds(rows), {}).jars.size).toBe(0)
   })
 })

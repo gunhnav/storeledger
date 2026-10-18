@@ -213,6 +213,16 @@ export type CreateTransferArgs = {
 
 export type TransferDestination = 'shop' | 'company'
 
+// get_company_sets: một nhóm set đã phân phối cho công ty (chỉ số lượng)
+export type CompanySetDbRow = {
+  id: string
+  distribution_date: string
+  set_size: number
+  set_count: number
+  mix: Record<string, number>
+  note: string | null
+}
+
 export type CreateSaleArgs = {
   p_store_id: string
   p_sale_date: string | null
@@ -450,6 +460,17 @@ export type Database = {
         Returns: undefined
       }
       delete_expense: { Args: { p_expense_id: string }; Returns: undefined }
+      // supabase/migrations/20261018172554_company_sets.sql
+      create_company_distribution: {
+        Args: {
+          p_store_id: string
+          p_date: string | null
+          p_note: string | null
+          p_groups: { size: number; count: number; mix: Record<string, number> }[]
+        }
+        Returns: undefined
+      }
+      get_company_sets: { Args: { p_store_id: string; p_days?: number }; Returns: CompanySetDbRow[] }
       get_store_prices: { Args: { p_store_id: string; p_date: string | null }; Returns: StorePriceRow[] }
       set_product_price: { Args: SetProductPriceArgs; Returns: string }
       get_daily_product_log: { Args: DailyRangeArgs; Returns: DailyProductLogRow[] }

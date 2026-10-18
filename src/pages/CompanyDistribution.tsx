@@ -62,34 +62,23 @@ export function CompanyDistribution({ storeId }: { storeId: string }) {
     setResult(null)
     const description = describeSets(groups, names)
     const fullNote = [description, note.trim()].filter(Boolean).join(' · ')
-    const done: string[] = []
-    const failed: string[] = []
-    for (const [productId, quantity] of totals) {
-      const { error } = await supabase.rpc('create_transfer', {
-        p_store_id: storeId,
-        p_product_id: productId,
-        p_quantity: quantity,
-        p_transfer_date: date,
-        p_note: fullNote,
-        p_destination: 'company',
-      })
-      const name = names.get(productId) ?? ''
-      if (error) failed.push(`${name}: ${t(errorMessage(error))}`)
-      else done.push(`${quantity} ${name}`)
-    }
+    // Một lần gọi: DB phân phối mọi vị và lưu các set trong cùng giao dịch (lỗi thì không ghi gì)
+    const { error } = await supabase.rpc('create_company_distribution', {
+      p_store_id: storeId,
+      p_date: date,
+      p_note: fullNote,
+      p_groups: groups.map((g) => ({ size: g.size, count: g.count, mix: g.mix })),
+    })
     setSaving(false)
-    reload()
-    if (failed.length === 0) {
-      toast.success(t('Đã phân phối cho công ty ngày {date}: {list}', { date: formatDate(date), list: done.join(', ') }))
-      setGroups([newGroup()])
-      setNote('')
+    if (error) {
+      setResult(t(errorMessage(error)))
       return
     }
-    // Lỗi giữa chừng: các vị đã lưu không lưu lại, nên giữ form để người dùng xem và sửa phần lỗi
-    setResult(
-      (done.length > 0 ? t('Đã phân phối: {list}. ', { list: done.join(', ') }) : '') +
-        t('Chưa phân phối: {list}', { list: failed.join('; ') }),
-    )
+    reload()
+    const list = [...totals].map(([productId, quantity]) => `${quantity} ${names.get(productId) ?? ''}`).join(', ')
+    toast.success(t('Đã phân phối cho công ty ngày {date}: {list}', { date: formatDate(date), list }))
+    setGroups([newGroup()])
+    setNote('')
   }
 
   if (stocked.length === 0) return <p className="pos-empty muted">{t('Cửa hàng chưa có món nào đếm tồn kho.')}</p>
