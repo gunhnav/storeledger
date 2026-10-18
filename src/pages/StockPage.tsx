@@ -5,6 +5,7 @@ import { useStore } from '../lib/store'
 import { StockAlertBanner } from '../components/StockAlertBanner'
 import { useStockAlerts } from '../lib/useStockAlerts'
 import { errorMessage } from '../lib/format'
+import { usesDistribution } from '../lib/storeFeatures'
 import type { StockStatus, StockStatusRow } from '../types/database'
 
 const STATUS_LABEL: Record<StockStatus, string> = {
@@ -40,6 +41,8 @@ export function StockPage() {
   if (result.error) return <p className="error">{t(result.error)}</p>
 
   const hasCompany = result.rows.some((r) => (r.qty_company ?? 0) > 0)
+  // Quán không có bước Phân phối: hàng nhập vào thẳng quán, không có tồn ở nhà
+  const showHome = usesDistribution(current?.code)
 
   return (
     <section>
@@ -52,7 +55,7 @@ export function StockPage() {
             <thead>
               <tr>
                 <th>{t('Sản phẩm')}</th>
-                <th className="num">{t('Ở nhà')}</th>
+                {showHome && <th className="num">{t('Ở nhà')}</th>}
                 <th className="num">{t('Ở quán')}</th>
                 {hasCompany && <th className="num">{t('Ở công ty')}</th>}
                 <th>{t('Trạng thái')}</th>
@@ -62,7 +65,7 @@ export function StockPage() {
               {result.rows.map((row) => (
                 <tr key={row.product_id}>
                   <td>{row.product_name}</td>
-                  <td className="num">{row.qty_home}</td>
+                  {showHome && <td className="num">{row.qty_home}</td>}
                   <td className="num">{row.qty_shop}</td>
                   {hasCompany && <td className="num">{row.qty_company ?? 0}</td>}
                   <td>

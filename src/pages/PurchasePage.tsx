@@ -9,6 +9,7 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
+import { usesDistribution } from '../lib/storeFeatures'
 import type { Product, ProductPrice } from '../types/database'
 
 type FormValues = { purchase_date: string; note: string }
@@ -20,12 +21,12 @@ const QUICK_MAX = 10
 
 export function PurchasePage() {
   const { current } = useStore()
-  return current ? <PurchaseForm key={current.id} storeId={current.id} /> : null
+  return current ? <PurchaseForm key={current.id} storeId={current.id} autoToShop={!usesDistribution(current.code)} /> : null
 }
 
 // Nhân viên cũng nhập được, nhưng không bao giờ xem được giá vốn: ô giá để trống
 // thì DB dùng giá vốn hiện hành. Chỉ admin được điền sẵn giá vốn (đọc product_prices).
-function PurchaseForm({ storeId }: { storeId: string }) {
+function PurchaseForm({ storeId, autoToShop }: { storeId: string; autoToShop: boolean }) {
   const { t } = useI18n()
   const toast = useToast()
   const { isAdmin } = useAuth()
@@ -165,6 +166,27 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       setResult({ ok: false, text: errorMessage(error) })
       return
     }
+    // Quán không có bước Phân phối: chuyển ngay toàn bộ hàng vừa nhập ra quán (cùng ngày nhập)
+    if (autoToShop) {
+      const failed: string[] = []
+      for (const item of items) {
+        if (!byId.get(item.product_id)?.tracks_stock) continue
+        const { error: moveError } = await supabase.rpc('create_transfer', {
+          p_store_id: storeId,
+          p_product_id: item.product_id,
+          p_quantity: item.quantity,
+          p_transfer_date: values.purchase_date || null,
+          p_note: 'Tự vào quán khi nhập hàng',
+          p_destination: 'shop',
+        })
+        if (moveError) failed.push(`${byId.get(item.product_id)?.name ?? ''}: ${t(errorMessage(moveError))}`)
+      }
+      if (failed.length > 0) {
+        setResult({ ok: false, text: t('Đã nhập hàng nhưng chưa đưa vào quán được: {list}', { list: failed.join('; ') }) })
+        reload()
+        return
+      }
+    }
     toast.success(
       t('Đã lưu đợt nhập {count} món ngày {date}', { count: lines.length, date: formatDate(values.purchase_date) }),
     )
@@ -176,7 +198,10 @@ function PurchaseForm({ storeId }: { storeId: string }) {
   if (loading) return <p className="muted">{t('Đang tải sản phẩm…')}</p>
   if (error) return <p className="error">{t(error)}</p>
 
-  const info = (p: Product) => t('Ở nhà: {value}', { value: stock.get(p.id)?.qty_home ?? 0 })
+  const info = (p: Product) =>
+    autoToShop
+      ? t('Ở quán: {value}', { value: stock.get(p.id)?.qty_shop ?? 0 })
+      : t('Ở nhà: {value}', { value: stock.get(p.id)?.qty_home ?? 0 })
   const lineFor = (id: string) => lines.find((l) => l.product_id === id)
 
   const costInput = (line: Line, name: string) => (

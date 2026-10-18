@@ -10,6 +10,7 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog, useStorePrices } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
+import { usesDistribution } from '../lib/storeFeatures'
 import { allocateSetTotal, allocatedTotal, setTotal } from '../lib/companySale'
 import type { Product, SaleChannel, StorePriceRow } from '../types/database'
 
@@ -30,10 +31,10 @@ function priceFor(price: StorePriceRow | undefined, channel: SaleChannel): numbe
 export function SalePage() {
   const { current } = useStore()
   // Đổi cửa hàng thì dựng lại form để bỏ các dòng của cửa hàng cũ
-  return current ? <SaleForm key={current.id} storeId={current.id} /> : null
+  return current ? <SaleForm key={current.id} storeId={current.id} distribution={usesDistribution(current.code)} /> : null
 }
 
-function SaleForm({ storeId }: { storeId: string }) {
+function SaleForm({ storeId, distribution }: { storeId: string; distribution: boolean }) {
   const { t } = useI18n()
   const toast = useToast()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
@@ -92,7 +93,7 @@ function SaleForm({ storeId }: { storeId: string }) {
     const shop = row?.qty_shop ?? 0
     const home = row?.qty_home ?? 0
     if ((Number(line.qty) || 0) <= shop) return null
-    if (shop === 0 && home === 0) return t('Chưa có hàng: nhập hàng rồi phân phối ra quán trước')
+    if (shop === 0 && home === 0) return distribution ? t('Chưa có hàng: nhập hàng rồi phân phối ra quán trước') : t('Chưa có hàng: nhập hàng trước')
     if (home > 0) return t('Ở quán còn {shop}, ở nhà còn {home}: phân phối thêm ra quán trước', { shop, home })
     return t('Ở quán chỉ còn {shop}', { shop })
   }

@@ -3,7 +3,10 @@ import { AppLayout } from './components/AppLayout'
 import { RequireAdmin, RequireAuth } from './components/RequireAuth'
 import { StoreProvider } from './components/StoreProvider'
 import { TabsLayout, type Tab } from './components/TabsLayout'
+import type { ReactNode } from 'react'
 import { useAuth } from './lib/auth'
+import { useStore } from './lib/store'
+import { usesDistribution } from './lib/storeFeatures'
 import { AccountPage } from './pages/AccountPage'
 import { BatchStatsPage } from './pages/BatchStatsPage'
 import { BestSellersPage } from './pages/BestSellersPage'
@@ -59,6 +62,20 @@ const LEGACY_PATHS: [string, string][] = [
   ['huong-dan', '/guide'],
 ]
 
+// Kho hàng: quán không có bước Phân phối (Bún đậu) thì ẩn tab đó
+function InventoryLayout() {
+  const { current } = useStore()
+  const tabs = usesDistribution(current?.code) ? STOCK_TABS : STOCK_TABS.filter((tab) => tab.to !== '/inventory/transfers')
+  return <TabsLayout title="Kho hàng" tabs={tabs} />
+}
+
+// Mở thẳng link Phân phối ở quán không dùng bước này thì về Nhập hàng
+function DistributionOnly({ children }: { children: ReactNode }) {
+  const { current } = useStore()
+  if (current && !usesDistribution(current.code)) return <Navigate to="/inventory/purchases" replace />
+  return children
+}
+
 // Mount lại StoreProvider khi đổi user để không giữ danh sách cửa hàng của user trước
 function StoreScope() {
   const { session } = useAuth()
@@ -77,11 +94,11 @@ function App() {
         <Route element={<StoreScope />}>
           <Route index element={<Navigate to="/sales" replace />} />
           <Route path="sales" element={<SalePage />} />
-          <Route path="inventory" element={<TabsLayout title="Kho hàng" tabs={STOCK_TABS} />}>
+          <Route path="inventory" element={<InventoryLayout />}>
             <Route index element={<Navigate to="purchases" replace />} />
             <Route path="purchases" element={<PurchasePage />} />
-            <Route path="transfers" element={<TransferPage />} />
-              <Route path="transfer-grid" element={<Navigate to="/inventory/transfers?view=grid" replace />} />
+            <Route path="transfers" element={<DistributionOnly><TransferPage /></DistributionOnly>} />
+            <Route path="transfer-grid" element={<Navigate to="/inventory/transfers?view=grid" replace />} />
             <Route path="stock" element={<StockPage />} />
           </Route>
           <Route path="account" element={<AccountPage />} />
