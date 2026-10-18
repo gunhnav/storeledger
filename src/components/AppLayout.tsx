@@ -5,7 +5,16 @@ import { useStore } from '../lib/store'
 type NavItem = { to: string; label: string; adminOnly?: boolean }
 
 // Thêm mục mới ở đây khi có trang mới
-const NAV_ITEMS: NavItem[] = [{ to: '/', label: 'Tồn kho' }]
+const NAV_ITEMS: NavItem[] = [
+  { to: '/', label: 'Tồn kho' },
+  { to: '/ban-hang', label: 'Bán hàng' },
+  { to: '/chuyen-hang', label: 'Chuyển hàng' },
+  { to: '/nhap-hang', label: 'Nhập hàng' },
+  { to: '/chi-phi', label: 'Chi phí', adminOnly: true },
+  { to: '/san-pham', label: 'Sản phẩm', adminOnly: true },
+  { to: '/nhan-vien', label: 'Nhân viên', adminOnly: true },
+  { to: '/bao-cao', label: 'Báo cáo', adminOnly: true },
+]
 
 export function AppLayout() {
   const { profile, isAdmin, signOut } = useAuth()

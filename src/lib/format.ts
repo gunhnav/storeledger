@@ -16,3 +16,8 @@ export function errorMessage(error: unknown): string {
   }
   return 'Đã có lỗi xảy ra'
 }
+
+// 'YYYY-MM-DD' → 'dd/mm/yyyy'
+export function formatDate(iso: string): string {
+  return iso.split('-').reverse().join('/')
+}

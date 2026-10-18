@@ -14,6 +14,10 @@
   --low-fg: #92400e;
   --out-bg: #fee2e2;
   --out-fg: #991b1b;
+  /* Màu biểu đồ (đã kiểm tra phân biệt được với người mù màu) */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
 
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light dark;
@@ -39,6 +43,9 @@
     --low-fg: #fde68a;
     --out-bg: #7f1d1d;
     --out-fg: #fecaca;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
   }
 }
 
@@ -250,4 +257,135 @@ th {
 .badge-out {
   background: var(--out-bg);
   color: var(--out-fg);
+}
+
+/* Form nhập liệu */
+.success {
+  color: var(--ok-fg);
+  background: var(--ok-bg);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 0;
+}
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.row > label {
+  flex: 1 1 140px;
+}
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.line .grow {
+  flex: 1 1 100%;
+}
+.line .qty {
+  flex: 0 1 90px;
+}
+.line .money {
+  flex: 1 1 120px;
+}
+.line input,
+.line select {
+  width: 100%;
+}
+.line .full {
+  flex-basis: 100%;
+}
+.total {
+  margin: 0;
+  text-align: right;
+  font-size: 18px;
+}
+.section-title {
+  margin-top: 24px;
+}
+.form label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+tr.inactive td {
+  opacity: 0.55;
+}
+.field-label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+/* Báo cáo */
+.report-block {
+  margin-bottom: 24px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+.stat-value {
+  color: var(--text-h);
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.stat-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.negative,
+.stat-value.negative {
+  color: var(--danger);
+}
+.progress {
+  height: 12px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+}
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.chart-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 8px 4px 0;
+  margin-bottom: 12px;
 }

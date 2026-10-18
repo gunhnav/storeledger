@@ -247,6 +247,17 @@ export type BreakEvenRow = {
   remaining_stock_value: number
 }
 
+// admin_list_users (chỉ admin) — supabase/migrations/20261018020118_staff_management.sql
+export type AdminUserRow = {
+  id: string
+  email: string
+  full_name: string | null
+  role: UserRole
+  created_at: string
+  last_sign_in_at: string | null
+  store_ids: string[]
+}
+
 // ---------------------------------------------------------------------------
 // Kiểu Database theo cấu trúc supabase-js
 // Insert/Update = never với bảng client không được ghi trực tiếp.
@@ -353,6 +364,7 @@ export type Database = {
       get_stock_status: { Args: { p_store_id: string }; Returns: StockStatusRow[] }
       get_pnl: { Args: GetPnlArgs; Returns: PnlRow[] }
       get_break_even: { Args: { p_store_id: string }; Returns: BreakEvenRow[] }
+      admin_list_users: { Args: Record<never, never>; Returns: AdminUserRow[] }
     }
     Enums: Record<never, never>
     CompositeTypes: Record<never, never>
