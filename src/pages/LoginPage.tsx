@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useLocation } from 'react-router-dom'
+import { Icon } from '../components/Icon'
 import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/format'
 
@@ -34,8 +35,16 @@ export function LoginPage() {
 
   return (
     <div className="login">
-      <form className="card form" onSubmit={handleSubmit(onSubmit)}>
-        <h1>Đăng nhập</h1>
+      <form className="card form login-card" onSubmit={handleSubmit(onSubmit)}>
+        <div className="login-brand">
+          <span className="brand-mark">
+            <Icon name="leaf" size={24} />
+          </span>
+          <div>
+            <h1>Đăng nhập</h1>
+            <p className="muted">Quản lý bán hàng, nhập hàng và tồn kho cửa hàng</p>
+          </div>
+        </div>
         <label>
           Email
           <input type="email" autoComplete="username" required {...register('email')} />

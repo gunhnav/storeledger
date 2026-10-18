@@ -4,7 +4,7 @@ import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../lib/store'
 import { useStoreCatalog, useStorePrices } from '../lib/useStoreCatalog'
-import { errorMessage, formatVND, todayVN } from '../lib/format'
+import { MAX_MONEY, MAX_QTY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
 import type { Product, SaleChannel, StorePriceRow } from '../types/database'
 
 type FormValues = { channel: SaleChannel; sale_date: string; note: string }
@@ -37,7 +37,7 @@ function SaleForm({ storeId }: { storeId: string }) {
     control,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: { channel: 'in_store', sale_date: todayVN(), note: '' },
   })
@@ -52,13 +52,19 @@ function SaleForm({ storeId }: { storeId: string }) {
   const priceText = (line: Line) => line.price ?? String(suggested(line.product_id))
   const total = lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(priceText(l)) || 0), 0)
 
-  // Món đếm tồn bán nhiều hơn số ở quầy thì cảnh báo (server vẫn chặn cuối cùng)
+  // Món đếm tồn chỉ bán được hàng đã chuyển ra quầy (server vẫn chặn cuối cùng)
   const overStock = (line: Line) => {
     const product = byId.get(line.product_id)
     if (!product?.tracks_stock) return null
-    const shop = stock.get(product.id)?.qty_shop ?? 0
-    return (Number(line.qty) || 0) > shop ? `Vượt số ở quầy (còn ${shop})` : null
+    const row = stock.get(product.id)
+    const shop = row?.qty_shop ?? 0
+    const home = row?.qty_home ?? 0
+    if ((Number(line.qty) || 0) <= shop) return null
+    if (shop === 0 && home === 0) return 'Chưa có hàng: nhập hàng rồi chuyển ra quầy trước'
+    if (home > 0) return `Ở quầy còn ${shop}, ở nhà còn ${home}: chuyển thêm ra quầy trước`
+    return `Ở quầy chỉ còn ${shop}`
   }
+  const hasStockProblem = lines.some((l) => overStock(l) !== null)
 
   // Đổi kênh hoặc ngày thì bỏ giá đã sửa tay, dùng lại giá gợi ý mới
   const resetPrices = () => setLines((ls) => ls.map((l) => ({ ...l, price: null })))
@@ -102,9 +108,16 @@ function SaleForm({ storeId }: { storeId: string }) {
       if (!Number.isInteger(quantity) || quantity <= 0) {
         return setFormError(`Số lượng của "${name}" phải là số nguyên > 0`)
       }
+      if (quantity > MAX_QTY) return setFormError(`Số lượng của "${name}" quá lớn, kiểm tra lại`)
+      const stockProblem = overStock(line)
+      if (stockProblem) return setFormError(`"${name}": ${stockProblem}`)
+      if (line.price === null && !prices.has(line.product_id)) {
+        return setFormError(`"${name}" chưa có giá bán vào ngày này: nhập đơn giá hoặc nhờ admin đặt giá`)
+      }
       if (priceText(line).trim() === '' || !Number.isFinite(unitPrice) || unitPrice < 0) {
         return setFormError(`Đơn giá của "${name}" không hợp lệ`)
       }
+      if (unitPrice > MAX_MONEY) return setFormError(`Đơn giá của "${name}" quá lớn, kiểm tra lại`)
       items.push({ product_id: line.product_id, quantity, unit_price: unitPrice })
     }
 
@@ -131,7 +144,10 @@ function SaleForm({ storeId }: { storeId: string }) {
   const info = (p: Product) => {
     const parts: string[] = []
     if (prices) parts.push(prices.has(p.id) ? formatVND(suggested(p.id)) : 'chưa có giá')
-    if (p.tracks_stock) parts.push(`Còn: ${stock.get(p.id)?.qty_shop ?? 0}`)
+    if (p.tracks_stock) {
+      const shop = stock.get(p.id)?.qty_shop ?? 0
+      parts.push(shop > 0 ? `Còn: ${shop}` : 'Hết ở quầy')
+    }
     return parts.join(' · ')
   }
 
@@ -162,9 +178,14 @@ function SaleForm({ storeId }: { storeId: string }) {
           </label>
           <label>
             Ngày bán
-            <input type="date" {...register('sale_date', { required: true, onChange: resetPrices })} />
+            <input
+              type="date"
+              max={todayVN()}
+              {...register('sale_date', { required: 'Chọn ngày bán', validate: notFuture, onChange: resetPrices })}
+            />
           </label>
         </div>
+        {errors.sale_date && <p className="error">{errors.sale_date.message}</p>}
         {pricesError && <p className="error">Không tải được giá: {pricesError}</p>}
 
         <ProductPicker
@@ -231,7 +252,10 @@ function SaleForm({ storeId }: { storeId: string }) {
 
         {formError && <p className="error">{formError}</p>}
         {result && <p className={result.ok ? 'success' : 'error'}>{result.text}</p>}
-        <button type="submit" className="primary" disabled={isSubmitting}>
+        {hasStockProblem && (
+          <p className="error">Có món chưa đủ hàng ở quầy. Sửa số lượng hoặc chuyển hàng ra quầy trước.</p>
+        )}
+        <button type="submit" className="primary" disabled={isSubmitting || hasStockProblem}>
           {isSubmitting ? 'Đang lưu…' : 'Lưu đơn bán'}
         </button>
       </form>

@@ -4,7 +4,7 @@ import { ProductPicker, QtyStepper } from '../components/ProductPicker'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
-import { errorMessage, todayVN } from '../lib/format'
+import { MAX_QTY, errorMessage, notFuture, todayVN } from '../lib/format'
 import type { Product } from '../types/database'
 
 type FormValues = { transfer_date: string; note: string }
@@ -28,7 +28,7 @@ function TransferForm({ storeId }: { storeId: string }) {
     register,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({ defaultValues: { transfer_date: todayVN(), note: '' } })
 
   const stocked = products.filter((p) => p.tracks_stock)
@@ -38,7 +38,8 @@ function TransferForm({ storeId }: { storeId: string }) {
   // Chuyển nhiều hơn số ở nhà thì cảnh báo và không cho lưu
   const overHome = (line: Line) => {
     const home = stock.get(line.product_id)?.qty_home ?? 0
-    return (Number(line.qty) || 0) > home ? `Vượt số ở nhà (còn ${home})` : null
+    if ((Number(line.qty) || 0) <= home) return null
+    return home === 0 ? 'Ở nhà hết hàng: nhập hàng trước' : `Vượt số ở nhà (còn ${home})`
   }
 
   const onPick = (ids: string[]) => {
@@ -74,6 +75,7 @@ function TransferForm({ storeId }: { storeId: string }) {
       if (!Number.isInteger(quantity) || quantity <= 0) {
         return setFormError(`Số lượng của "${name}" phải là số nguyên > 0`)
       }
+      if (quantity > MAX_QTY) return setFormError(`Số lượng của "${name}" quá lớn, kiểm tra lại`)
       const warn = overHome(line)
       if (warn) return setFormError(`"${name}": ${warn}`)
     }
@@ -125,8 +127,13 @@ function TransferForm({ storeId }: { storeId: string }) {
       <form className="card form" onSubmit={handleSubmit(onSubmit)}>
         <label>
           Ngày chuyển
-          <input type="date" {...register('transfer_date', { required: true })} />
+          <input
+            type="date"
+            max={todayVN()}
+            {...register('transfer_date', { required: 'Chọn ngày chuyển', validate: notFuture })}
+          />
         </label>
+        {errors.transfer_date && <p className="error">{errors.transfer_date.message}</p>}
 
         {stocked.length === 0 ? (
           <p className="muted">Cửa hàng chưa có món nào đếm tồn kho.</p>

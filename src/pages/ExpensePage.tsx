@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../lib/store'
-import { errorMessage, formatVND, todayVN } from '../lib/format'
+import { MAX_MONEY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
 import type { Expense } from '../types/database'
 
 type FormValues = { expense_date: string; category: string; amount: number; note: string }
@@ -73,7 +73,11 @@ function ExpenseForm({ storeId }: { storeId: string }) {
         <div className="row">
           <label>
             Ngày
-            <input type="date" {...register('expense_date', { required: true })} />
+            <input
+              type="date"
+              max={todayVN()}
+              {...register('expense_date', { required: 'Chọn ngày', validate: notFuture })}
+            />
           </label>
           <label>
             Số tiền
@@ -84,12 +88,19 @@ function ExpenseForm({ storeId }: { storeId: string }) {
               step="any"
               {...register('amount', {
                 valueAsNumber: true,
-                validate: (v) => (Number.isFinite(v) && v >= 0) || 'Nhập số tiền hợp lệ',
+                validate: (v) =>
+                  !Number.isFinite(v) || v <= 0
+                    ? 'Số tiền phải lớn hơn 0'
+                    : v > MAX_MONEY
+                      ? 'Số tiền quá lớn, kiểm tra lại'
+                      : true,
               })}
             />
           </label>
         </div>
-        {errors.amount && <p className="error">{errors.amount.message}</p>}
+        {(errors.expense_date || errors.amount) && (
+          <p className="error">{errors.expense_date?.message ?? errors.amount?.message}</p>
+        )}
 
         <label>
           Nhóm chi phí
@@ -97,7 +108,8 @@ function ExpenseForm({ storeId }: { storeId: string }) {
             type="text"
             list="expense-categories"
             {...register('category', {
-              validate: (v) => v.trim() !== '' || 'Nhập nhóm chi phí',
+              validate: (v) =>
+                v.trim() === '' ? 'Nhập nhóm chi phí' : v.trim().length > 50 ? 'Tối đa 50 ký tự' : true,
             })}
           />
           <datalist id="expense-categories">

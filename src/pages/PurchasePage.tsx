@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
-import { errorMessage, formatVND, todayVN } from '../lib/format'
+import { MAX_MONEY, MAX_QTY, errorMessage, formatVND, notFuture, todayVN } from '../lib/format'
 import type { Product, ProductPrice } from '../types/database'
 
 type FormValues = { purchase_date: string; note: string }
@@ -35,7 +35,7 @@ function PurchaseForm({ storeId }: { storeId: string }) {
     control,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({ defaultValues: { purchase_date: todayVN(), note: '' } })
 
   const purchaseDate = useWatch({ control, name: 'purchase_date' })
@@ -109,11 +109,19 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       if (!Number.isInteger(quantity) || quantity <= 0) {
         return setFormError(`Số lượng của "${name}" phải là số nguyên > 0`)
       }
+      if (quantity > MAX_QTY) return setFormError(`Số lượng của "${name}" quá lớn, kiểm tra lại`)
+      // Admin thấy được giá vốn nên báo sớm món chưa có giá vốn mà ô giá để trống
+      if (isAdmin && costText(line) === '') {
+        return setFormError(`"${name}" chưa có giá vốn: nhập giá nhập cho món này`)
+      }
       // Chỉ gửi giá khi người dùng tự gõ; còn lại để DB lấy giá vốn hiện hành
       const typed = line.cost?.trim() ?? ''
       const unitCost = typed === '' ? null : Number(typed)
       if (unitCost !== null && (!Number.isFinite(unitCost) || unitCost < 0)) {
         return setFormError(`Giá nhập của "${name}" không hợp lệ`)
+      }
+      if (unitCost !== null && unitCost > MAX_MONEY) {
+        return setFormError(`Giá nhập của "${name}" quá lớn, kiểm tra lại`)
       }
       items.push({ product_id: line.product_id, quantity, unit_cost: unitCost })
     }
@@ -158,8 +166,13 @@ function PurchaseForm({ storeId }: { storeId: string }) {
       <form className="card form" onSubmit={handleSubmit(onSubmit)}>
         <label>
           Ngày nhập
-          <input type="date" {...register('purchase_date', { required: true })} />
+          <input
+            type="date"
+            max={todayVN()}
+            {...register('purchase_date', { required: 'Chọn ngày nhập', validate: notFuture })}
+          />
         </label>
+        {errors.purchase_date && <p className="error">{errors.purchase_date.message}</p>}
 
         {stocked.length === 0 ? (
           <p className="muted">Cửa hàng chưa có món nào đếm tồn kho.</p>

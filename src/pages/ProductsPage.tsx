@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../lib/store'
-import { errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
+import { MAX_MONEY, errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
 import type { Product, ProductPrice, StorePriceRow } from '../types/database'
 
 type FormValues = {
@@ -48,8 +48,13 @@ const EMPTY: FormValues = {
 // Ô số để trống thì thành null (giá app là không bắt buộc)
 const optionalNumber = (v: unknown) => (v === '' || v === null ? null : Number(v))
 
-const money = (v: number) => (Number.isFinite(v) && v >= 0) || 'Nhập số tiền hợp lệ'
+const money = (v: number) =>
+  !Number.isFinite(v) || v < 0 ? 'Nhập số tiền hợp lệ' : v > MAX_MONEY ? 'Số tiền quá lớn, kiểm tra lại' : true
 const optionalMoney = (v: number | null) => v === null || money(v)
+// Giá bán phải > 0 (bán giá 0 thường là gõ nhầm)
+const salePrice = (v: number) => (Number.isFinite(v) && v > 0) ? money(v) : 'Giá bán phải lớn hơn 0'
+const productName = (v: string) =>
+  v.trim() === '' ? 'Nhập tên sản phẩm' : v.trim().length > 100 ? 'Tên tối đa 100 ký tự' : true
 
 function saveError(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
@@ -225,7 +230,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                 Tên sản phẩm
                 <input
                   type="text"
-                  {...register('name', { validate: (v) => v.trim() !== '' || 'Nhập tên sản phẩm' })}
+                  {...register('name', { validate: productName })}
                 />
               </label>
               <label>
@@ -247,7 +252,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                       inputMode="numeric"
                       min={0}
                       step="any"
-                      {...register('sale_price', { valueAsNumber: true, validate: money })}
+                      {...register('sale_price', { valueAsNumber: true, validate: salePrice })}
                     />
                   </label>
                   <label>
@@ -468,7 +473,7 @@ function PriceEditor({
               inputMode="numeric"
               min={0}
               step="any"
-              {...register('sale_price', { valueAsNumber: true, validate: money })}
+              {...register('sale_price', { valueAsNumber: true, validate: salePrice })}
             />
           </label>
           <label>
@@ -613,7 +618,7 @@ function BulkCostEditor({
     for (const product of chosen) {
       const text = costText(product.id).trim()
       const cost = Number(text)
-      if (text === '' || !Number.isFinite(cost) || cost < 0) {
+      if (text === '' || !Number.isFinite(cost) || cost < 0 || cost > MAX_MONEY) {
         return setError(`Giá vốn của "${product.name}" chưa hợp lệ`)
       }
       const base = effectiveAt(history, product.id, date)

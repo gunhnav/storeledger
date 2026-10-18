@@ -1,25 +1,36 @@
+/* Giao diện: xanh lá tươi + vàng nắng trên nền kem, bo tròn, nút dạng viên */
 :root {
-  --text: #3f3b45;
-  --text-h: #08060d;
-  --muted: #7a7482;
-  --bg: #f7f7f8;
+  --text: #2b3a2e;
+  --text-h: #11251a;
+  --muted: #6b7a6e;
+  --bg: #f6f5f0;
   --surface: #fff;
-  --border: #e5e4e7;
-  --accent: #2563eb;
+  --surface-2: #f2f6f0;
+  --border: #e3e7dd;
+  --accent: #107634;
+  --accent-hover: #0c5e29;
   --accent-text: #fff;
-  --danger: #b91c1c;
-  --ok-bg: #dcfce7;
-  --ok-fg: #166534;
-  --low-bg: #fef3c7;
-  --low-fg: #92400e;
-  --out-bg: #fee2e2;
-  --out-fg: #991b1b;
+  --accent-soft: #e5f1e8;
+  --gold: #eecd15;
+  --gold-soft: #fdf6d3;
+  --gold-text: #4d3f00;
+  --danger: #c0262d;
+  --ok-bg: #dcf3e2;
+  --ok-fg: #12632f;
+  --low-bg: #fdf1c7;
+  --low-fg: #8a5a00;
+  --out-bg: #fde3e3;
+  --out-fg: #9f1d22;
+  --topbar-from: #0d6a2d;
+  --topbar-to: #15873e;
+  --shadow: 0 1px 2px rgba(16, 40, 20, 0.05), 0 10px 28px -14px rgba(16, 40, 20, 0.18);
+  --radius: 16px;
   /* Màu biểu đồ (đã kiểm tra phân biệt được với người mù màu) */
   --chart-1: #2a78d6;
   --chart-2: #eb6834;
   --chart-3: #1baf7a;
 
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  font: 16px/1.5 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light dark;
   color: var(--text);
   background: var(--bg);
@@ -28,21 +39,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #d1d5db;
-    --text-h: #f3f4f6;
-    --muted: #9ca3af;
-    --bg: #16171d;
-    --surface: #1f2028;
-    --border: #2e303a;
-    --accent: #60a5fa;
-    --accent-text: #0b1220;
-    --danger: #f87171;
-    --ok-bg: #14532d;
-    --ok-fg: #bbf7d0;
-    --low-bg: #78350f;
+    --text: #d5ddd6;
+    --text-h: #f2f6f2;
+    --muted: #93a197;
+    --bg: #0f1411;
+    --surface: #171e19;
+    --surface-2: #1d2620;
+    --border: #2a352d;
+    --accent: #3fb26b;
+    --accent-hover: #5cc485;
+    --accent-text: #06210f;
+    --accent-soft: #1c3324;
+    --gold: #f0d340;
+    --gold-soft: #3a3412;
+    --gold-text: #f6e48a;
+    --danger: #f2777c;
+    --ok-bg: #173d24;
+    --ok-fg: #b9ecc8;
+    --low-bg: #4a3a0c;
     --low-fg: #fde68a;
-    --out-bg: #7f1d1d;
+    --out-bg: #5a1d20;
     --out-fg: #fecaca;
+    --topbar-from: #0a3d1c;
+    --topbar-to: #0f5428;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px -14px rgba(0, 0, 0, 0.6);
     --chart-1: #3987e5;
     --chart-2: #d95926;
     --chart-3: #199e70;
@@ -61,14 +81,27 @@ body {
 h1,
 h2 {
   color: var(--text-h);
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 16px;
+  letter-spacing: -0.01em;
 }
 h1 {
-  font-size: 24px;
+  font-size: 26px;
 }
 h2 {
   font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* Vạch màu trước tiêu đề mục */
+h2::before {
+  content: '';
+  width: 5px;
+  height: 20px;
+  border-radius: 3px;
+  background: linear-gradient(var(--gold), var(--accent));
+  flex: none;
 }
 
 input,
@@ -80,38 +113,74 @@ button {
 
 input,
 select {
-  padding: 8px 10px;
+  min-height: 40px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input[type='checkbox'] {
+  min-height: 0;
+  accent-color: var(--accent);
 }
 
 button {
-  padding: 8px 14px;
+  min-height: 40px;
+  padding: 8px 18px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 999px;
   background: var(--surface);
   cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s;
+}
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 button:disabled {
-  opacity: 0.6;
-  cursor: default;
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 6px 16px -8px var(--accent);
+}
+button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 button.link {
+  min-height: 0;
   border: none;
   background: none;
-  padding: 4px;
+  padding: 4px 6px;
   color: var(--accent);
+  font-weight: 600;
+  box-shadow: none;
+}
+button.link:hover:not(:disabled) {
+  text-decoration: underline;
 }
 
 a {
   color: var(--accent);
+}
+
+.icon {
+  flex: none;
 }
 
 .muted {
@@ -133,8 +202,9 @@ a {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 24px;
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
 }
 
 .form {
@@ -145,8 +215,10 @@ a {
 .form label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   font-size: 14px;
+  font-weight: 500;
+  color: var(--text-h);
 }
 
 /* Đăng nhập */
@@ -155,58 +227,193 @@ a {
   display: grid;
   place-items: center;
   padding: 16px;
+  background:
+    radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--gold) 35%, transparent), transparent 40%),
+    linear-gradient(135deg, var(--topbar-from), var(--topbar-to));
 }
 .login .card {
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
+}
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.login-brand h1 {
+  margin: 0;
+}
+.login-brand p {
+  margin: 2px 0 0;
+  font-size: 14px;
 }
 
 /* Khung ứng dụng */
-.layout {
-  max-width: 960px;
-  margin: 0 auto;
-}
 .topbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 8px 16px 0;
+  background: linear-gradient(135deg, var(--topbar-from), var(--topbar-to));
+  color: #fff;
   position: sticky;
   top: 0;
+  z-index: 10;
+  box-shadow: 0 6px 20px -12px rgba(0, 0, 0, 0.45);
+}
+.topbar-inner,
+.content {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.topbar-inner {
+  padding: 10px 16px 0;
 }
 .topbar-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px 14px;
   flex-wrap: wrap;
 }
 .brand {
-  color: var(--text-h);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--gold);
+  color: #1f3a00;
+  flex: none;
+}
+.store-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-weight: 600;
+  min-height: 36px;
+}
+.store-pill > span {
+  padding-right: 10px;
+}
+.store-pill select {
+  min-height: 32px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.store-pill select:focus {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+.store-pill option {
+  color: #11251a;
 }
 .spacer {
   flex: 1;
 }
 .user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #1f3a00;
+  font-weight: 800;
+  font-size: 13px;
+}
+.user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.user-name {
+  font-weight: 600;
   font-size: 14px;
+}
+.user-role {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.icon-button {
+  min-height: 36px;
+  width: 36px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+.icon-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 .nav {
   display: flex;
   gap: 4px;
   overflow-x: auto;
-  margin-top: 8px;
+  margin-top: 10px;
+  padding-bottom: 10px;
+  scrollbar-width: none;
 }
 .nav a {
-  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
   text-decoration: none;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 500;
+  font-size: 15px;
   white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.nav a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 .nav a.active {
-  color: var(--text-h);
-  border-bottom-color: var(--accent);
+  background: var(--gold);
+  color: #1f3a00;
+  font-weight: 700;
 }
 .content {
-  padding: 16px;
+  padding: 20px 16px 40px;
+}
+/* Điện thoại: ẩn chữ vai trò để thanh trên gọn */
+@media (max-width: 520px) {
+  .topbar-row {
+    flex-wrap: nowrap;
+  }
+  .user-text,
+  .brand-text {
+    display: none;
+  }
+  .store-pill {
+    min-width: 0;
+  }
+  .store-pill select {
+    min-width: 0;
+    max-width: 52vw;
+    text-overflow: ellipsis;
+  }
 }
 
 /* Bảng */
@@ -214,7 +421,8 @@ a {
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 table {
   width: 100%;
@@ -222,17 +430,23 @@ table {
 }
 th,
 td {
-  padding: 10px 12px;
+  padding: 11px 14px;
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
 tbody tr:last-child td {
   border-bottom: none;
 }
+tbody tr:hover td {
+  background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
+}
 th {
-  font-size: 13px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--muted);
-  font-weight: 500;
+  font-weight: 600;
+  background: var(--surface-2);
 }
 .num {
   text-align: right;
@@ -241,9 +455,10 @@ th {
 
 .badge {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
 }
 .badge-ok {
@@ -263,9 +478,11 @@ th {
 .success {
   color: var(--ok-fg);
   background: var(--ok-bg);
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border-left: 4px solid var(--accent);
   margin: 0;
+  font-weight: 500;
 }
 .row {
   display: flex;
@@ -305,6 +522,14 @@ th {
   margin: 0;
   text-align: right;
   font-size: 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--gold-soft);
+  color: var(--gold-text);
+}
+.total strong {
+  font-size: 22px;
+  font-weight: 800;
 }
 .section-title {
   margin-top: 24px;
@@ -337,8 +562,10 @@ tr.inactive td {
 .stat {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-top: 3px solid var(--gold);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
 }
 .stat-label {
   font-size: 13px;
@@ -346,8 +573,8 @@ tr.inactive td {
 }
 .stat-value {
   color: var(--text-h);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .stat-sub {
@@ -366,7 +593,7 @@ tr.inactive td {
 }
 .progress-bar {
   height: 100%;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--gold));
   border-radius: 999px;
 }
 .filters {
@@ -385,7 +612,8 @@ tr.inactive td {
 .chart-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
   padding: 12px 8px 4px 0;
   margin-bottom: 12px;
 }
@@ -444,9 +672,10 @@ td.actions {
   font-size: 14px;
 }
 .chip.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1f3a00;
+  font-weight: 700;
 }
 .picker-list {
   list-style: none;
@@ -455,7 +684,8 @@ td.actions {
   max-height: 420px;
   overflow-y: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 14px;
+  background: var(--surface);
 }
 .picker-list > li + li {
   border-top: 1px solid var(--border);
@@ -473,7 +703,7 @@ td.actions {
   flex-wrap: wrap;
 }
 .picker-row.selected {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: var(--accent-soft);
 }
 .picker-row input[type='checkbox'] {
   width: 20px;

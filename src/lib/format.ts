@@ -32,3 +32,12 @@ export function normalizeSearch(text: string): string {
     .toLowerCase()
     .trim()
 }
+
+// Giới hạn chặn gõ nhầm (DB cũng kiểm tra cùng mức)
+export const MAX_QTY = 10000
+export const MAX_MONEY = 1_000_000_000
+
+// Ngày giao dịch không được ở tương lai (so với giờ Việt Nam)
+export function notFuture(date: string): true | string {
+  return date <= todayVN() || 'Không chọn ngày trong tương lai'
+}
