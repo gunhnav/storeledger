@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
 import { RequireAdmin, RequireAuth } from './components/RequireAuth'
 import { StoreProvider } from './components/StoreProvider'
@@ -30,7 +30,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
-          <Route index element={<StockPage />} />
+          <Route index element={<Navigate to="/ban-hang" replace />} />
+          <Route path="ton-kho" element={<StockPage />} />
           <Route path="ban-hang" element={<SalePage />} />
           <Route path="chuyen-hang" element={<TransferPage />} />
           <Route path="nhap-hang" element={<PurchasePage />} />

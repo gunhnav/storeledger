@@ -1,20 +1,21 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useStore } from '../lib/store'
 import { Icon, type IconName } from './Icon'
 
 type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean }
 
-// Thêm mục mới ở đây khi có trang mới. Nhân viên để cuối cùng.
+// Thứ tự theo công việc hằng ngày. Thêm mục mới ở đây khi có trang mới.
+// Nhân viên nằm trong menu ở tên người dùng (chỉ quản trị).
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Tồn kho', icon: 'stock' },
   { to: '/ban-hang', label: 'Bán hàng', icon: 'sale' },
   { to: '/chuyen-hang', label: 'Chuyển hàng', icon: 'transfer' },
   { to: '/nhap-hang', label: 'Nhập hàng', icon: 'purchase' },
   { to: '/chi-phi', label: 'Chi phí', icon: 'expense', adminOnly: true },
   { to: '/san-pham', label: 'Sản phẩm', icon: 'product', adminOnly: true },
+  { to: '/ton-kho', label: 'Tồn kho', icon: 'stock' },
   { to: '/bao-cao', label: 'Báo cáo', icon: 'report', adminOnly: true },
-  { to: '/nhan-vien', label: 'Nhân viên', icon: 'staff', adminOnly: true },
 ]
 
 // Chữ cái đầu của tên để làm avatar
@@ -60,18 +61,7 @@ export function AppLayout() {
               )}
             </span>
             <span className="spacer" />
-            <span className="user">
-              <span className="avatar" aria-hidden="true">
-                {initials(displayName)}
-              </span>
-              <span className="user-text">
-                <span className="user-name">{displayName}</span>
-                <span className="user-role">{isAdmin ? 'Quản trị' : 'Nhân viên'}</span>
-              </span>
-            </span>
-            <button type="button" className="icon-button" onClick={() => signOut()} aria-label="Đăng xuất" title="Đăng xuất">
-              <Icon name="logout" />
-            </button>
+            <UserMenu name={displayName} isAdmin={isAdmin} onSignOut={() => signOut()} />
           </div>
           <nav className="nav">
             {items.map((item) => (
@@ -94,6 +84,86 @@ export function AppLayout() {
           <Outlet />
         )}
       </main>
+    </div>
+  )
+}
+
+// Menu ở tên người dùng: Nhân viên (chỉ quản trị) và Đăng xuất
+function UserMenu({
+  name,
+  isAdmin,
+  onSignOut,
+}: {
+  name: string
+  isAdmin: boolean
+  onSignOut: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const location = useLocation()
+  const [lastPath, setLastPath] = useState(location.pathname)
+
+  // Chuyển trang thì đóng menu
+  if (lastPath !== location.pathname) {
+    setLastPath(location.pathname)
+    setOpen(false)
+  }
+
+  // Bấm ra ngoài hoặc nhấn Esc thì đóng menu
+  useEffect(() => {
+    if (!open) return
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="user-menu" ref={ref}>
+      <button
+        type="button"
+        className="user"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="avatar" aria-hidden="true">
+          {initials(name)}
+        </span>
+        <span className="user-text">
+          <span className="user-name">{name}</span>
+          <span className="user-role">{isAdmin ? 'Quản trị' : 'Nhân viên'}</span>
+        </span>
+        <span className={`caret${open ? ' up' : ''}`} aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className="user-dropdown" role="menu">
+          <div className="user-dropdown-head">
+            <strong>{name}</strong>
+            <span className="muted">{isAdmin ? 'Quản trị' : 'Nhân viên'}</span>
+          </div>
+          {isAdmin && (
+            <NavLink to="/nhan-vien" role="menuitem" className="user-dropdown-item">
+              <Icon name="staff" />
+              Nhân viên
+            </NavLink>
+          )}
+          <button type="button" role="menuitem" className="user-dropdown-item danger" onClick={onSignOut}>
+            <Icon name="logout" />
+            Đăng xuất
+          </button>
+        </div>
+      )}
     </div>
   )
 }
