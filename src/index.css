@@ -1140,3 +1140,123 @@ button.block {
     max-height: none;
   }
 }
+
+/* Nhật ký ngày: bảng ma trận ngày × hạng mục */
+.log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+}
+.log-filters .field {
+  flex: 0 1 170px;
+}
+.log-quick {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.log-wrap {
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+}
+.log-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+.log-table th,
+.log-table td {
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+.log-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.log-table th .day-label {
+  display: block;
+  color: var(--text-h);
+  font-weight: 700;
+}
+.log-table th .weekday {
+  display: block;
+  font-size: 11px;
+}
+.log-table th.sunday .weekday {
+  color: var(--danger);
+}
+/* Cột đầu dính khi cuộn ngang */
+.log-table .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  min-width: 180px;
+  max-width: 240px;
+  white-space: normal;
+  border-right: 1px solid var(--border);
+}
+.log-table thead .sticky-col {
+  z-index: 3;
+  background: var(--surface-2);
+}
+.log-table .total-col {
+  background: var(--gold-soft);
+  color: var(--gold-text);
+  font-weight: 700;
+  border-right: 1px solid var(--border);
+}
+.log-table thead .total-col {
+  color: var(--gold-text);
+}
+.log-section td {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+.log-section td.sticky-col {
+  background: var(--accent-soft);
+}
+.log-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+}
+.log-table tbody tr.log-section:hover td {
+  background: var(--accent-soft);
+}
+.log-table .zero {
+  color: var(--muted);
+  opacity: 0.6;
+}
+.log-text {
+  font-size: 13px;
+}
+.log-text-row .log-text {
+  white-space: normal;
+  min-width: 140px;
+  vertical-align: top;
+}
+.tone-out {
+  background: var(--out-bg) !important;
+  color: var(--out-fg) !important;
+  font-weight: 700;
+}
+.tone-low {
+  background: var(--low-bg) !important;
+  color: var(--low-fg) !important;
+  font-weight: 700;
+}
+.tone-neg {
+  color: var(--danger) !important;
+}
+.tone-ok {
+  color: var(--ok-fg) !important;
+  font-weight: 800;
+}

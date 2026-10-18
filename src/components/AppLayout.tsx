@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/san-pham', label: 'Sản phẩm', icon: 'product', adminOnly: true },
   { to: '/ton-kho', label: 'Tồn kho', icon: 'stock' },
   { to: '/bao-cao', label: 'Báo cáo', icon: 'report', adminOnly: true },
+  { to: '/nhat-ky', label: 'Nhật ký ngày', icon: 'log', adminOnly: true },
 ]
 
 // Chữ cái đầu của tên để làm avatar

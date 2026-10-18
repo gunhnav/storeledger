@@ -13,7 +13,16 @@ import {
 } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../lib/store'
-import { errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
+import {
+  addDays,
+  errorMessage,
+  formatCompact,
+  formatDate,
+  formatVND,
+  monthEnd,
+  monthStart,
+  todayVN,
+} from '../lib/format'
 import type { BreakEvenRow, PnlPeriod, PnlRow } from '../types/database'
 
 export function ReportsPage() {
@@ -35,35 +44,9 @@ function Reports({ storeId }: { storeId: string }) {
 // Ngày tháng: làm việc trên chuỗi 'YYYY-MM-DD' theo UTC để không lệch múi giờ
 // ---------------------------------------------------------------------------
 
-function toISO(time: number): string {
-  return new Date(time).toISOString().slice(0, 10)
-}
-
-function parts(iso: string): [number, number, number] {
-  const [y, m, d] = iso.split('-').map(Number)
-  return [y, m - 1, d]
-}
-
-function addDays(iso: string, days: number): string {
-  const [y, m, d] = parts(iso)
-  return toISO(Date.UTC(y, m, d + days))
-}
-
-// Ngày đầu / cuối tháng, lệch `offset` tháng so với tháng chứa `iso`
-function monthStart(iso: string, offset = 0): string {
-  const [y, m] = parts(iso)
-  return toISO(Date.UTC(y, m + offset, 1))
-}
-
-function monthEnd(iso: string, offset = 0): string {
-  const [y, m] = parts(iso)
-  return toISO(Date.UTC(y, m + offset + 1, 0))
-}
-
 // Thứ Hai của tuần chứa `iso` (khớp date_trunc('week') trong DB)
 function mondayOf(iso: string): string {
-  const [y, m, d] = parts(iso)
-  const weekday = new Date(Date.UTC(y, m, d)).getUTCDay()
+  const weekday = new Date(`${iso}T00:00:00Z`).getUTCDay()
   return addDays(iso, -((weekday + 6) % 7))
 }
 
@@ -80,17 +63,6 @@ function periodLabel(iso: string, period: PnlPeriod): string {
   if (period === 'day') return `${d}/${m}`
   if (period === 'week') return `Tuần ${d}/${m}`
   return `${m}/${y}`
-}
-
-const compact = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 })
-
-// Trục Y rút gọn: 1,2tr · 350k · 2,5 tỷ
-function formatCompact(value: number): string {
-  const abs = Math.abs(value)
-  if (abs >= 1e9) return `${compact.format(value / 1e9)} tỷ`
-  if (abs >= 1e6) return `${compact.format(value / 1e6)}tr`
-  if (abs >= 1e3) return `${compact.format(value / 1e3)}k`
-  return compact.format(value)
 }
 
 const percent = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 })

@@ -3,6 +3,7 @@ import { AppLayout } from './components/AppLayout'
 import { RequireAdmin, RequireAuth } from './components/RequireAuth'
 import { StoreProvider } from './components/StoreProvider'
 import { useAuth } from './lib/auth'
+import { DailyLogPage } from './pages/DailyLogPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -40,6 +41,7 @@ function App() {
             <Route path="san-pham" element={<ProductsPage />} />
             <Route path="nhan-vien" element={<StaffPage />} />
             <Route path="bao-cao" element={<ReportsPage />} />
+            <Route path="nhat-ky" element={<DailyLogPage />} />
           </Route>
         </Route>
       </Route>

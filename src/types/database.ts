@@ -255,6 +255,44 @@ export type SetProductPriceArgs = {
   p_note: string | null
 }
 
+// Nhật ký ngày (chỉ admin) — supabase/migrations/20261018041617_daily_log_report.sql
+export type DailyRangeArgs = { p_store_id: string; p_from: string; p_to: string }
+
+// Một dòng (ngày, sản phẩm). shop_end / home_end = null với món không đếm tồn.
+export type DailyProductLogRow = {
+  day: string
+  product_id: string
+  product_name: string
+  category: string | null
+  tracks_stock: boolean
+  qty_transferred: number
+  qty_sold: number
+  gross_revenue: number
+  cogs: number
+  shop_end: number | null
+  home_end: number | null
+  low_stock_threshold: number
+}
+
+// Một dòng mỗi ngày; các cột cum_* luỹ kế từ giao dịch đầu tiên của cửa hàng
+export type DailySummaryRow = {
+  day: string
+  qty_sold: number
+  gross_revenue: number
+  commission: number
+  net_revenue: number
+  expenses: number
+  cogs: number
+  gross_profit: number
+  net_profit: number
+  purchase_cost: number
+  cum_invested: number
+  cum_net_revenue: number
+  cum_cash_flow: number
+  is_break_even: boolean
+  price_notes: string | null
+}
+
 export type BreakEvenRow = {
   total_purchase_cost: number
   total_expenses: number
@@ -384,6 +422,8 @@ export type Database = {
       admin_list_users: { Args: Record<never, never>; Returns: AdminUserRow[] }
       get_store_prices: { Args: { p_store_id: string; p_date: string | null }; Returns: StorePriceRow[] }
       set_product_price: { Args: SetProductPriceArgs; Returns: string }
+      get_daily_product_log: { Args: DailyRangeArgs; Returns: DailyProductLogRow[] }
+      get_daily_summary: { Args: DailyRangeArgs; Returns: DailySummaryRow[] }
     }
     Enums: Record<never, never>
     CompositeTypes: Record<never, never>

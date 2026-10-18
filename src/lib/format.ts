@@ -41,3 +41,40 @@ export const MAX_MONEY = 1_000_000_000
 export function notFuture(date: string): true | string {
   return date <= todayVN() || 'Không chọn ngày trong tương lai'
 }
+
+// Ngày tháng: làm việc trên chuỗi 'YYYY-MM-DD' theo UTC để không lệch múi giờ
+function toISO(time: number): string {
+  return new Date(time).toISOString().slice(0, 10)
+}
+
+function parts(iso: string): [number, number, number] {
+  const [y, m, d] = iso.split('-').map(Number)
+  return [y, m - 1, d]
+}
+
+export function addDays(iso: string, days: number): string {
+  const [y, m, d] = parts(iso)
+  return toISO(Date.UTC(y, m, d + days))
+}
+
+// Ngày đầu / cuối tháng, lệch `offset` tháng so với tháng chứa `iso`
+export function monthStart(iso: string, offset = 0): string {
+  const [y, m] = parts(iso)
+  return toISO(Date.UTC(y, m + offset, 1))
+}
+
+export function monthEnd(iso: string, offset = 0): string {
+  const [y, m] = parts(iso)
+  return toISO(Date.UTC(y, m + offset + 1, 0))
+}
+
+const compact = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 })
+
+// Số tiền rút gọn: 1,2tr · 350k · 2,5 tỷ
+export function formatCompact(value: number): string {
+  const abs = Math.abs(value)
+  if (abs >= 1e9) return `${compact.format(value / 1e9)} tỷ`
+  if (abs >= 1e6) return `${compact.format(value / 1e6)}tr`
+  if (abs >= 1e3) return `${compact.format(value / 1e3)}k`
+  return compact.format(value)
+}
