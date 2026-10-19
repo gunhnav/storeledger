@@ -6,6 +6,7 @@ import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
+import { usesPartnerChannel } from '../lib/storeFeatures'
 import type { Product, ProductPrice, StorePriceRow } from '../types/database'
 
 type FormValues = {
@@ -73,11 +74,11 @@ function effectiveAt(history: ProductPrice[], productId: string, date: string) {
 
 export function ProductsPage() {
   const { current } = useStore()
-  return current ? <ProductsManager key={current.id} storeId={current.id} /> : null
+  return current ? <ProductsManager key={current.id} storeId={current.id} partner={usesPartnerChannel(current.code)} /> : null
 }
 
 // Chỉ admin (route bọc RequireAdmin, RLS cũng chặn ghi)
-function ProductsManager({ storeId }: { storeId: string }) {
+function ProductsManager({ storeId, partner }: { storeId: string; partner: boolean }) {
   const { t } = useI18n()
   const toast = useToast()
   const [catalog, setCatalog] = useState<Catalog | null>(null)
@@ -206,6 +207,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
     <section>
       {pricing ? (
         <PriceEditor
+          partner={partner}
           product={pricing}
           history={catalog.history.filter((r) => r.product_id === pricing.id)}
           onDone={(text) => {
@@ -262,7 +264,7 @@ function ProductsManager({ storeId }: { storeId: string }) {
                     />
                   </label>
                   <label>
-                    {t('Giá ShopeeFood (trống = giá quán)')}
+                    {partner ? t('Giá đối tác (trống = giá quán)') : t('Giá ShopeeFood (trống = giá quán)')}
                     <input
                       type="number"
                       inputMode="numeric"
@@ -416,11 +418,13 @@ function ProductsManager({ storeId }: { storeId: string }) {
 // ---------------------------------------------------------------------------
 
 function PriceEditor({
+  partner,
   product,
   history,
   onDone,
   onCancel,
 }: {
+  partner: boolean
   product: Product
   history: ProductPrice[]
   onDone: (text: string) => void
@@ -489,7 +493,7 @@ function PriceEditor({
             />
           </label>
           <label>
-            {t('Giá ShopeeFood (trống = giá quán)')}
+            {partner ? t('Giá đối tác (trống = giá quán)') : t('Giá ShopeeFood (trống = giá quán)')}
             <input
               type="number"
               inputMode="numeric"

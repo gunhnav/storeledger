@@ -8,9 +8,9 @@ describe('quy trình theo cửa hàng', () => {
     expect(usesDistribution(undefined)).toBe(true)
   })
 
-  it('kênh bán: Hogi bỏ ShopeeFood, Bún đậu giữ', () => {
+  it('kênh bán: Hogi là Quán + Công ty, Bún đậu là Quán + Đối tác', () => {
     expect(salesChannels('hogi')).toEqual(['in_store', 'company'])
-    expect(salesChannels('bundau')).toEqual(['in_store', 'shopeefood', 'company'])
+    expect(salesChannels('bundau')).toEqual(['in_store', 'shopeefood'])
     expect(salesChannels(undefined)).toEqual(['in_store', 'company'])
   })
 })

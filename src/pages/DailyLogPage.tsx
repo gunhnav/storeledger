@@ -13,6 +13,7 @@ import {
   monthStart,
   todayVN,
 } from '../lib/format'
+import { usesPartnerChannel } from '../lib/storeFeatures'
 import type { DailyProductLogRow, DailySummaryRow } from '../types/database'
 
 // Một ô của bảng: số lượng, tiền hoặc chữ; tone để tô màu
@@ -38,11 +39,11 @@ const sum = (values: number[]) => values.reduce((a, b) => a + b, 0)
 export function DailyLogPage() {
   const { current } = useStore()
   // Đổi cửa hàng thì dựng lại để tải lại dữ liệu
-  return current ? <DailyLog key={current.id} storeId={current.id} storeName={current.name} /> : null
+  return current ? <DailyLog key={current.id} storeId={current.id} storeName={current.name} partner={usesPartnerChannel(current.code)} /> : null
 }
 
 // Chỉ admin (route bọc RequireAdmin, hàm DB cũng chặn)
-function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }) {
+function DailyLog({ storeId, storeName, partner }: { storeId: string; storeName: string; partner: boolean }) {
   const { t } = useI18n()
   const today = todayVN()
   const [range, setRange] = useState({ from: monthStart(today), to: today })
@@ -108,7 +109,7 @@ function DailyLog({ storeId, storeName }: { storeId: string; storeName: string }
     if (!wrap || !th) return
     wrap.scrollLeft = Math.max(0, th.offsetLeft - wrap.clientWidth / 2 + th.offsetWidth / 2)
   }, [loaded?.key])
-  const rows = loaded ? buildRows(loaded.summary, loaded.products, loaded.company, days, category, t) : []
+  const rows = loaded ? buildRows(loaded.summary, loaded.products, loaded.company, days, category, t, partner) : []
   const categories = loaded
     ? [...new Set(loaded.products.map((p) => p.category ?? '').filter((c) => c !== ''))].sort()
     : []
@@ -281,6 +282,7 @@ function buildRows(
   days: string[],
   category: string,
   t: Translate,
+  partner: boolean,
 ): Row[] {
   const rows: Row[] = []
   const byProduct = new Map<string, { id: string; name: string; category: string | null; tracks: boolean; threshold: number; byDay: Map<string, DailyProductLogRow> }>()
@@ -342,7 +344,7 @@ function buildRows(
   rows.push({ kind: 'section', label: 'KẾT QUẢ NGÀY' })
   rows.push(qtyRow('Tổng số lượng bán', summary.map((r) => r.qty_sold)))
   rows.push(moneyRow('Doanh thu gộp', summary.map((r) => r.gross_revenue)))
-  rows.push(moneyRow('Hoa hồng ShopeeFood', summary.map((r) => r.commission)))
+  rows.push(moneyRow(partner ? 'Hoa hồng đối tác' : 'Hoa hồng ShopeeFood', summary.map((r) => r.commission)))
   rows.push(moneyRow('Doanh thu thuần', summary.map((r) => r.net_revenue)))
   rows.push(moneyRow('Chi phí', summary.map((r) => r.expenses)))
   rows.push(moneyRow('Giá vốn hàng bán', summary.map((r) => r.cogs)))

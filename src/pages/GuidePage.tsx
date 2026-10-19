@@ -24,7 +24,7 @@ const SECTIONS: Section[] = [
     icon: 'sale',
     title: 'Bán hàng',
     items: [
-      'Chọn kênh “Quán” hoặc “Công ty” (Bún đậu có thêm “ShopeeFood”) trước khi bấm món; giá tự lấy theo kênh và ngày bán.',
+      'Chọn kênh bán trước khi bấm món: “Quán” hoặc “Công ty” (Bún đậu: “Quán” hoặc “Đối tác”); giá tự lấy theo kênh và ngày bán.',
       'Kênh “Công ty”: trước tiên vào Kho hàng → Phân phối → Cho công ty, nhập theo set 4 / set 6 (mỗi set mix nhiều vị). Khi bán, nhập số set, giá 1 set và tổng số hũ từng vị; hàng trừ vào phần đã phân phối cho công ty.',
       'Món nào chưa có ở quán thì phân phối trước rồi mới bán, để tồn tại quán không bị âm.',
       'Ghi đơn ngay khi bán. Nếu quên, đổi ngày bán sang đúng ngày rồi lưu.',
@@ -60,7 +60,7 @@ const SECTIONS: Section[] = [
     items: [
       'Luỹ kế = cộng dồn từ giao dịch đầu tiên của cửa hàng đến ngày đang xem, không chỉ riêng khoảng ngày đã chọn.',
       'Ví dụ doanh thu ngày 1 là 100.000đ, ngày 2 là 50.000đ thì doanh thu luỹ kế đến ngày 2 là 150.000đ.',
-      'Doanh thu thuần đã trừ hoa hồng ShopeeFood.',
+      'Doanh thu thuần đã trừ hoa hồng ShopeeFood / đối tác.',
     ],
     link: { to: '/reports/daily-log', label: 'Mở Nhật ký ngày' },
     adminOnly: true,

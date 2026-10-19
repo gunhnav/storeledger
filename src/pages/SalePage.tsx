@@ -10,7 +10,7 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog, useStorePrices } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
-import { salesChannels, usesDistribution, type SelectableChannel } from '../lib/storeFeatures'
+import { salesChannels, usesDistribution, usesPartnerChannel, type SelectableChannel } from '../lib/storeFeatures'
 import { allocateSetTotal, allocatedTotal } from '../lib/companySale'
 import { saleFromSets, setKinds } from '../lib/companySets'
 import type { CompanySetDbRow, Product, SaleChannel, StorePriceRow } from '../types/database'
@@ -33,17 +33,19 @@ function priceFor(price: StorePriceRow | undefined, channel: SaleChannel): numbe
 export function SalePage() {
   const { current } = useStore()
   // Đổi cửa hàng thì dựng lại form để bỏ các dòng của cửa hàng cũ
-  return current ? <SaleForm key={current.id} storeId={current.id} distribution={usesDistribution(current.code)} channels={salesChannels(current.code)} /> : null
+  return current ? <SaleForm key={current.id} storeId={current.id} distribution={usesDistribution(current.code)} channels={salesChannels(current.code)} partner={usesPartnerChannel(current.code)} /> : null
 }
 
 function SaleForm({
   storeId,
   distribution,
   channels,
+  partner,
 }: {
   storeId: string
   distribution: boolean
   channels: SelectableChannel[]
+  partner: boolean
 }) {
   const { t } = useI18n()
   const toast = useToast()
@@ -283,7 +285,7 @@ function SaleForm({
               <select {...register('channel', { onChange: resetPrices })}>
                 {channels.map((c) => (
                   <option key={c} value={c}>
-                    {c === 'shopeefood' ? 'ShopeeFood' : t(c === 'company' ? 'Công ty' : 'Quán')}
+                    {c === 'shopeefood' ? (partner ? t('Đối tác') : 'ShopeeFood') : t(c === 'company' ? 'Công ty' : 'Quán')}
                   </option>
                 ))}
               </select>
