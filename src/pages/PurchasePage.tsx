@@ -9,7 +9,8 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
-import { usesDistribution } from '../lib/storeFeatures'
+import { usesDistribution, usesExpenseStylePurchase } from '../lib/storeFeatures'
+import { PurchaseRowsForm } from './PurchaseRowsForm'
 import type { Product, ProductPrice } from '../types/database'
 
 type FormValues = { purchase_date: string; note: string }
@@ -21,7 +22,13 @@ const QUICK_MAX = 10
 
 export function PurchasePage() {
   const { current } = useStore()
-  return current ? <PurchaseForm key={current.id} storeId={current.id} autoToShop={!usesDistribution(current.code)} /> : null
+  if (!current) return null
+  const autoToShop = !usesDistribution(current.code)
+  return usesExpenseStylePurchase(current.code) ? (
+    <PurchaseRowsForm key={current.id} storeId={current.id} autoToShop={autoToShop} />
+  ) : (
+    <PurchaseForm key={current.id} storeId={current.id} autoToShop={autoToShop} />
+  )
 }
 
 // Nhân viên cũng nhập được, nhưng không bao giờ xem được giá vốn: ô giá để trống

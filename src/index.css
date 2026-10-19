@@ -1626,6 +1626,27 @@ a.button.primary:hover {
   }
 }
 
+/* Nhập kho dạng bảng (Bún đậu): món, số lượng, đơn giá, thành tiền */
+.expense-line.purchase-line {
+  grid-template-columns: minmax(160px, 1fr) 90px 150px 170px 32px;
+}
+.expense-line.purchase-line.no-price {
+  grid-template-columns: minmax(160px, 1fr) 110px 32px;
+}
+@media (max-width: 760px) {
+  .expense-line.purchase-line,
+  .expense-line.purchase-line.no-price {
+    grid-template-columns: 1fr 1fr;
+  }
+  .expense-line.purchase-line > label:nth-child(2),
+  .expense-line.purchase-line > label:nth-child(3) {
+    grid-column: auto;
+  }
+  .expense-line.purchase-line > label:nth-child(4) {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Chi phí: đang sửa một khoản */
 .form.editing {
   border-color: var(--accent);

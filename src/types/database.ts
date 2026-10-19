@@ -129,6 +129,8 @@ export type Expense = {
   quantity: number
   unit_price: number
   note: string | null
+  // Khoản chi sinh từ đợt nhập kho (báo cáo lãi lỗ bỏ qua, xem 20261019090000_purchase_expenses.sql)
+  purchase_id: string | null
   created_by: string | null
   created_at: string
 }
@@ -460,6 +462,8 @@ export type Database = {
         Returns: undefined
       }
       delete_expense: { Args: { p_expense_id: string }; Returns: undefined }
+      // supabase/migrations/20261019090000_purchase_expenses.sql
+      record_purchase_expenses: { Args: { p_purchase_id: string; p_category: string }; Returns: number }
       // supabase/migrations/20261018172554_company_sets.sql
       create_company_distribution: {
         Args: {

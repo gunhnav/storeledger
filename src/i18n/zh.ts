@@ -605,4 +605,11 @@ export const zh: Record<string, string> = {
   '“Chưa mang ra”: món đã nhập nhưng chưa phân phối hũ nào ra quán.': '“尚未转出”：商品已进货，但还没有配送任何一件到店里。',
   '“Lãi/lỗ nếu bán hết” = cả đợt bán hết theo giá hiện hành trừ vốn nhập của đợt.': '“售罄预计盈亏” = 整个批次按当前价格售完的金额减去该批次进货成本。',
   '⚠ Cảnh báo': '⚠ 警告',
+  'Không tạo được đợt nhập': '无法创建进货单',
+  'Đã nhập hàng nhưng chưa ghi được vào Chi phí: {error}': '已进货但未能记入费用：{error}',
+  'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí (nhóm Đồ uống).': '单价和金额留空则使用进货日生效的成本价。保存后进货金额自动记入费用（饮料组）。',
+  'Chọn món và số lượng, giá nhập do hệ thống tự lấy.': '选择品项和数量，进货价由系统自动取值。',
+  'Chi phí theo kỳ': '按期间费用',
+  'Chưa có chi phí trong khoảng này.': '此区间没有费用。',
+  'Tổng chi phí': '费用合计',
 }

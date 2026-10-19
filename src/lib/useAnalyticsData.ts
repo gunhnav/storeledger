@@ -41,7 +41,8 @@ export function useAnalyticsData(storeId: string) {
           .from('sales')
           .select('sale_date, channel, commission_rate, sale_items(product_id, quantity, unit_price, sale_item_cost_lines(batch_id, quantity, unit_cost))')
           .eq('store_id', storeId),
-        supabase.from('expenses').select('expense_date, amount').eq('store_id', storeId),
+        // Khoản chi sinh từ nhập kho đã nằm trong giá vốn / vốn nhập nên bỏ qua
+        supabase.from('expenses').select('expense_date, amount').eq('store_id', storeId).is('purchase_id', null),
       ])
       const firstError = [products, purchases, batches, transfers, sales, expenses].find((r) => r.error)?.error
       if (firstError) throw firstError

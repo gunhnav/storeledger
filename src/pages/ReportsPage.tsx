@@ -28,7 +28,7 @@ import {
   monthStart,
   todayVN,
 } from '../lib/format'
-import type { BreakEvenRow, PnlPeriod, PnlRow } from '../types/database'
+import type { BreakEvenRow, Expense, PnlPeriod, PnlRow } from '../types/database'
 
 export function ReportsPage() {
   const { current } = useStore()
@@ -42,6 +42,7 @@ function Reports({ storeId }: { storeId: string }) {
       <OverviewExtras storeId={storeId} />
       <BreakEvenBlock storeId={storeId} />
       <PnlBlock storeId={storeId} />
+      <ExpenseStatsBlock storeId={storeId} />
     </>
   )
 }
@@ -423,5 +424,157 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
         </table>
       </div>
     </>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Chi phí theo ngày / tuần / tháng hoặc cả giai đoạn (gồm cả tiền nhập kho tự ghi vào Chi phí)
+// ---------------------------------------------------------------------------
+
+type ExpenseSlice = Pick<Expense, 'expense_date' | 'category' | 'amount'>
+
+const PAGE = 1000
+
+async function loadExpenses(storeId: string, from: string, to: string): Promise<ExpenseSlice[]> {
+  const rows: ExpenseSlice[] = []
+  for (let start = 0; ; start += PAGE) {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('expense_date, category, amount')
+      .eq('store_id', storeId)
+      .gte('expense_date', from)
+      .lte('expense_date', to)
+      .order('expense_date')
+      .range(start, start + PAGE - 1)
+    if (error) throw error
+    rows.push(...(data ?? []))
+    if ((data ?? []).length < PAGE) return rows
+  }
+}
+
+const periodStart = (iso: string, period: PnlPeriod) =>
+  period === 'day' ? iso : period === 'week' ? mondayOf(iso) : monthStart(iso)
+
+function ExpenseStatsBlock({ storeId }: { storeId: string }) {
+  const { t } = useI18n()
+  const [period, setPeriod] = useState<PnlPeriod>('day')
+  const [range, setRange] = useState(() => ({ from: monthStart(todayVN()), to: todayVN() }))
+  const [result, setResult] = useState<{ key: string; rows: ExpenseSlice[]; error: string | null } | null>(null)
+
+  const valid = range.from !== '' && range.to !== '' && range.from <= range.to
+  const key = `${storeId}|${range.from}|${range.to}`
+
+  useEffect(() => {
+    if (!valid) return
+    let cancelled = false
+    loadExpenses(storeId, range.from, range.to)
+      .then((rows) => !cancelled && setResult({ key, rows, error: null }))
+      .catch((e) => !cancelled && setResult({ key, rows: [], error: errorMessage(e) }))
+    return () => {
+      cancelled = true
+    }
+  }, [storeId, range.from, range.to, valid, key])
+
+  const today = todayVN()
+  const rows = result?.key === key ? result.rows : []
+  const categories = [...new Set(rows.map((r) => r.category))].sort()
+  const total = rows.reduce((s, r) => s + r.amount, 0)
+  const byCategory = new Map(categories.map((c) => [c, rows.filter((r) => r.category === c).reduce((s, r) => s + r.amount, 0)]))
+  // Từng kỳ: tổng + theo nhóm
+  const periods = new Map<string, Map<string, number>>()
+  for (const r of rows) {
+    const k = periodStart(r.expense_date, period)
+    const m = periods.get(k) ?? new Map<string, number>()
+    m.set(r.category, (m.get(r.category) ?? 0) + r.amount)
+    periods.set(k, m)
+  }
+  const periodRows = [...periods.entries()].sort(([a], [b]) => a.localeCompare(b))
+
+  return (
+    <section className="report-block">
+      <h2>{t('Chi phí theo kỳ')}</h2>
+      <div className="filters">
+        <label>
+          {t('Kỳ')}
+          <select value={period} onChange={(e) => setPeriod(e.target.value as PnlPeriod)}>
+            <option value="day">{t('Ngày')}</option>
+            <option value="week">{t('Tuần')}</option>
+            <option value="month">{t('Tháng')}</option>
+          </select>
+        </label>
+        <div className="field">
+          {t('Từ ngày')}
+          <DatePicker value={range.from} onChange={(v) => setRange((r) => ({ ...r, from: v }))} label={t('Từ ngày')} />
+        </div>
+        <div className="field">
+          {t('Đến ngày')}
+          <DatePicker value={range.to} onChange={(v) => setRange((r) => ({ ...r, to: v }))} label={t('Đến ngày')} />
+        </div>
+        <button type="button" onClick={() => setRange({ from: today, to: today })}>
+          {t('Hôm nay')}
+        </button>
+        <button type="button" onClick={() => setRange({ from: monthStart(today), to: today })}>
+          {t('Tháng này')}
+        </button>
+        <button type="button" onClick={() => setRange({ from: monthStart(today, -1), to: monthEnd(today, -1) })}>
+          {t('Tháng trước')}
+        </button>
+      </div>
+
+      {!valid ? (
+        <p className="error">{t('Khoảng ngày không hợp lệ: "Từ ngày" phải trước hoặc bằng "Đến ngày".')}</p>
+      ) : !result || result.key !== key ? (
+        <p className="muted">{t('Đang tải…')}</p>
+      ) : result.error ? (
+        <p className="error">{t(result.error)}</p>
+      ) : rows.length === 0 ? (
+        <p className="muted">{t('Chưa có chi phí trong khoảng này.')}</p>
+      ) : (
+        <>
+          <div className="stats">
+            <div className="stat">
+              <div className="stat-label">{t('Tổng chi phí')}</div>
+              <div className="stat-value">{formatVND(total)}</div>
+            </div>
+            {categories.map((c) => (
+              <div className="stat" key={c}>
+                <div className="stat-label">{t(c)}</div>
+                <div className="stat-value">{formatVND(byCategory.get(c) ?? 0)}</div>
+              </div>
+            ))}
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('Kỳ')}</th>
+                  <th className="num">{t('Tổng chi phí')}</th>
+                  {categories.map((c) => (
+                    <th key={c} className="num">
+                      {t(c)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {periodRows.map(([start, m]) => (
+                  <tr key={start}>
+                    <td>{period === 'day' ? formatDate(start) : periodLabel(start, period, t)}</td>
+                    <td className="num">
+                      <strong>{formatVND([...m.values()].reduce((s, v) => s + v, 0))}</strong>
+                    </td>
+                    {categories.map((c) => (
+                      <td key={c} className="num">
+                        {m.has(c) ? formatVND(m.get(c) ?? 0) : '—'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
   )
 }
