@@ -182,6 +182,7 @@ export const zh: Record<string, string> = {
   'Giá vốn không hợp lệ': '成本无效',
   'Giá vốn mới': '新成本',
   'Giá vốn mới của {name}': '{name} 的新成本',
+  'Giá đối tác': '合作伙伴价格',
   'Giá đối tác (trống = giá quán)': '合作伙伴价格（留空 = 店内价）',
   'Giảm {label}': '减少{label}',
   'Gõ số hũ mang từ nhà ra quán vào ô của từng ngày, rồi bấm Lưu. Số nhỏ phía trên ô là số đã mang ra trước đó.': '在每天的格子里输入从家里带到店里的数量，然后点保存。格子上方的小数字是之前已带出的数量。',

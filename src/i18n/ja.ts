@@ -182,6 +182,7 @@ export const ja: Record<string, string> = {
   'Giá vốn không hợp lệ': '原価が正しくありません',
   'Giá vốn mới': '新しい原価',
   'Giá vốn mới của {name}': '{name} の新しい原価',
+  'Giá đối tác': 'パートナー価格',
   'Giá đối tác (trống = giá quán)': 'パートナー価格（空欄 = 店舗価格）',
   'Giảm {label}': '{label}を減らす',
   'Gõ số hũ mang từ nhà ra quán vào ô của từng ngày, rồi bấm Lưu. Số nhỏ phía trên ô là số đã mang ra trước đó.': '日ごとのマスに自宅から店へ持ち出した個数を入力し、保存を押します。マスの上の小さい数字はすでに持ち出した数です。',

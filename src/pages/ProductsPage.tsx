@@ -263,16 +263,18 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
                       {...register('sale_price', { valueAsNumber: true, validate: salePrice })}
                     />
                   </label>
-                  <label>
-                    {partner ? t('Giá đối tác (trống = giá quán)') : t('Giá ShopeeFood (trống = giá quán)')}
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      step="any"
-                      {...register('app_price', { setValueAs: optionalNumber, validate: optionalMoney })}
-                    />
-                  </label>
+                  {partner && (
+                    <label>
+                      {t('Giá đối tác (trống = giá quán)')}
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        step="any"
+                        {...register('app_price', { setValueAs: optionalNumber, validate: optionalMoney })}
+                      />
+                    </label>
+                  )}
                   <label>
                     {t('Giá vốn / đơn vị')}
                     <input
@@ -367,7 +369,7 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
               <tr>
                 <th>{t('Sản phẩm')}</th>
                 <th className="num">{t('Giá quán')}</th>
-                <th className="num">{t('Giá app')}</th>
+                {partner && <th className="num">{t('Giá đối tác')}</th>}
                 <th className="num">{t('Giá vốn')}</th>
                 <th />
               </tr>
@@ -384,9 +386,9 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
                       {!row.is_active && <small className="muted"> {t('· ngừng bán')}</small>}
                     </td>
                     <td className="num">{price ? formatVND(price.sale_price) : '—'}</td>
-                    <td className="num">
-                      {price?.app_price === null || !price ? '—' : formatVND(price.app_price)}
-                    </td>
+                    {partner && (
+                      <td className="num">{price?.app_price === null || !price ? '—' : formatVND(price.app_price)}</td>
+                    )}
                     <td className="num">
                       {cost === null ? (
                         <span className="badge badge-out">{t('Thiếu giá vốn')}</span>
@@ -492,16 +494,18 @@ function PriceEditor({
               {...register('sale_price', { valueAsNumber: true, validate: salePrice })}
             />
           </label>
-          <label>
-            {partner ? t('Giá đối tác (trống = giá quán)') : t('Giá ShopeeFood (trống = giá quán)')}
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step="any"
-              {...register('app_price', { setValueAs: optionalNumber, validate: optionalMoney })}
-            />
-          </label>
+          {partner && (
+            <label>
+              {t('Giá đối tác (trống = giá quán)')}
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step="any"
+                {...register('app_price', { setValueAs: optionalNumber, validate: optionalMoney })}
+              />
+            </label>
+          )}
           <label>
             {t('Giá vốn / đơn vị')}
             <input
@@ -546,7 +550,7 @@ function PriceEditor({
               <tr>
                 <th>{t('Áp dụng từ')}</th>
                 <th className="num">{t('Giá quán')}</th>
-                <th className="num">{t('Giá app')}</th>
+                {partner && <th className="num">{t('Giá đối tác')}</th>}
                 <th className="num">{t('Giá vốn')}</th>
                 <th>{t('Ghi chú')}</th>
               </tr>
@@ -556,7 +560,7 @@ function PriceEditor({
                 <tr key={r.id}>
                   <td>{formatDate(r.effective_from)}</td>
                   <td className="num">{formatVND(r.sale_price)}</td>
-                  <td className="num">{r.app_price === null ? '—' : formatVND(r.app_price)}</td>
+                  {partner && <td className="num">{r.app_price === null ? '—' : formatVND(r.app_price)}</td>}
                   <td className="num">{r.unit_cost === null ? '—' : formatVND(r.unit_cost)}</td>
                   <td>{r.note}</td>
                 </tr>

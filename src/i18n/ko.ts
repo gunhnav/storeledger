@@ -182,6 +182,7 @@ export const ko: Record<string, string> = {
   'Giá vốn không hợp lệ': '원가가 올바르지 않습니다',
   'Giá vốn mới': '새 원가',
   'Giá vốn mới của {name}': '{name}의 새 원가',
+  'Giá đối tác': '파트너 가격',
   'Giá đối tác (trống = giá quán)': '파트너 가격 (비우면 매장 가격)',
   'Giảm {label}': '{label} 줄이기',
   'Gõ số hũ mang từ nhà ra quán vào ô của từng ngày, rồi bấm Lưu. Số nhỏ phía trên ô là số đã mang ra trước đó.': '날짜별 칸에 창고에서 매장으로 가져간 개수를 입력하고 저장을 누르세요. 칸 위의 작은 숫자는 이미 가져간 수량입니다.',

@@ -182,6 +182,7 @@ export const en: Record<string, string> = {
   'Giá vốn không hợp lệ': 'Invalid cost',
   'Giá vốn mới': 'New cost',
   'Giá vốn mới của {name}': 'New cost of {name}',
+  'Giá đối tác': 'Partner price',
   'Giá đối tác (trống = giá quán)': 'Partner price (empty = store price)',
   'Giảm {label}': 'Decrease {label}',
   'Gõ số hũ mang từ nhà ra quán vào ô của từng ngày, rồi bấm Lưu. Số nhỏ phía trên ô là số đã mang ra trước đó.': 'Type how many jars you brought from home to the store into each day’s cell, then press Save. The small number above a cell is what was already brought out.',
