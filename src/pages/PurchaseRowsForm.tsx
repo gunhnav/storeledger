@@ -47,6 +47,15 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
   }
   const filled = rows.filter((r) => !isBlank(r))
   const total = filled.reduce((s, r) => s + (Number.isFinite(lineTotal(r)) ? lineTotal(r) : 0), 0)
+  // Dòng bỏ trống giá: DB lấy giá vốn hiện hành nên chưa tính được vào tổng ở đây
+  const hasBlankPrice = filled.some((r) => r.unitPrice.trim() === '' && r.total.trim() === '')
+  // Enter ở ô cuối của dòng cuối: thêm dòng mới
+  const enterAdds = (i: number) => (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && i === rows.length - 1) {
+      e.preventDefault()
+      addRow()
+    }
+  }
 
   const save = async () => {
     setResult(null)
@@ -69,7 +78,8 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
           unitCost = storedUnitPrice(amount / quantity)
         } else if (r.unitPrice.trim() !== '') {
           const price = num(r.unitPrice)
-          if (!Number.isFinite(price) || price < 0) return fail('Phép tính ở ô Đơn giá không hợp lệ')
+          if (!Number.isFinite(price)) return fail('Phép tính ở ô Đơn giá không hợp lệ')
+          if (price <= 0) return fail('Số tiền phải lớn hơn 0')
           unitCost = storedUnitPrice(price)
         }
         if (unitCost !== null && quantity * unitCost > MAX_MONEY) return fail('Số tiền quá lớn, kiểm tra lại')
@@ -90,6 +100,10 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
       p_items: items,
     })
     if (purchaseError || !purchaseId) return finish(purchaseError ? errorMessage(purchaseError) : 'Không tạo được đợt nhập')
+
+    // Đợt nhập đã tạo: xoá form ngay để bấm lưu lại không nhập trùng, các bước sau lỗi thì chỉ báo
+    setRows([newRow()])
+    setNote('')
 
     const { error: expenseError } = await supabase.rpc('record_purchase_expenses', {
       p_purchase_id: purchaseId,
@@ -116,8 +130,6 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
 
     setSaving(false)
     toast.success(t('Đã lưu đợt nhập {count} món ngày {date}', { count: items.length, date: formatDate(date) }))
-    setRows([newRow()])
-    setNote('')
     reload()
   }
 
@@ -166,6 +178,7 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
                       aria-label={t('Số lượng')}
                       value={r.qty}
                       onChange={(e) => update(r.id, { qty: cleanNumber(e.target.value) })}
+                      onKeyDown={isAdmin ? undefined : enterAdds(i)}
                     />
                   </label>
                   {isAdmin && (
@@ -191,13 +204,7 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
                           placeholder={Number.isFinite(line) && line > 0 ? formatVND(line) : t('Số hoặc phép tính')}
                           value={r.total}
                           onChange={(e) => update(r.id, { total: cleanExpression(e.target.value) })}
-                          onKeyDown={(e) => {
-                            // Enter ở ô cuối của dòng cuối: thêm dòng mới
-                            if (e.key === 'Enter' && i === rows.length - 1) {
-                              e.preventDefault()
-                              addRow()
-                            }
-                          }}
+                          onKeyDown={enterAdds(i)}
                         />
                         {isExpression(r.total) && Number.isFinite(line) && <small className="calc-result">= {formatVND(line)}</small>}
                       </span>
@@ -237,6 +244,7 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
               <>
                 {' · '}
                 <strong>{formatVND(total)}</strong>
+                {hasBlankPrice && <small className="muted"> {t('(chưa gồm món để trống giá)')}</small>}
               </>
             )}
           </span>

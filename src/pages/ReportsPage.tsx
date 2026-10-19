@@ -445,6 +445,7 @@ async function loadExpenses(storeId: string, from: string, to: string): Promise<
       .gte('expense_date', from)
       .lte('expense_date', to)
       .order('expense_date')
+      .order('id')
       .range(start, start + PAGE - 1)
     if (error) throw error
     rows.push(...(data ?? []))
