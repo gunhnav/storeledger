@@ -344,7 +344,10 @@ function buildRows(
   rows.push({ kind: 'section', label: 'KẾT QUẢ NGÀY' })
   rows.push(qtyRow('Tổng số lượng bán', summary.map((r) => r.qty_sold)))
   rows.push(moneyRow('Doanh thu gộp', summary.map((r) => r.gross_revenue)))
-  rows.push(moneyRow(partner ? 'Hoa hồng đối tác' : 'Hoa hồng ShopeeFood', summary.map((r) => r.commission)))
+  // Quán không có kênh đối tác (Hogi) chỉ hiện dòng hoa hồng khi dữ liệu cũ thật sự có hoa hồng
+  if (partner || summary.some((r) => r.commission !== 0)) {
+    rows.push(moneyRow('Hoa hồng đối tác', summary.map((r) => r.commission)))
+  }
   rows.push(moneyRow('Doanh thu thuần', summary.map((r) => r.net_revenue)))
   rows.push(moneyRow('Chi phí', summary.map((r) => r.expenses)))
   rows.push(moneyRow('Giá vốn hàng bán', summary.map((r) => r.cogs)))

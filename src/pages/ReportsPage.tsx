@@ -16,6 +16,7 @@ import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
+import { usesPartnerChannel } from '../lib/storeFeatures'
 import { OverviewExtras } from './OverviewExtras'
 import {
   addDays,
@@ -296,6 +297,10 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
   const { t, lang } = useI18n()
   const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
   const totals = sumRows(rows)
+  // Hoa hồng chỉ hiện ở quán có kênh đối tác, hoặc khi dữ liệu thật sự có hoa hồng (đơn cũ)
+  const { current } = useStore()
+  const showCommission = usesPartnerChannel(current?.code) || totals.commission !== 0
+  const fields = TOTAL_FIELDS.filter((f) => f.key !== 'commission' || showCommission)
   const chartData = rows.map((r) => ({
     label: periodLabel(r.period_start, period, t),
     net_revenue: r.net_revenue,
@@ -310,7 +315,7 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
   return (
     <>
       <div className="stats">
-        {TOTAL_FIELDS.map(({ key, label }) => (
+        {fields.map(({ key, label }) => (
           <div className="stat" key={key}>
             <div className="stat-label">{t(label)}</div>
             <div
@@ -391,7 +396,7 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
           <thead>
             <tr>
               <th>{t('Kỳ')}</th>
-              {TOTAL_FIELDS.map(({ key, label }) => (
+              {fields.map(({ key, label }) => (
                 <th key={key} className="num">
                   {t(label)}
                 </th>
@@ -404,7 +409,7 @@ function PnlDetails({ rows, period }: { rows: PnlRow[]; period: PnlPeriod }) {
                 <td>
                   {period === 'day' ? formatDate(row.period_start) : periodLabel(row.period_start, period, t)}
                 </td>
-                {TOTAL_FIELDS.map(({ key }) => (
+                {fields.map(({ key }) => (
                   <td
                     key={key}
                     className={`num${key === 'net_profit' && row[key] < 0 ? ' negative' : ''}`}

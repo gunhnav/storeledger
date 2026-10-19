@@ -60,7 +60,7 @@ const SECTIONS: Section[] = [
     items: [
       'Luỹ kế = cộng dồn từ giao dịch đầu tiên của cửa hàng đến ngày đang xem, không chỉ riêng khoảng ngày đã chọn.',
       'Ví dụ doanh thu ngày 1 là 100.000đ, ngày 2 là 50.000đ thì doanh thu luỹ kế đến ngày 2 là 150.000đ.',
-      'Doanh thu thuần đã trừ hoa hồng ShopeeFood / đối tác.',
+      'Doanh thu thuần đã trừ hoa hồng đối tác (nếu có).',
     ],
     link: { to: '/reports/daily-log', label: 'Mở Nhật ký ngày' },
     adminOnly: true,

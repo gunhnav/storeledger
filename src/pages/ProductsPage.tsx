@@ -219,6 +219,7 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
         />
       ) : bulk ? (
         <BulkCostEditor
+          partner={partner}
           products={catalog.products}
           history={catalog.history}
           onDone={(text, ok) => {
@@ -578,11 +579,13 @@ function PriceEditor({
 // ---------------------------------------------------------------------------
 
 function BulkCostEditor({
+  partner,
   products,
   history,
   onDone,
   onCancel,
 }: {
+  partner: boolean
   products: Product[]
   history: ProductPrice[]
   onDone: (text: string, ok: boolean) => void
@@ -698,7 +701,9 @@ function BulkCostEditor({
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
         <small className="muted">
-          {t('Giá bán và giá app giữ nguyên theo giá đang hiệu lực vào ngày áp dụng. Ô giá vốn điền sẵn giá vốn hiện hành, trống là món chưa có giá vốn.')}
+          {partner
+            ? t('Giá bán và giá đối tác giữ nguyên theo giá đang hiệu lực vào ngày áp dụng. Ô giá vốn điền sẵn giá vốn hiện hành, trống là món chưa có giá vốn.')
+            : t('Giá bán giữ nguyên theo giá đang hiệu lực vào ngày áp dụng. Ô giá vốn điền sẵn giá vốn hiện hành, trống là món chưa có giá vốn.')}
         </small>
 
         <div className="table-wrap">
