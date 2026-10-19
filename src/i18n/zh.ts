@@ -80,6 +80,7 @@ export const zh: Record<string, string> = {
   'Chỉ admin được xem điểm hoà vốn': '仅管理员可查看回本点',
   'Chỉ admin được xoá chi phí': '只有管理员可以删除费用',
   'Chỉ admin được đổi giá': '仅管理员可修改价格',
+  'Chọn kênh “Quán” hoặc “Công ty” (Bún đậu có thêm “ShopeeFood”) trước khi bấm món; giá tự lấy theo kênh và ngày bán.': '点选商品前先选“店里”或“公司”（Bún đậu 还有“ShopeeFood”）；价格按渠道和销售日期自动带出。',
   'Chọn kênh “Quán” hoặc “Công ty” trước khi bấm món; giá quán tự lấy theo ngày bán.': '点选商品前先选“店里”或“公司”；店内价格按销售日期自动带出。',
   'Chọn kênh “Tại quán” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.': '点选商品前先选“店内”或“ShopeeFood”；价格按渠道和销售日期自动带出。',
   'Chọn món': '选择商品',

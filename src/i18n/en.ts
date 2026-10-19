@@ -80,6 +80,7 @@ export const en: Record<string, string> = {
   'Chỉ admin được xem điểm hoà vốn': 'Only admins can view break-even',
   'Chỉ admin được xoá chi phí': 'Only admins can delete expenses',
   'Chỉ admin được đổi giá': 'Only admins can change prices',
+  'Chọn kênh “Quán” hoặc “Công ty” (Bún đậu có thêm “ShopeeFood”) trước khi bấm món; giá tự lấy theo kênh và ngày bán.': 'Choose “Store” or “Company” (Bún đậu also has “ShopeeFood”) before tapping items; prices follow the channel and the sale date.',
   'Chọn kênh “Quán” hoặc “Công ty” trước khi bấm món; giá quán tự lấy theo ngày bán.': 'Choose “Store” or “Company” before tapping items; store prices follow the sale date.',
   'Chọn kênh “Tại quán” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.': 'Choose “In store” or “ShopeeFood” before tapping items; prices follow the channel and the sale date.',
   'Chọn món': 'Pick items',

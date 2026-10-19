@@ -80,6 +80,7 @@ export const ja: Record<string, string> = {
   'Chỉ admin được xem điểm hoà vốn': '損益分岐点は管理者のみ閲覧できます',
   'Chỉ admin được xoá chi phí': '経費を削除できるのは管理者のみです',
   'Chỉ admin được đổi giá': '価格変更は管理者のみです',
+  'Chọn kênh “Quán” hoặc “Công ty” (Bún đậu có thêm “ShopeeFood”) trước khi bấm món; giá tự lấy theo kênh và ngày bán.': '商品をタップする前に「店舗」か「法人」（Bún đậu には「ShopeeFood」もあり）を選びます。価格はチャネルと販売日に合わせて自動で入ります。',
   'Chọn kênh “Quán” hoặc “Công ty” trước khi bấm món; giá quán tự lấy theo ngày bán.': '商品をタップする前に「店舗」か「法人」を選びます。店舗価格は販売日に合わせて自動で入ります。',
   'Chọn kênh “Tại quán” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.': '商品をタップする前に「店頭」か「ShopeeFood」を選びます。価格はチャネルと販売日に合わせて自動で入ります。',
   'Chọn món': '商品を選ぶ',

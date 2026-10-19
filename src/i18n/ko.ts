@@ -80,6 +80,7 @@ export const ko: Record<string, string> = {
   'Chỉ admin được xem điểm hoà vốn': '관리자만 손익분기점을 볼 수 있습니다',
   'Chỉ admin được xoá chi phí': '관리자만 비용을 삭제할 수 있습니다',
   'Chỉ admin được đổi giá': '관리자만 가격을 변경할 수 있습니다',
+  'Chọn kênh “Quán” hoặc “Công ty” (Bún đậu có thêm “ShopeeFood”) trước khi bấm món; giá tự lấy theo kênh và ngày bán.': '상품을 누르기 전에 “매장” 또는 “회사”를 고르세요 (Bún đậu는 “ShopeeFood”도 있음). 가격은 채널과 판매일에 따라 자동으로 정해집니다.',
   'Chọn kênh “Quán” hoặc “Công ty” trước khi bấm món; giá quán tự lấy theo ngày bán.': '상품을 누르기 전에 “매장” 또는 “회사”를 고르세요. 매장 가격은 판매일에 따라 자동으로 정해집니다.',
   'Chọn kênh “Tại quán” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.': '상품을 누르기 전에 “매장” 또는 “ShopeeFood”를 고르세요. 가격은 채널과 판매일에 따라 자동으로 정해집니다.',
   'Chọn món': '품목 선택',

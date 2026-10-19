@@ -283,7 +283,7 @@ function SaleForm({
               <select {...register('channel', { onChange: resetPrices })}>
                 {channels.map((c) => (
                   <option key={c} value={c}>
-                    {t(c === 'company' ? 'Công ty' : 'Quán')}
+                    {c === 'shopeefood' ? 'ShopeeFood' : t(c === 'company' ? 'Công ty' : 'Quán')}
                   </option>
                 ))}
               </select>
