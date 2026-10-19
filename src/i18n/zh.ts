@@ -612,4 +612,6 @@ export const zh: Record<string, string> = {
   'Chi phí theo kỳ': '按期间费用',
   'Chưa có chi phí trong khoảng này.': '此区间没有费用。',
   'Tổng chi phí': '费用合计',
+  '"{name}" ở nhiều dòng phải cùng một nhóm chi phí': '“{name}”在多行中必须使用同一费用组',
+  'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': '单价和金额留空则使用进货日生效的成本价。保存后进货金额按所选组自动记入费用。',
 }

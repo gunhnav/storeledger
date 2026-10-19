@@ -463,7 +463,10 @@ export type Database = {
       }
       delete_expense: { Args: { p_expense_id: string }; Returns: undefined }
       // supabase/migrations/20261019090000_purchase_expenses.sql
-      record_purchase_expenses: { Args: { p_purchase_id: string; p_category: string }; Returns: number }
+      record_purchase_expenses: {
+        Args: { p_purchase_id: string; p_category: string; p_categories?: Record<string, string> }
+        Returns: number
+      }
       // supabase/migrations/20261018172554_company_sets.sql
       create_company_distribution: {
         Args: {

@@ -612,4 +612,6 @@ export const ko: Record<string, string> = {
   'Chi phí theo kỳ': '기간별 비용',
   'Chưa có chi phí trong khoảng này.': '이 기간에 비용이 없습니다.',
   'Tổng chi phí': '총 비용',
+  '"{name}" ở nhiều dòng phải cùng một nhóm chi phí': '"{name}"은(는) 모든 행에서 같은 비용 그룹이어야 합니다',
+  'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': '단가와 금액을 비워 두면 입고일에 적용되는 원가를 사용합니다. 저장하면 입고 금액이 선택한 그룹의 비용에 자동 기록됩니다.',
 }

@@ -612,4 +612,6 @@ export const en: Record<string, string> = {
   'Chi phí theo kỳ': 'Expenses by period',
   'Chưa có chi phí trong khoảng này.': 'No expenses in this range.',
   'Tổng chi phí': 'Total expenses',
+  '"{name}" ở nhiều dòng phải cùng một nhóm chi phí': '"{name}" must use the same expense category on every row',
+  'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': 'Leave unit price and amount empty to use the cost in effect on the purchase date. After saving, the purchase amount is recorded in Expenses under the chosen category.',
 }

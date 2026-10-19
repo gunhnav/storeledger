@@ -9,16 +9,16 @@ import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, tod
 import { evalExpression, isExpression } from '../lib/calc'
 import { storedUnitPrice } from '../lib/expenses'
 
-// Nhóm chi phí của khoản chi sinh từ nhập kho
-const PURCHASE_EXPENSE_CATEGORY = 'Đồ uống'
+// Nhóm chi phí của khoản chi sinh từ nhập kho (DB chỉ nhận hai nhóm này)
+const PURCHASE_CATEGORIES = ['Đồ uống', 'Nguyên liệu'] as const
 
-type Row = { id: number; productId: string; qty: string; unitPrice: string; total: string }
+type Row = { id: number; productId: string; category: string; qty: string; unitPrice: string; total: string }
 
 const cleanNumber = (text: string) => text.replace(/[^0-9]/g, '')
 const cleanExpression = (text: string) => text.replace(/[^0-9.,+\-*/x×÷:()kKtTrR\s]/g, '')
 const num = (text: string) => (text.trim() === '' ? Number.NaN : (evalExpression(text) ?? Number.NaN))
 let nextId = 1
-const newRow = (): Row => ({ id: nextId++, productId: '', qty: '', unitPrice: '', total: '' })
+const newRow = (): Row => ({ id: nextId++, productId: '', category: PURCHASE_CATEGORIES[0], qty: '', unitPrice: '', total: '' })
 const isBlank = (r: Row) => r.productId === '' && r.qty.trim() === '' && r.unitPrice.trim() === '' && r.total.trim() === ''
 
 // Nhập kho dạng bảng giống Chi phí. Lưu xong: tạo đợt nhập (tồn kho), đưa hàng ra quán và ghi vào Chi phí.
@@ -87,6 +87,16 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
       items.push({ product_id: r.productId, quantity, unit_cost: unitCost })
     }
 
+    // Món lặp ở nhiều dòng thì phải cùng nhóm (DB gắn nhóm theo món)
+    const categoryOf = new Map<string, string>()
+    for (const r of filled) {
+      const prev = categoryOf.get(r.productId)
+      if (prev !== undefined && prev !== r.category) {
+        return setResult({ ok: false, text: t('"{name}" ở nhiều dòng phải cùng một nhóm chi phí', { name: byId.get(r.productId)?.name ?? '' }) })
+      }
+      categoryOf.set(r.productId, r.category)
+    }
+
     setSaving(true)
     const finish = (text: string) => {
       setSaving(false)
@@ -107,7 +117,8 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
 
     const { error: expenseError } = await supabase.rpc('record_purchase_expenses', {
       p_purchase_id: purchaseId,
-      p_category: PURCHASE_EXPENSE_CATEGORY,
+      p_category: PURCHASE_CATEGORIES[0],
+      p_categories: Object.fromEntries(categoryOf),
     })
     if (expenseError) return finish(t('Đã nhập hàng nhưng chưa ghi được vào Chi phí: {error}', { error: t(errorMessage(expenseError)) }))
 
@@ -150,6 +161,7 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
           <div className="expense-lines">
             <div className={`expense-line purchase-line${isAdmin ? '' : ' no-price'} expense-line-head`} aria-hidden="true">
               <span>{t('Món')}</span>
+              {isAdmin && <span>{t('Nhóm chi phí')}</span>}
               <span>{t('Số lượng')}</span>
               {isAdmin && <span>{t('Đơn giá')}</span>}
               {isAdmin && <span>{t('Thành tiền')}</span>}
@@ -170,6 +182,18 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
                       ))}
                     </select>
                   </label>
+                  {isAdmin && (
+                    <label>
+                      <span className="mobile-label">{t('Nhóm chi phí')}</span>
+                      <select value={r.category} onChange={(e) => update(r.id, { category: e.target.value })} aria-label={t('Nhóm chi phí')}>
+                        {PURCHASE_CATEGORIES.map((g) => (
+                          <option key={g} value={g}>
+                            {t(g)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <label>
                     <span className="mobile-label">{t('Số lượng')}</span>
                     <input
@@ -228,7 +252,7 @@ export function PurchaseRowsForm({ storeId, autoToShop }: { storeId: string; aut
         </button>
         <small className="muted">
           {isAdmin
-            ? t('Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí (nhóm Đồ uống).')
+            ? t('Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.')
             : t('Chọn món và số lượng, giá nhập do hệ thống tự lấy.')}
         </small>
 

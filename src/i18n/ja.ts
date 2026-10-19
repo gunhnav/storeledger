@@ -612,4 +612,6 @@ export const ja: Record<string, string> = {
   'Chi phí theo kỳ': '期間別経費',
   'Chưa có chi phí trong khoảng này.': 'この期間に経費はありません。',
   'Tổng chi phí': '経費合計',
+  '"{name}" ở nhiều dòng phải cùng một nhóm chi phí': '「{name}」は複数行で同じ経費グループにしてください',
+  'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': '単価と金額を空にすると入荷日に適用中の原価を使います。保存すると入荷金額が選んだグループの経費に自動記録されます。',
 }
