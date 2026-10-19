@@ -10,7 +10,7 @@ import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog, useStorePrices } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
-import { usesDistribution } from '../lib/storeFeatures'
+import { salesChannels, usesDistribution, type SelectableChannel } from '../lib/storeFeatures'
 import { allocateSetTotal, allocatedTotal } from '../lib/companySale'
 import { saleFromSets, setKinds } from '../lib/companySets'
 import type { CompanySetDbRow, Product, SaleChannel, StorePriceRow } from '../types/database'
@@ -33,10 +33,18 @@ function priceFor(price: StorePriceRow | undefined, channel: SaleChannel): numbe
 export function SalePage() {
   const { current } = useStore()
   // Đổi cửa hàng thì dựng lại form để bỏ các dòng của cửa hàng cũ
-  return current ? <SaleForm key={current.id} storeId={current.id} distribution={usesDistribution(current.code)} /> : null
+  return current ? <SaleForm key={current.id} storeId={current.id} distribution={usesDistribution(current.code)} channels={salesChannels(current.code)} /> : null
 }
 
-function SaleForm({ storeId, distribution }: { storeId: string; distribution: boolean }) {
+function SaleForm({
+  storeId,
+  distribution,
+  channels,
+}: {
+  storeId: string
+  distribution: boolean
+  channels: SelectableChannel[]
+}) {
   const { t } = useI18n()
   const toast = useToast()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
@@ -273,9 +281,11 @@ function SaleForm({ storeId, distribution }: { storeId: string; distribution: bo
             <label className="field">
               {t('Kênh bán')}
               <select {...register('channel', { onChange: resetPrices })}>
-                <option value="in_store">{t('Tại quán')}</option>
-                <option value="shopeefood">ShopeeFood</option>
-                <option value="company">{t('Công ty')}</option>
+                {channels.map((c) => (
+                  <option key={c} value={c}>
+                    {t(c === 'company' ? 'Công ty' : 'Quán')}
+                  </option>
+                ))}
               </select>
             </label>
             <div className="field">

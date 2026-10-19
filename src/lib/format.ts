@@ -1,5 +1,12 @@
 const vnd = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 })
 
+const plainNumber = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 })
+
+// Số tiền không kèm ký hiệu ₫ (dùng khi tiêu đề cột đã ghi đơn vị)
+export function formatAmount(value: number): string {
+  return plainNumber.format(value)
+}
+
 export function formatVND(value: number): string {
   return vnd.format(value)
 }

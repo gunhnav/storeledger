@@ -55,9 +55,9 @@ export function StockPage() {
             <thead>
               <tr>
                 <th>{t('Sản phẩm')}</th>
-                {showHome && <th className="num">{t('Ở nhà')}</th>}
-                <th className="num">{t('Ở quán')}</th>
-                {hasCompany && <th className="num">{t('Ở công ty')}</th>}
+                {showHome && <th className="num">{t('Nhà')}</th>}
+                <th className="num">{t('Quán')}</th>
+                {hasCompany && <th className="num">{t('Công ty')}</th>}
                 <th>{t('Trạng thái')}</th>
               </tr>
             </thead>

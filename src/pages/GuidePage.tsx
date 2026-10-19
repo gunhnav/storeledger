@@ -24,7 +24,7 @@ const SECTIONS: Section[] = [
     icon: 'sale',
     title: 'Bán hàng',
     items: [
-      'Chọn kênh “Tại quán” hoặc “ShopeeFood” trước khi bấm món; giá tự lấy theo kênh và theo ngày bán.',
+      'Chọn kênh “Quán” hoặc “Công ty” trước khi bấm món; giá quán tự lấy theo ngày bán.',
       'Kênh “Công ty”: trước tiên vào Kho hàng → Phân phối → Cho công ty, nhập theo set 4 / set 6 (mỗi set mix nhiều vị). Khi bán, nhập số set, giá 1 set và tổng số hũ từng vị; hàng trừ vào phần đã phân phối cho công ty.',
       'Món nào chưa có ở quán thì phân phối trước rồi mới bán, để tồn tại quán không bị âm.',
       'Ghi đơn ngay khi bán. Nếu quên, đổi ngày bán sang đúng ngày rồi lưu.',

@@ -2772,8 +2772,28 @@ td.actions {
 .overview-extras {
   margin-bottom: 28px;
 }
+.results-table th,
+.results-table td {
+  padding-left: 8px;
+  padding-right: 8px;
+}
 .overview-extras td:first-child {
   min-width: 130px;
+}
+@media (max-width: 560px) {
+  .results-table th,
+  .results-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+  .results-table th {
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .overview-extras .results-table td:first-child {
+    min-width: 0;
+    max-width: 96px;
+  }
 }
 .overview-extras .stock-banner {
   margin: 0;

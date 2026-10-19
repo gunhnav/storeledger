@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { StockAlertBanner, StockStatusBadge } from '../components/StockAlertBanner'
 import { useI18n } from '../lib/i18n'
-import { formatDate, formatVND } from '../lib/format'
+import { formatAmount, formatDate, formatVND } from '../lib/format'
 import { financialSummary, productResults, stockAlerts, stockRows } from '../lib/analytics/overview'
 import { useAnalyticsData } from '../lib/useAnalyticsData'
 
@@ -106,30 +106,26 @@ export function OverviewExtras({ storeId }: { storeId: string }) {
           <p className="muted">{t('Chưa có giao dịch trong khoảng này.')}</p>
         ) : (
           <div className="table-wrap">
-            <table>
+            <table className="results-table">
               <thead>
                 <tr>
                   <th>{t('Loại')}</th>
-                  <th className="num">{t('Giá bán hiện hành')}</th>
-                  <th className="num">{t('Giá vốn BQ/hũ bán')}</th>
-                  <th className="num">{t('Hũ bán')}</th>
-                  <th className="num">{t('Doanh thu')}</th>
-                  <th className="num">{t('Giá vốn')}</th>
-                  <th className="num">{t('Lãi gộp')}</th>
-                  <th className="num">{t('Lãi/hũ')}</th>
+                  <th className="num">{t('Số lượng')}</th>
+                  <th className="num">{t('Doanh thu')} (₫)</th>
+                  <th className="num">{t('Vốn')} (₫)</th>
+                  <th className="num">{t('Lợi nhuận')} (₫)</th>
                 </tr>
               </thead>
               <tbody>
                 {results.map((r) => (
                   <tr key={r.productId}>
                     <td>{r.name}</td>
-                    <td className="num">{formatVND(r.currentPrice)}</td>
-                    <td className="num">{r.avgCost === null ? '—' : formatVND(r.avgCost)}</td>
                     <td className="num">{r.sold}</td>
-                    <td className="num">{formatVND(r.revenue)}</td>
-                    <td className="num">{formatVND(r.cogs)}</td>
-                    <td className="num">{money(r.grossProfit)}</td>
-                    <td className="num">{r.profitPerUnit === null ? '—' : money(r.profitPerUnit)}</td>
+                    <td className="num">{formatAmount(r.revenue)}</td>
+                    <td className="num">{formatAmount(r.cogs)}</td>
+                    <td className="num">
+                      <span className={r.grossProfit < 0 ? 'negative' : undefined}>{formatAmount(r.grossProfit)}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
