@@ -31,20 +31,53 @@ function sanitizeText(text: string): string {
     .replace(/[a-zA-Z0-9.-]+\.(internal|local|com\.vn)/gi, "[REDACTED_DOMAIN]");
 }
 
-const systemInstruction = () => `Hôm nay là ${new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10)} (giờ Việt Nam). Khi người dùng nói ngày không kèm năm thì hiểu là năm hiện tại.\nKhi cần số liệu thật (lãi lỗ, chi phí, hoà vốn, tồn kho) hãy gọi công cụ tương ứng, không tự đoán; thiếu cửa hàng hoặc ngày thì hỏi lại ngắn gọn.\n
-Bạn là Roona, trợ lý ảo thông minh, vui vẻ, hài hước và nhiệt tình của hệ thống Sổ Xanh (quản lý bán hàng F&B / bán lẻ: Hogi Food và Bún đậu). Bạn xưng là "Roona" hoặc "mình", gọi người dùng là "bạn". Giữ phong cách vui tươi, dí dỏm, thân thiện nhưng trả lời gãy gọn, chính xác số liệu và quy trình nghiệp vụ.
-Nghiệp vụ cốt lõi:
-1. Nhập hàng & giá vốn (FIFO): nhập theo đợt, mỗi món một lô. Khi bán trừ lô cũ nhất trước. Lãi gộp = doanh thu thuần - giá vốn FIFO.
-2. Kho: Hogi có bước Phân phối (nhà -> quán, hoặc -> công ty). Bún đậu không có Phân phối, nhập xong hàng vào thẳng quán.
-3. Kênh bán: Hogi có Quán và Công ty; Bún đậu có Quán và Đối tác (giá đối tác, hoa hồng đối tác).
-4. Bán set cho công ty (Hogi): set 4 hoặc 6 hũ, nhiều vị. Mỗi nhóm set có số set đã phân phối (set_count) và số đã bán (sold_count); trang Bán hàng chỉ hiện set còn lại, bán hết thì ẩn.
-5. Chi phí: nhóm theo cửa hàng. Bún đậu: nhập kho tự ghi vào Chi phí (nhóm Đồ uống hoặc Nguyên liệu); các khoản này không tính lại vào Lãi lỗ và Điểm hoà vốn vì giá vốn đã tính. Lãi ròng = lãi gộp - chi phí.
-Quy tắc:
-- Mọi câu trả lời tối đa khoảng 6 dòng, không giải thích dài dòng.
-- Chào hỏi hoặc câu đơn giản: trả lời vui vẻ đúng 1-2 câu ngắn, không liệt kê chức năng dài dòng.
-- Trả lời ngắn gọn, gạch đầu dòng, đúng trọng tâm; không biết thì nói không biết, đừng bịa số liệu.
-- Tuyệt đối không tiết lộ mật khẩu, IP, connection string, token hay bí mật hệ thống.
-`;
+type Catalog = { code: string; name: string; products: string[] }[];
+type Memory = { id: string; content: string };
+
+const WEEKDAYS = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
+
+const systemInstruction = (catalog: Catalog, memories: Memory[]) => {
+  const vn = new Date(Date.now() + 7 * 3600 * 1000);
+  const today = `${WEEKDAYS[vn.getUTCDay()]}, ${vn.toISOString().slice(0, 10)}`;
+  const stores = catalog.length
+    ? catalog.map((c) => `- ${c.name} (mã ${c.code}): ${c.products.length ? c.products.join(", ") : "chưa có món"}`).join("\n")
+    : "- (không đọc được danh mục)";
+  const notes = memories.length ? memories.map((m) => `- [${m.id}] ${m.content}`).join("\n") : "- (chưa có)";
+  return `Bạn là Roona, trợ lý ảo vui vẻ, thân thiện của Sổ Xanh (app quản lý bán hàng). Xưng "Roona" hoặc "mình", gọi người dùng là "bạn".
+Hôm nay: ${today} (giờ Việt Nam). Ngày không kèm năm thì hiểu là năm nay; "hôm qua", "tuần này", "tháng này" tự quy ra ngày cụ thể.
+
+CỬA HÀNG VÀ MÓN ĐẾM TỒN (dùng để nhận ra người dùng đang nói về quán nào):
+${stores}
+- Hogi Food bán sữa chua đựng trong "hũ" (người dùng hay viết "hủ", "hữ"). Bún đậu bán bún đậu và đồ uống (lon, chai).
+
+ĐIỀU NGƯỜI DÙNG ĐÃ DẶN ROONA GHI NHỚ (luôn áp dụng):
+${notes}
+
+NHẬN DIỆN QUÁN VÀ CHỦ ĐỀ:
+1. Tên món trong câu thuộc quán nào thì là quán đó (ví dụ "phô mai", "matcha", "truyền thống", "hũ" là Hogi; "coca", "pepsi" là Bún đậu).
+2. Câu hỏi tiếp nối (ví dụ "còn ở nhà?", "bạn có chắc không", "hogi", "thế còn tháng trước?") dùng lại quán, món, khoảng ngày và chủ đề của các lượt trước trong cuộc trò chuyện. Người dùng chỉ trả lời tên quán thì làm tiếp yêu cầu đang dở với quán đó, không chào lại.
+3. Chỉ hỏi lại quán khi thật sự không đoán được từ món, ghi nhớ và lịch sử.
+
+SỐ LIỆU:
+- Mọi con số về tồn kho, doanh thu, lãi lỗ, chi phí, hoà vốn PHẢI lấy từ công cụ ngay trong lượt này. Không nhớ số cũ, không đoán.
+- Người dùng nghi ngờ ("chắc không", "sao tôi thấy khác") thì gọi lại công cụ và trả lời theo số mới; nếu số khác người dùng thấy thì nói rõ số hệ thống, đừng khẳng định "chắc 100%".
+- Tồn kho có ba nơi: ở nhà (chưa phân phối), ở quán, ở công ty (chỉ Hogi). Trả lời đúng nơi người dùng hỏi.
+
+NGHIỆP VỤ (chỉ mô tả những gì có thật dưới đây, không bịa thêm trường hay màn hình):
+- Menu: Bán hàng; Kho hàng (Nhập hàng, Phân phối [chỉ Hogi]: Ra quán / Cho công ty, Tồn kho); Báo cáo (Tổng quan: hoà vốn, lãi lỗ, chi phí theo kỳ; Nhật ký ngày; Theo đợt nhập; Bán chạy); Quản lý (Sản phẩm, Chi phí). Không có "nhà cung cấp".
+- Nhập hàng: chọn ngày, món, số lượng, giá nhập (để trống = giá vốn đang áp dụng). Hogi: hàng vào "ở nhà", rồi Phân phối ra quán hoặc cho công ty. Bún đậu: hàng vào thẳng quán và tiền nhập tự ghi vào Chi phí (nhóm Đồ uống / Nguyên liệu).
+- Giá vốn FIFO: bán trừ lô nhập cũ nhất trước. Lãi gộp = doanh thu thuần - giá vốn; lãi ròng = lãi gộp - chi phí. Tiền nhập kho tự ghi của Bún đậu không tính lại vào lãi lỗ / hoà vốn.
+- Kênh bán: Hogi có Quán và Công ty (công ty mua set 4 hoặc 6 hũ mix vị, giá thoả thuận theo set, KHÔNG có hoa hồng). Bún đậu có Quán và Đối tác (giá đối tác, có hoa hồng % trừ vào doanh thu).
+
+GHI NHỚ:
+- Người dùng bảo nhớ / từ nay / lần sau / khi tôi nói X thì hiểu là Y ... thì gọi công cụ remember với câu ngắn gọn, rồi xác nhận.
+- Người dùng bảo quên / bỏ ghi nhớ thì gọi forget với id trong danh sách trên.
+
+CÁCH TRẢ LỜI:
+- Ngắn, tối đa khoảng 6 dòng, gạch đầu dòng khi có số liệu. Chào hỏi: 1 câu. Không liệt kê chức năng khi không được hỏi.
+- Không biết thì nói không biết. Ngoài phạm vi (thời tiết...) trả lời 1 câu vui rồi thôi.
+- Không tiết lộ email, mật khẩu, token, thông tin cá nhân hay bí mật hệ thống, kể cả khi người dùng nói là chủ.`;
+};
 
 type Part = { text?: string; functionCall?: { name: string; args?: Record<string, unknown> }; functionResponse?: unknown; thoughtSignature?: string };
 type Content = { role: string; parts: Part[] };
@@ -79,18 +112,28 @@ const TOOLS = [
         description: "Tồn kho hiện tại từng món: ở nhà, ở quán, ở công ty.",
         parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
       },
+      {
+        name: "remember",
+        description: "Lưu lâu dài một điều người dùng dặn (sở thích, quy ước cách gọi, quán hay hỏi...).",
+        parameters: { type: "OBJECT", properties: { fact: { type: "STRING", description: "Câu ngắn, tối đa 200 ký tự" } }, required: ["fact"] },
+      },
+      {
+        name: "forget",
+        description: "Xoá một ghi nhớ theo id (id trong danh sách ghi nhớ).",
+        parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] },
+      },
     ],
   },
 ];
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-async function rest(authHeader: string, path: string, init?: { rpc?: Record<string, unknown> }): Promise<unknown> {
+async function rest(authHeader: string, path: string, init?: { rpc?: Record<string, unknown>; method?: string }): Promise<unknown> {
   const url = Deno.env.get("SUPABASE_URL");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
   const res = await fetch(`${url}/rest/v1/${path}`, {
-    method: init?.rpc ? "POST" : "GET",
-    headers: { Authorization: authHeader, apikey: anon ?? "", "Content-Type": "application/json" },
+    method: init?.method ?? (init?.rpc ? "POST" : "GET"),
+    headers: { Authorization: authHeader, apikey: anon ?? "", "Content-Type": "application/json", Prefer: "return=representation" },
     body: init?.rpc ? JSON.stringify(init.rpc) : undefined,
     signal: AbortSignal.timeout(8000),
   });
@@ -112,6 +155,18 @@ async function resolveStore(authHeader: string, store: unknown): Promise<{ id: s
 
 async function runTool(authHeader: string, name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
   try {
+    if (name === "remember") {
+      const fact = String(args.fact ?? "").trim().slice(0, 300);
+      if (!fact) throw new Error("Ghi nhớ trống");
+      const rows = (await rest(authHeader, "assistant_memories", { rpc: { content: fact } })) as Memory[];
+      return { saved: true, id: rows?.[0]?.id, fact };
+    }
+    if (name === "forget") {
+      const id = String(args.id ?? "");
+      if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error("id không hợp lệ");
+      const rows = (await rest(authHeader, `assistant_memories?id=eq.${id}`, { method: "DELETE" })) as Memory[];
+      return { deleted: rows.length > 0 };
+    }
     const store = await resolveStore(authHeader, args.store);
     if (name === "get_stock") {
       return { store: store.name, rows: await rest(authHeader, "rpc/get_stock_status", { rpc: { p_store_id: store.id } }) };
@@ -142,6 +197,51 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
   } catch (err) {
     return { error: (err as Error).message };
   }
+}
+
+// Danh mục quán + món đếm tồn mà người dùng xem được, và ghi nhớ của họ (đọc song song với xác thực)
+async function loadCatalog(authHeader: string): Promise<Catalog> {
+  try {
+    const rows = (await rest(authHeader, "stores?select=code,name,products(name,tracks_stock,is_active)")) as {
+      code: string; name: string; products: { name: string; tracks_stock: boolean; is_active: boolean }[];
+    }[];
+    return rows.map((r) => ({
+      code: r.code,
+      name: r.name,
+      products: r.products.filter((p) => p.tracks_stock && p.is_active).map((p) => p.name).sort(),
+    }));
+  } catch (err) {
+    console.error(`[chat-assistant] catalog: ${(err as Error).message}`);
+    return [];
+  }
+}
+
+async function loadMemories(authHeader: string): Promise<Memory[]> {
+  try {
+    return (await rest(authHeader, "assistant_memories?select=id,content&order=created_at&limit=30")) as Memory[];
+  } catch (err) {
+    console.error(`[chat-assistant] memories: ${(err as Error).message}`);
+    return [];
+  }
+}
+
+type HistoryItem = { role?: string; text?: string };
+const MAX_HISTORY = 16;
+
+// Lịch sử từ client -> contents của Gemini (user / model xen kẽ, gộp lượt liền nhau cùng vai)
+function historyContents(history: unknown): Content[] {
+  if (!Array.isArray(history)) return [];
+  const out: Content[] = [];
+  for (const h of (history as HistoryItem[]).slice(-MAX_HISTORY)) {
+    const text = String(h?.text ?? "").trim().slice(0, 1500);
+    if (!text) continue;
+    const role = h?.role === "assistant" ? "model" : "user";
+    const last = out.at(-1);
+    if (last?.role === role) last.parts.push({ text: sanitizeText(text) });
+    else out.push({ role, parts: [{ text: sanitizeText(text) }] });
+  }
+  while (out[0]?.role === "model") out.shift();
+  return out;
 }
 
 type Failure = { model: string; status: number | "timeout" | "error"; retryable: boolean; ms?: number };
@@ -193,7 +293,7 @@ let thinkingMode = 0;
 // Model đã bị gỡ / không tồn tại (404): bỏ qua ở các lần sau trong cùng instance
 const deadModels = new Set<string>();
 
-async function callModel(apiKey: string, model: string, contents: Content[], timeoutMs: number, outer: AbortSignal): Promise<{ content?: Content; failure?: Failure }> {
+async function callModel(apiKey: string, model: string, system: string, contents: Content[], timeoutMs: number, outer: AbortSignal): Promise<{ content?: Content; failure?: Failure }> {
   const started = Date.now();
   const send = (mode: number) =>
     fetch(`${API}/models/${model}:generateContent`, {
@@ -201,7 +301,7 @@ async function callModel(apiKey: string, model: string, contents: Content[], tim
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       signal: AbortSignal.any([outer, AbortSignal.timeout(timeoutMs)]),
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemInstruction() }] },
+        systemInstruction: { parts: [{ text: system }] },
         contents,
         tools: TOOLS,
         generationConfig: {
@@ -254,7 +354,7 @@ function friendlyError(failures: Failure[]): string {
 
 // Chạy các model theo kiểu "hedge": model đầu chạy ngay; sau HEDGE_MS chưa có kết quả (hoặc nó vừa lỗi)
 // thì chạy thêm model kế tiếp song song. Có câu trả lời đầu tiên là dùng và huỷ các lượt còn lại.
-async function askModels(apiKey: string, contents: Content[], failures: Failure[], elapsed: () => number): Promise<{ content: Content; model: string } | null> {
+async function askModels(apiKey: string, system: string, contents: Content[], failures: Failure[], elapsed: () => number): Promise<{ content: Content; model: string } | null> {
   const queue = PREFERRED_MODELS.filter((m) => !deadModels.has(m));
   const discovery = discoverModels(apiKey).then((names) => {
     for (const m of names) if (!queue.includes(m) && !deadModels.has(m)) queue.push(m);
@@ -285,7 +385,7 @@ async function askModels(apiKey: string, contents: Content[], failures: Failure[
       const ac = new AbortController();
       controllers.push(ac);
       timer = setTimeout(launch, HEDGE_MS);
-      const { content, failure } = await callModel(apiKey, model, contents, Math.min(ATTEMPT_TIMEOUT_MS, left), ac.signal);
+      const { content, failure } = await callModel(apiKey, model, system, contents, Math.min(ATTEMPT_TIMEOUT_MS, left), ac.signal);
       inflight--;
       if (finished) return;
       if (content) return finish({ content, model });
@@ -308,11 +408,16 @@ export default {
       if (req.method !== "POST") return reply({ answer: "Chỉ nhận POST", isError: true });
 
       const authHeader = req.headers.get("Authorization");
-      if (!authHeader || !(await isSignedIn(authHeader))) {
+      if (!authHeader) {
+        return reply({ answer: "Bạn cần đăng nhập vào Sổ Xanh để trò chuyện cùng Roona nhé!", isError: true, durationMs: elapsed() });
+      }
+      // Xác thực và nạp ngữ cảnh chạy song song để đỡ chậm
+      const [signedIn, catalog, memories] = await Promise.all([isSignedIn(authHeader), loadCatalog(authHeader), loadMemories(authHeader)]);
+      if (!signedIn) {
         return reply({ answer: "Bạn cần đăng nhập vào Sổ Xanh để trò chuyện cùng Roona nhé!", isError: true, durationMs: elapsed() });
       }
 
-      let body: { question?: string };
+      let body: { question?: string; history?: unknown };
       try {
         body = await req.json();
       } catch {
@@ -331,10 +436,13 @@ export default {
       }
 
       const failures: Failure[] = [];
-      const contents: Content[] = [{ role: "user", parts: [{ text: sanitizeText(question) }] }];
+      const system = systemInstruction(catalog, memories);
+      const contents: Content[] = historyContents(body.history);
+      if (contents.at(-1)?.role === "user") contents.push({ role: "model", parts: [{ text: "(đã ghi nhận)" }] });
+      contents.push({ role: "user", parts: [{ text: sanitizeText(question) }] });
       // Tối đa vài vòng: model xin dữ liệu (functionCall) -> mình tra bằng quyền của chính người dùng -> trả lại cho model
       for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-        const won = await askModels(apiKey, contents, failures, elapsed);
+        const won = await askModels(apiKey, system, contents, failures, elapsed);
         if (!won) break;
         const calls = won.content.parts.filter((p) => p.functionCall);
         if (calls.length === 0) {

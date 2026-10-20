@@ -9,6 +9,7 @@ import { ErrorPage } from './ErrorPage'
 import { Icon, type IconName } from './Icon'
 import { LanguageSelect } from './LanguageSelect'
 import { Logo } from './Logo'
+import { ChatWidget } from './ChatWidget'
 
 type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean }
 
@@ -98,6 +99,7 @@ export function AppLayout() {
           <Outlet />
         )}
       </main>
+      <ChatWidget />
     </div>
   )
 }
