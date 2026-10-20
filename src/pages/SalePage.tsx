@@ -182,6 +182,7 @@ function SaleForm({
       const picked = kinds.filter((k) => (numericPicks[k.key]?.count ?? 0) > 0)
       if (picked.some((k) => !Number.isInteger(numericPicks[k.key].count))) return setFormError(t('Số set phải là số nguyên > 0'))
       if (picked.some((k) => !(numericPicks[k.key].price > 0))) return setFormError(t('Nhập giá 1 set'))
+      if (picked.some((k) => numericPicks[k.key].count > k.distributed)) return setFormError(t('Số set bán nhiều hơn số set còn lại'))
       if (total > MAX_MONEY) return setFormError(t('Tổng tiền quá lớn, kiểm tra lại'))
     }
     const companyPrices = isCompany ? allocateSetTotal(total, companyLines) : null
@@ -210,13 +211,24 @@ function SaleForm({
       items.push({ product_id: line.product_id, quantity, unit_price: unitPrice })
     }
 
-    const { error } = await supabase.rpc('create_sale', {
-      p_store_id: storeId,
-      p_sale_date: values.sale_date || null,
-      p_channel: values.channel,
-      p_note: isCompany ? [setNote(), values.note.trim()].filter(Boolean).join(' · ') : values.note.trim() || null,
-      p_items: items,
-    })
+    // Kênh Công ty: một giao dịch vừa trừ set đã chọn vừa tạo đơn (set bán rồi không hiện nữa)
+    const { error } = isCompany
+      ? await supabase.rpc('create_company_sale', {
+          p_store_id: storeId,
+          p_sale_date: values.sale_date || null,
+          p_note: [setNote(), values.note.trim()].filter(Boolean).join(' · ') || null,
+          p_items: items,
+          p_sets: kinds
+            .filter((k) => (numericPicks[k.key]?.count ?? 0) > 0)
+            .map((k) => ({ size: k.size, mix: k.mix, count: numericPicks[k.key].count })),
+        })
+      : await supabase.rpc('create_sale', {
+          p_store_id: storeId,
+          p_sale_date: values.sale_date || null,
+          p_channel: values.channel,
+          p_note: values.note.trim() || null,
+          p_items: items,
+        })
     if (error) {
       setResult({ ok: false, text: errorMessage(error) })
       return
@@ -326,7 +338,7 @@ function SaleForm({
                       <div className="sale-set-info">
                         <span className="badge badge-ok">{t('Set {size}', { size: k.size })}</span>
                         <span>{mixText(k.mix)}</span>
-                        <small className="muted">{t('Đã phân phối {count} set', { count: k.distributed })}</small>
+                        <small className="muted">{t('Còn {count} set', { count: k.distributed })}</small>
                       </div>
                       <div className="sale-set-inputs">
                         <QtyStepper

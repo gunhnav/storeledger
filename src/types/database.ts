@@ -477,6 +477,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_company_sale: {
+        Args: { p_store_id: string; p_sale_date: string | null; p_note: string | null; p_items: CreateSaleArgs['p_items']; p_sets: { size: number; mix: Record<string, number>; count: number }[] }
+        Returns: string
+      }
       get_company_sets: { Args: { p_store_id: string; p_days?: number }; Returns: CompanySetDbRow[] }
       get_store_prices: { Args: { p_store_id: string; p_date: string | null }; Returns: StorePriceRow[] }
       set_product_price: { Args: SetProductPriceArgs; Returns: string }
