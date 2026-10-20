@@ -11,9 +11,9 @@ const CORS_HEADERS = {
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
 // Model ưu tiên; các model flash khác còn hoạt động được lấy từ ListModels làm dự phòng
-const PREFERRED_MODELS = (Deno.env.get("GEMINI_MODELS") ?? "gemini-3.8-flash").split(",").map((m) => m.trim()).filter(Boolean);
+const PREFERRED_MODELS = (Deno.env.get("GEMINI_MODELS") ?? "gemini-3.8-flash-lite,gemini-3.8-flash").split(",").map((m) => m.trim()).filter(Boolean);
 const ATTEMPT_TIMEOUT_MS = 20000;
-const HEDGE_MS = 5000;
+const HEDGE_MS = 3000;
 const TOTAL_BUDGET_MS = 28000;
 const MAX_QUESTION_CHARS = 2000;
 
@@ -40,6 +40,7 @@ Nghiệp vụ cốt lõi:
 4. Bán set cho công ty (Hogi): set 4 hoặc 6 hũ, nhiều vị. Mỗi nhóm set có số set đã phân phối (set_count) và số đã bán (sold_count); trang Bán hàng chỉ hiện set còn lại, bán hết thì ẩn.
 5. Chi phí: nhóm theo cửa hàng. Bún đậu: nhập kho tự ghi vào Chi phí (nhóm Đồ uống hoặc Nguyên liệu); các khoản này không tính lại vào Lãi lỗ và Điểm hoà vốn vì giá vốn đã tính. Lãi ròng = lãi gộp - chi phí.
 Quy tắc:
+- Mọi câu trả lời tối đa khoảng 6 dòng, không giải thích dài dòng.
 - Chào hỏi hoặc câu đơn giản: trả lời vui vẻ đúng 1-2 câu ngắn, không liệt kê chức năng dài dòng.
 - Trả lời ngắn gọn, gạch đầu dòng, đúng trọng tâm; không biết thì nói không biết, đừng bịa số liệu.
 - Tuyệt đối không tiết lộ mật khẩu, IP, connection string, token hay bí mật hệ thống.
@@ -189,6 +190,8 @@ async function discoverModels(apiKey: string): Promise<string[]> {
 // API từ chối (400) thì lùi sang cách kế tiếp và nhớ lại cho các lần gọi sau.
 const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingLevel: "minimal" }, { thinkingBudget: 0 }, null];
 let thinkingMode = 0;
+// Model đã bị gỡ / không tồn tại (404): bỏ qua ở các lần sau trong cùng instance
+const deadModels = new Set<string>();
 
 async function callModel(apiKey: string, model: string, contents: Content[], timeoutMs: number, outer: AbortSignal): Promise<{ content?: Content; failure?: Failure }> {
   const started = Date.now();
@@ -203,7 +206,7 @@ async function callModel(apiKey: string, model: string, contents: Content[], tim
         tools: TOOLS,
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 2000,
+          maxOutputTokens: 800,
           ...(THINKING_MODES[mode] ? { thinkingConfig: THINKING_MODES[mode] } : {}),
         },
       }),
@@ -224,6 +227,7 @@ async function callModel(apiKey: string, model: string, contents: Content[], tim
     }
     console.error(`[chat-assistant] ${model} -> ${res.status} sau ${Date.now() - started}ms: ${(await res.text()).slice(0, 300)}`);
     // 503/429/5xx: model đang quá tải; 404: model đã gỡ; 400/403: lỗi cấu hình / key (không thử lại được)
+    if (res.status === 404) deadModels.add(model);
     const retryable = res.status === 503 || res.status === 429 || res.status === 404 || res.status >= 500;
     return { failure: { model, status: res.status, retryable, ms: Date.now() - started } };
   } catch (err) {
@@ -251,9 +255,9 @@ function friendlyError(failures: Failure[]): string {
 // Chạy các model theo kiểu "hedge": model đầu chạy ngay; sau HEDGE_MS chưa có kết quả (hoặc nó vừa lỗi)
 // thì chạy thêm model kế tiếp song song. Có câu trả lời đầu tiên là dùng và huỷ các lượt còn lại.
 async function askModels(apiKey: string, contents: Content[], failures: Failure[], elapsed: () => number): Promise<{ content: Content; model: string } | null> {
-  const queue = [...PREFERRED_MODELS];
+  const queue = PREFERRED_MODELS.filter((m) => !deadModels.has(m));
   const discovery = discoverModels(apiKey).then((names) => {
-    for (const m of names) if (!queue.includes(m)) queue.push(m);
+    for (const m of names) if (!queue.includes(m) && !deadModels.has(m)) queue.push(m);
   });
   const controllers: AbortController[] = [];
   return await new Promise<{ content: Content; model: string } | null>((resolve) => {
