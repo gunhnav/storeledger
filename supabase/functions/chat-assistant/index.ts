@@ -184,13 +184,15 @@ async function discoverModels(apiKey: string): Promise<string[]> {
   }
 }
 
-// Gemini 3 "suy nghĩ" trước khi trả lời nên hỏi đơn giản cũng chậm; hạ mức suy nghĩ cho chat nghiệp vụ.
-// Nếu API từ chối tham số này (400) thì bỏ đi và gọi lại.
-let useThinkingConfig = true;
+// Chat nghiệp vụ chỉ cần model flash đọc số liệu rồi trả lời, không cần "suy nghĩ" (rất chậm).
+// Thử tắt suy nghĩ theo thứ tự: thinkingLevel "minimal" (Gemini 3) -> thinkingBudget 0 (Gemini 2.5) -> không gửi tham số.
+// API từ chối (400) thì lùi sang cách kế tiếp và nhớ lại cho các lần gọi sau.
+const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingLevel: "minimal" }, { thinkingBudget: 0 }, null];
+let thinkingMode = 0;
 
 async function callModel(apiKey: string, model: string, contents: Content[], timeoutMs: number, outer: AbortSignal): Promise<{ content?: Content; failure?: Failure }> {
   const started = Date.now();
-  const send = (withThinking: boolean) =>
+  const send = (mode: number) =>
     fetch(`${API}/models/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -202,16 +204,16 @@ async function callModel(apiKey: string, model: string, contents: Content[], tim
         generationConfig: {
           temperature: 0.2,
           maxOutputTokens: 2000,
-          ...(withThinking ? { thinkingConfig: { thinkingLevel: "low" } } : {}),
+          ...(THINKING_MODES[mode] ? { thinkingConfig: THINKING_MODES[mode] } : {}),
         },
       }),
     });
   try {
-    let res = await send(useThinkingConfig);
-    if (res.status === 400 && useThinkingConfig) {
-      console.error(`[chat-assistant] ${model} từ chối thinkingConfig: ${(await res.text()).slice(0, 200)}`);
-      useThinkingConfig = false;
-      res = await send(false);
+    let res = await send(thinkingMode);
+    while (res.status === 400 && thinkingMode < THINKING_MODES.length - 1) {
+      console.error(`[chat-assistant] ${model} từ chối thinkingConfig #${thinkingMode}: ${(await res.text()).slice(0, 200)}`);
+      thinkingMode++;
+      res = await send(thinkingMode);
     }
     if (res.ok) {
       const data = await res.json();
