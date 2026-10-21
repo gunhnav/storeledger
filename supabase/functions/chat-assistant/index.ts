@@ -36,7 +36,10 @@ type Memory = { id: string; content: string };
 
 const WEEKDAYS = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
 
-const systemInstruction = (catalog: Catalog, memories: Memory[]) => {
+const LANG_NAMES: Record<string, string> = { vi: "tiếng Việt", en: "English", ko: "한국어 (tiếng Hàn)", zh: "中文 (tiếng Trung giản thể)", ja: "日本語 (tiếng Nhật)" };
+
+const systemInstruction = (catalog: Catalog, memories: Memory[], lang: string) => {
+  const language = LANG_NAMES[lang] ?? LANG_NAMES.vi;
   const vn = new Date(Date.now() + 7 * 3600 * 1000);
   const today = `${WEEKDAYS[vn.getUTCDay()]}, ${vn.toISOString().slice(0, 10)}`;
   const stores = catalog.length
@@ -44,6 +47,7 @@ const systemInstruction = (catalog: Catalog, memories: Memory[]) => {
     : "- (không đọc được danh mục)";
   const notes = memories.length ? memories.map((m) => `- [${m.id}] ${m.content}`).join("\n") : "- (chưa có)";
   return `Bạn là Roona, trợ lý ảo vui vẻ, thân thiện của Sổ Xanh (app quản lý bán hàng). Xưng "Roona" hoặc "mình", gọi người dùng là "bạn".
+NGÔN NGỮ: người dùng đang dùng giao diện ${language}. Luôn trả lời bằng ${language}; chỉ khi người dùng tự viết cả câu bằng ngôn ngữ khác thì trả lời theo ngôn ngữ họ viết. Tên món, tên cửa hàng giữ nguyên.
 Hôm nay: ${today} (giờ Việt Nam). Ngày không kèm năm thì hiểu là năm nay; "hôm qua", "tuần này", "tháng này" tự quy ra ngày cụ thể.
 
 CỬA HÀNG VÀ MÓN ĐẾM TỒN (dùng để nhận ra người dùng đang nói về quán nào):
@@ -67,6 +71,8 @@ NGHIỆP VỤ (chỉ mô tả những gì có thật dưới đây, không bịa
 - Menu: Bán hàng; Kho hàng (Nhập hàng, Phân phối [chỉ Hogi]: Ra quán / Cho công ty, Tồn kho); Báo cáo (Tổng quan: hoà vốn, lãi lỗ, chi phí theo kỳ; Nhật ký ngày; Theo đợt nhập; Bán chạy); Quản lý (Sản phẩm, Chi phí). Không có "nhà cung cấp".
 - Nhập hàng: chọn ngày, món, số lượng, giá nhập (để trống = giá vốn đang áp dụng). Hogi: hàng vào "ở nhà", rồi Phân phối ra quán hoặc cho công ty. Bún đậu: hàng vào thẳng quán và tiền nhập tự ghi vào Chi phí (nhóm Đồ uống / Nguyên liệu).
 - Giá vốn FIFO: bán trừ lô nhập cũ nhất trước. Lãi gộp = doanh thu thuần - giá vốn; lãi ròng = lãi gộp - chi phí. Tiền nhập kho tự ghi của Bún đậu không tính lại vào lãi lỗ / hoà vốn.
+- Câu hỏi "làm sao để ...": Chọn cửa hàng: ô tên cửa hàng ở trên cùng. Thêm / sửa món, đặt giá bán và giá vốn (có ngày áp dụng): Quản lý → Sản phẩm (admin). Ghi chi phí: Quản lý → Chi phí (admin). Thêm nhân viên, cấp quyền admin, gán cửa hàng: menu tên góc phải → Nhân viên (admin). Đổi ngôn ngữ, giao diện sáng / tối: menu tên góc phải. Hướng dẫn sử dụng: menu tên → Hướng dẫn.
+- Thêm cửa hàng mới: app CHƯA có chức năng tự thêm cửa hàng trên giao diện; cần nhờ người phụ trách kỹ thuật của Sổ Xanh tạo cửa hàng, sau đó admin vào Nhân viên để gán người làm và vào Sản phẩm để thêm món.
 - Kênh bán: Hogi có Quán và Công ty (công ty mua set 4 hoặc 6 hũ mix vị, giá thoả thuận theo set, KHÔNG có hoa hồng). Bún đậu có Quán và Đối tác (giá đối tác, có hoa hồng % trừ vào doanh thu).
 
 GHI NHỚ:
@@ -420,7 +426,7 @@ export default {
         return reply({ answer: "Bạn cần đăng nhập vào Sổ Xanh để trò chuyện cùng Roona nhé!", isError: true, durationMs: elapsed() });
       }
 
-      let body: { question?: string; history?: unknown };
+      let body: { question?: string; history?: unknown; lang?: string };
       try {
         body = await req.json();
       } catch {
@@ -439,7 +445,7 @@ export default {
       }
 
       const failures: Failure[] = [];
-      const system = systemInstruction(catalog, memories);
+      const system = systemInstruction(catalog, memories, String(body.lang ?? "vi"));
       const contents: Content[] = historyContents(body.history);
       if (contents.at(-1)?.role === "user") contents.push({ role: "model", parts: [{ text: "(đã ghi nhận)" }] });
       contents.push({ role: "user", parts: [{ text: sanitizeText(question) }] });

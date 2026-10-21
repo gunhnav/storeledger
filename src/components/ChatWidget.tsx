@@ -120,7 +120,7 @@ function getWelcomeMessage(t: (k: string) => string): Message {
 }
 
 export function ChatWidget() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { session } = useAuth()
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
@@ -288,6 +288,8 @@ export function ChatWidget() {
       const { data, error } = await supabase.functions.invoke<{ answer?: string; error?: string; isError?: boolean; durationMs?: number }>('chat-assistant', {
         body: {
           question: textToSend,
+          // Roona trả lời theo ngôn ngữ giao diện đang chọn
+          lang,
           // Các lượt trước (bỏ lời chào và tin lỗi) để Roona hiểu câu hỏi tiếp nối: quán, món, khoảng ngày
           history: messages
             .filter((m) => m.id !== 'welcome' && !m.isError)
@@ -356,7 +358,7 @@ export function ChatWidget() {
     } finally {
       setLoading(false)
     }
-  }, [input, loading, messages, t])
+  }, [input, loading, messages, lang, t])
 
   return (
     <div
