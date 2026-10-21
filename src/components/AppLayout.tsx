@@ -9,7 +9,7 @@ import { ErrorPage } from './ErrorPage'
 import { Icon, type IconName } from './Icon'
 import { LanguageSelect } from './LanguageSelect'
 import { Logo } from './Logo'
-import { ChatWidget } from './ChatWidget'
+import { ChatWidget, ROONA_OPEN_EVENT } from './ChatWidget'
 
 type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean }
 
@@ -184,6 +184,18 @@ function UserMenu({
             <Icon name="help" />
             {t('Hướng dẫn')}
           </NavLink>
+          <button
+            type="button"
+            role="menuitem"
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false)
+              window.dispatchEvent(new Event(ROONA_OPEN_EVENT))
+            }}
+          >
+            <Icon name="chat" />
+            {t('Gọi trợ lý Roona')}
+          </button>
           <div className="theme-switch" role="radiogroup" aria-label={t('Giao diện')}>
             {THEME_CHOICES.map((choice) => (
               <button

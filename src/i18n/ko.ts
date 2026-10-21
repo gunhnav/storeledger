@@ -636,4 +636,7 @@ export const ko: Record<string, string> = {
   'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': '단가와 금액을 비워 두면 입고일에 적용되는 원가를 사용합니다. 저장하면 입고 금액이 선택한 그룹의 비용에 자동 기록됩니다.',
   'Còn {count} set': '{count}세트 남음',
   'Số set bán nhiều hơn số set còn lại': '남은 세트보다 많이 판매할 수 없습니다',
+  'Giữ để kéo, chạm để mở': '길게 눌러 이동, 탭하여 열기',
+  'Ẩn Roona (mở lại trong menu tài khoản)': 'Roona 숨기기 (계정 메뉴에서 다시 열기)',
+  'Gọi trợ lý Roona': 'Roona 어시스턴트 호출',
 }

@@ -636,4 +636,7 @@ export const ja: Record<string, string> = {
   'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': '単価と金額を空にすると入荷日に適用中の原価を使います。保存すると入荷金額が選んだグループの経費に自動記録されます。',
   'Còn {count} set': '残り {count} セット',
   'Số set bán nhiều hơn số set còn lại': '残りセット数を超えて販売できません',
+  'Giữ để kéo, chạm để mở': '長押しで移動、タップで開く',
+  'Ẩn Roona (mở lại trong menu tài khoản)': 'Roonaを隠す（アカウントメニューから再表示）',
+  'Gọi trợ lý Roona': 'アシスタントRoonaを呼ぶ',
 }

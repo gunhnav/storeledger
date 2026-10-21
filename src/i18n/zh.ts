@@ -636,4 +636,7 @@ export const zh: Record<string, string> = {
   'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': '单价和金额留空则使用进货日生效的成本价。保存后进货金额按所选组自动记入费用。',
   'Còn {count} set': '剩余 {count} 套',
   'Số set bán nhiều hơn số set còn lại': '出售套数超过剩余套数',
+  'Giữ để kéo, chạm để mở': '按住拖动，点按打开',
+  'Ẩn Roona (mở lại trong menu tài khoản)': '隐藏 Roona（可在账户菜单中重新打开）',
+  'Gọi trợ lý Roona': '呼叫助手 Roona',
 }

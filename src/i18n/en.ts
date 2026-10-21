@@ -636,4 +636,7 @@ export const en: Record<string, string> = {
   'Để trống đơn giá và thành tiền thì dùng giá vốn đang áp dụng vào ngày nhập. Lưu xong, tiền nhập tự ghi vào Chi phí theo nhóm đã chọn.': 'Leave unit price and amount empty to use the cost in effect on the purchase date. After saving, the purchase amount is recorded in Expenses under the chosen category.',
   'Còn {count} set': '{count} sets left',
   'Số set bán nhiều hơn số set còn lại': 'Selling more sets than remain',
+  'Giữ để kéo, chạm để mở': 'Hold to drag, tap to open',
+  'Ẩn Roona (mở lại trong menu tài khoản)': 'Hide Roona (reopen from the account menu)',
+  'Gọi trợ lý Roona': 'Call assistant Roona',
 }

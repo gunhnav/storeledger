@@ -3257,3 +3257,93 @@ input.overridden {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* Roona: nút kéo được, nút ẩn, nội dung markdown, toàn màn hình trên điện thoại */
+.chat-widget-root[hidden] {
+  display: none;
+}
+.chat-toggle-btn {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.chat-hide-btn {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.chat-hide-btn:hover {
+  color: var(--text-h);
+  border-color: var(--accent);
+}
+.chat-bubble p {
+  margin: 0 0 6px;
+}
+.chat-bubble p:last-child,
+.chat-bubble .chat-md-list:last-child {
+  margin-bottom: 0;
+}
+.chat-md-list {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+.chat-md-list li + li {
+  margin-top: 3px;
+}
+.chat-widget-root.is-open {
+  right: 16px;
+  bottom: 16px;
+}
+@media (max-width: 900px) {
+  /* Nút gọn (chỉ avatar) để không che nút Lưu của thanh dưới */
+  .chat-widget-root:not(.is-open) .chat-toggle-label {
+    display: none;
+  }
+  .chat-widget-root:not(.is-open) .chat-toggle-btn {
+    padding: 4px;
+  }
+}
+@media (max-width: 640px) {
+  .chat-widget-root.is-open {
+    inset: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+  }
+  .chat-widget-root.is-open .chat-card {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: chatSheetIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .chat-widget-root.is-open .chat-input {
+    font-size: 16px; /* không để iOS tự phóng to khi gõ */
+  }
+}
+@keyframes chatSheetIn {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
