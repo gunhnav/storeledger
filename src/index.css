@@ -3269,11 +3269,16 @@ input.overridden {
 }
 .chat-hide-btn {
   position: absolute;
-  top: -6px;
-  left: -6px;
-  width: 22px;
-  height: 22px;
+  top: -4px;
+  left: -4px;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  min-width: 0;
+  min-height: 0; /* nút chung có min-height 40px làm nút × bị kéo dài */
   padding: 0;
+  line-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3283,6 +3288,9 @@ input.overridden {
   color: var(--muted);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.chat-hide-btn:active:not(:disabled) {
+  transform: none;
 }
 .chat-hide-btn:hover {
   color: var(--text-h);
