@@ -63,7 +63,8 @@ NHẬN DIỆN QUÁN VÀ CHỦ ĐỀ:
 3. Chỉ hỏi lại quán khi thật sự không đoán được từ món, ghi nhớ và lịch sử.
 
 SỐ LIỆU:
-- Mọi con số về tồn kho, doanh thu, lãi lỗ, chi phí, hoà vốn PHẢI lấy từ công cụ ngay trong lượt này. Không nhớ số cũ, không đoán.
+- Công cụ có sẵn: tồn kho (get_stock), giá bán và giá vốn từng món (get_prices), món bán chạy (get_best_sellers), các đợt nhập hàng (get_purchases), lãi lỗ, chi phí, hoà vốn. Hỏi về giá vốn / giá quán / giá bán thì gọi get_prices, KHÔNG nói là không có công cụ.
+- Mọi con số về tồn kho, giá, doanh thu, lãi lỗ, chi phí, hoà vốn PHẢI lấy từ công cụ ngay trong lượt này. Không nhớ số cũ, không đoán.
 - Người dùng nghi ngờ ("chắc không", "sao tôi thấy khác") thì gọi lại công cụ và trả lời theo số mới; nếu số khác người dùng thấy thì nói rõ số hệ thống, đừng khẳng định "chắc 100%".
 - Tồn kho có ba nơi: ở nhà (chưa phân phối), ở quán, ở công ty (chỉ Hogi). Trả lời đúng nơi người dùng hỏi.
 
@@ -122,6 +123,21 @@ const TOOLS = [
         parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
       },
       {
+        name: "get_prices",
+        description: "Giá bán hiện hành (quán, đối tác) và giá vốn của từng món; có thể lọc theo tên món. Giá vốn chỉ admin xem được.",
+        parameters: { type: "OBJECT", properties: { store: STORE_ARG, product: { type: "STRING", description: "Tên món (tuỳ chọn, không dấu cũng được)" } }, required: ["store"] },
+      },
+      {
+        name: "get_best_sellers",
+        description: "Món bán chạy trong khoảng ngày: số lượng và doanh thu theo từng món.",
+        parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+      },
+      {
+        name: "get_purchases",
+        description: "Các đợt nhập hàng trong khoảng ngày: ngày, món, số lượng, giá nhập (chỉ admin).",
+        parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+      },
+      {
         name: "remember",
         description: "Lưu lâu dài một điều người dùng dặn (sở thích, quy ước cách gọi, quán hay hỏi...).",
         parameters: { type: "OBJECT", properties: { fact: { type: "STRING", description: "Câu ngắn, tối đa 200 ký tự" } }, required: ["fact"] },
@@ -162,6 +178,13 @@ async function resolveStore(authHeader: string, store: unknown): Promise<{ id: s
   return hit;
 }
 
+async function timedTool(authHeader: string, name: string, args: Record<string, unknown>, trace: string[]) {
+  const t0 = Date.now();
+  const out = await runTool(authHeader, name, args);
+  trace.push(`${name} ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  return out;
+}
+
 async function runTool(authHeader: string, name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
   try {
     if (name === "remember") {
@@ -180,12 +203,55 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
     if (name === "get_stock") {
       return { store: store.name, rows: await rest(authHeader, "rpc/get_stock_status", { rpc: { p_store_id: store.id } }) };
     }
+    if (name === "get_prices") {
+      const today = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+      const norm = (v: string) => v.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d");
+      const products = (await rest(authHeader, `products?select=id,name,tracks_stock&store_id=eq.${store.id}&is_active=eq.true&order=name`)) as { id: string; name: string }[];
+      const want = args.product ? norm(String(args.product)) : "";
+      const picked = want ? products.filter((p) => norm(p.name).includes(want)) : products;
+      let history: { product_id: string; effective_from: string; sale_price: number | null; app_price: number | null; unit_cost: number | null }[] = [];
+      let costVisible = true;
+      try {
+        history = (await rest(authHeader, `product_prices?select=product_id,effective_from,sale_price,app_price,unit_cost&effective_from=lte.${today}&order=effective_from.desc&limit=2000`)) as typeof history;
+      } catch {
+        costVisible = false;
+        const rows = (await rest(authHeader, "rpc/get_store_prices", { rpc: { p_store_id: store.id, p_date: today } })) as { product_id: string; sale_price: number; app_price: number | null; effective_from: string }[];
+        history = rows.map((r) => ({ ...r, unit_cost: null }));
+      }
+      const items = picked.map((p) => {
+        const row = history.find((h) => h.product_id === p.id);
+        return { name: p.name, sale_price: row?.sale_price ?? null, partner_price: row?.app_price ?? null, cost: costVisible ? (row?.unit_cost ?? null) : "chỉ admin xem được", applies_from: row?.effective_from ?? null };
+      });
+      return { store: store.name, date: today, note: "Giá hiện hành theo ngày áp dụng. null = chưa đặt giá. Đơn vị VND.", items };
+    }
     if (name === "get_break_even") {
       return { store: store.name, data: await rest(authHeader, "rpc/get_break_even", { rpc: { p_store_id: store.id } }) };
     }
     const from = String(args.from ?? "");
     const to = String(args.to ?? "");
     if (!ISO_DATE.test(from) || !ISO_DATE.test(to) || from > to) throw new Error("Khoảng ngày không hợp lệ (cần YYYY-MM-DD, từ <= đến).");
+    if (name === "get_best_sellers") {
+      const sales = (await rest(authHeader, `sales?select=channel,sale_items(quantity,unit_price,products(name))&store_id=eq.${store.id}&sale_date=gte.${from}&sale_date=lte.${to}&limit=5000`)) as {
+        sale_items: { quantity: number; unit_price: number; products: { name: string } | null }[];
+      }[];
+      const agg = new Map<string, { qty: number; revenue: number }>();
+      for (const sale of sales) for (const it of sale.sale_items) {
+        const n = it.products?.name ?? "?";
+        const a = agg.get(n) ?? { qty: 0, revenue: 0 };
+        a.qty += it.quantity;
+        a.revenue += it.quantity * it.unit_price;
+        agg.set(n, a);
+      }
+      const top = [...agg].map(([name, v]) => ({ name, qty: v.qty, revenue: Math.round(v.revenue) })).sort((a, b) => b.qty - a.qty);
+      return { store: store.name, from, to, orders: sales.length, top };
+    }
+    if (name === "get_purchases") {
+      const rows = (await rest(authHeader, `stock_batches?select=received_date,initial_qty,unit_cost,products(name)&store_id=eq.${store.id}&received_date=gte.${from}&received_date=lte.${to}&order=received_date&limit=2000`)) as {
+        received_date: string; initial_qty: number; unit_cost: number; products: { name: string } | null;
+      }[];
+      const items = rows.map((r) => ({ date: r.received_date, name: r.products?.name ?? "?", qty: r.initial_qty, unit_cost: r.unit_cost, total: Math.round(r.initial_qty * r.unit_cost) }));
+      return { store: store.name, from, to, total: items.reduce((s, i) => s + i.total, 0), items: items.length <= 60 ? items : items.slice(-60), count: items.length };
+    }
     if (name === "get_profit_loss") {
       const rows = (await rest(authHeader, "rpc/get_pnl", { rpc: { p_store_id: store.id, p_period: "day", p_from: from, p_to: to } })) as Record<string, number>[];
       const keys = ["gross_revenue", "commission", "net_revenue", "cogs", "gross_profit", "expenses", "net_profit"];
@@ -302,7 +368,7 @@ let thinkingMode = 0;
 // Model đã bị gỡ / không tồn tại (404): bỏ qua ở các lần sau trong cùng instance
 const deadModels = new Set<string>();
 
-async function callModel(apiKey: string, model: string, system: string, contents: Content[], timeoutMs: number, outer: AbortSignal): Promise<{ content?: Content; failure?: Failure }> {
+async function callModel(apiKey: string, model: string, system: string, contents: Content[], timeoutMs: number, outer: AbortSignal, trace: string[]): Promise<{ content?: Content; failure?: Failure }> {
   const started = Date.now();
   const send = (mode: number) =>
     fetch(`${API}/models/${model}:generateContent`, {
@@ -331,9 +397,11 @@ async function callModel(apiKey: string, model: string, system: string, contents
       const data = await res.json();
       const content: Content | undefined = data?.candidates?.[0]?.content;
       console.log(`[chat-assistant] ${model} ok ${Date.now() - started}ms finish=${data?.candidates?.[0]?.finishReason}`);
+      trace.push(`${model} ${((Date.now() - started) / 1000).toFixed(1)}s`);
       if (content?.parts?.some((p) => p.text || p.functionCall)) return { content };
       return { failure: { model, status: "error", retryable: true, ms: Date.now() - started } };
     }
+    trace.push(`${model} ${res.status} ${((Date.now() - started) / 1000).toFixed(1)}s`);
     console.error(`[chat-assistant] ${model} -> ${res.status} sau ${Date.now() - started}ms: ${(await res.text()).slice(0, 300)}`);
     // 503/429/5xx: model đang quá tải; 404: model đã gỡ; 400/403: lỗi cấu hình / key (không thử lại được)
     if (res.status === 404) deadModels.add(model);
@@ -342,6 +410,7 @@ async function callModel(apiKey: string, model: string, system: string, contents
   } catch (err) {
     const name = (err as Error).name;
     const timedOut = name === "TimeoutError" || name === "AbortError";
+    trace.push(`${model} ${timedOut ? "timeout" : "lỗi"} ${((Date.now() - started) / 1000).toFixed(1)}s`);
     console.error(`[chat-assistant] ${model} ${timedOut ? "timeout" : "exception"} sau ${Date.now() - started}ms: ${(err as Error).message}`);
     return { failure: { model, status: timedOut ? "timeout" : "error", retryable: true, ms: Date.now() - started } };
   }
@@ -363,7 +432,7 @@ function friendlyError(failures: Failure[]): string {
 
 // Chạy các model theo kiểu "hedge": model đầu chạy ngay; sau HEDGE_MS chưa có kết quả (hoặc nó vừa lỗi)
 // thì chạy thêm model kế tiếp song song. Có câu trả lời đầu tiên là dùng và huỷ các lượt còn lại.
-async function askModels(apiKey: string, system: string, contents: Content[], failures: Failure[], elapsed: () => number): Promise<{ content: Content; model: string } | null> {
+async function askModels(apiKey: string, system: string, contents: Content[], failures: Failure[], elapsed: () => number, trace: string[]): Promise<{ content: Content; model: string } | null> {
   const queue = PREFERRED_MODELS.filter((m) => !deadModels.has(m));
   const discovery = discoverModels(apiKey).then((names) => {
     for (const m of names) if (!queue.includes(m) && !deadModels.has(m)) queue.push(m);
@@ -394,7 +463,7 @@ async function askModels(apiKey: string, system: string, contents: Content[], fa
       const ac = new AbortController();
       controllers.push(ac);
       timer = setTimeout(launch, HEDGE_MS);
-      const { content, failure } = await callModel(apiKey, model, system, contents, Math.min(ATTEMPT_TIMEOUT_MS, left), ac.signal);
+      const { content, failure } = await callModel(apiKey, model, system, contents, Math.min(ATTEMPT_TIMEOUT_MS, left), ac.signal, trace);
       inflight--;
       if (finished) return;
       if (content) return finish({ content, model });
@@ -421,7 +490,10 @@ export default {
         return reply({ answer: "Bạn cần đăng nhập vào Sổ Xanh để trò chuyện cùng Roona nhé!", isError: true, durationMs: elapsed() });
       }
       // Xác thực và nạp ngữ cảnh chạy song song để đỡ chậm
+      const trace: string[] = [];
+      const ctxStart = Date.now();
       const [signedIn, catalog, memories] = await Promise.all([isSignedIn(authHeader), loadCatalog(authHeader), loadMemories(authHeader)]);
+      trace.push(`ngữ cảnh ${((Date.now() - ctxStart) / 1000).toFixed(1)}s`);
       if (!signedIn) {
         return reply({ answer: "Bạn cần đăng nhập vào Sổ Xanh để trò chuyện cùng Roona nhé!", isError: true, durationMs: elapsed() });
       }
@@ -451,23 +523,23 @@ export default {
       contents.push({ role: "user", parts: [{ text: sanitizeText(question) }] });
       // Tối đa vài vòng: model xin dữ liệu (functionCall) -> mình tra bằng quyền của chính người dùng -> trả lại cho model
       for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-        const won = await askModels(apiKey, system, contents, failures, elapsed);
+        const won = await askModels(apiKey, system, contents, failures, elapsed, trace);
         if (!won) break;
         const calls = won.content.parts.filter((p) => p.functionCall);
         if (calls.length === 0) {
           const text = won.content.parts.map((p) => p.text ?? "").join("").trim();
-          return reply({ answer: sanitizeText(text), model: won.model, durationMs: elapsed() });
+          return reply({ answer: sanitizeText(text), model: won.model, durationMs: elapsed(), trace: trace.join(" · ") });
         }
         contents.push(won.content);
         const responses = await Promise.all(
           calls.map(async (c) => ({
-            functionResponse: { name: c.functionCall!.name, response: await runTool(authHeader, c.functionCall!.name, c.functionCall!.args ?? {}) },
+            functionResponse: { name: c.functionCall!.name, response: await timedTool(authHeader, c.functionCall!.name, c.functionCall!.args ?? {}, trace) },
           })),
         );
         contents.push({ role: "user", parts: responses });
       }
 
-      return reply({ answer: friendlyError(failures), isError: true, durationMs: elapsed() });
+      return reply({ answer: friendlyError(failures), isError: true, durationMs: elapsed(), trace: trace.join(" · ") });
     } catch (globalErr) {
       console.error(`[chat-assistant] ${(globalErr as Error).message}`);
       return reply({ answer: "Trợ lý gặp lỗi hệ thống. Bạn thử lại sau.", isError: true, durationMs: elapsed() });
