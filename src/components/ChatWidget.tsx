@@ -12,7 +12,6 @@ type Message = {
   isError?: boolean
   timestamp?: string
   responseTimeSec?: number
-  trace?: string
 }
 
 // Số tin nhắn gần nhất gửi kèm làm ngữ cảnh hội thoại
@@ -286,7 +285,7 @@ export function ChatWidget() {
     setLoading(true)
 
     try {
-      const { data, error } = await supabase.functions.invoke<{ answer?: string; error?: string; isError?: boolean; durationMs?: number; trace?: string }>('chat-assistant', {
+      const { data, error } = await supabase.functions.invoke<{ answer?: string; error?: string; isError?: boolean; durationMs?: number }>('chat-assistant', {
         body: {
           question: textToSend,
           // Roona trả lời theo ngôn ngữ giao diện đang chọn
@@ -330,7 +329,6 @@ export function ChatWidget() {
           isError: data?.isError,
           timestamp: new Date().toISOString(),
           responseTimeSec: totalSec,
-          trace: data?.trace,
         },
       ])
 
@@ -460,8 +458,8 @@ export function ChatWidget() {
                     <div className="chat-meta">
                       <span className="chat-time">{formatMessageTime(m.timestamp)}</span>
                       {m.responseTimeSec !== undefined && (
-                        <span className="chat-duration" title={m.trace}>
-                          • {m.responseTimeSec}s{m.trace ? ` (${m.trace})` : ''}
+                        <span className="chat-duration">
+                          • {m.responseTimeSec}s
                         </span>
                       )}
                     </div>
