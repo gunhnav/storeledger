@@ -20,6 +20,10 @@ const EXPENSE_STYLE_PURCHASE = new Set(['bundau'])
 export const usesExpenseStylePurchase = (storeCode: string | undefined) =>
   !!storeCode && EXPENSE_STYLE_PURCHASE.has(storeCode)
 
+// Quán có nguyên liệu + công thức món (tồn kho nguyên liệu tính theo doanh thu) và báo cáo riêng.
+const INGREDIENT_STORES = new Set(['bundau'])
+export const usesIngredients = (storeCode: string | undefined) => !!storeCode && INGREDIENT_STORES.has(storeCode)
+
 export function usesDistribution(storeCode: string | undefined): boolean {
   return !(storeCode && NO_DISTRIBUTION.has(storeCode))
 }

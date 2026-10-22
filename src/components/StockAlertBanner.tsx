@@ -2,12 +2,12 @@ import { useI18n } from '../lib/i18n'
 import type { StockAlerts, StockStatus } from '../lib/analytics/overview'
 
 // Banner tồn tại quầy: đỏ (hết / cần kiểm tra), cam (sắp hết), xanh (ổn). Chỉ dùng số lượng.
-export function StockAlertBanner({ alerts }: { alerts: StockAlerts }) {
+export function StockAlertBanner({ alerts, restock = false }: { alerts: StockAlerts; restock?: boolean }) {
   const { t } = useI18n()
   return (
     <div className={`stock-banner stock-banner-${alerts.level}`} role="status">
       {alerts.out.length > 0 && (
-        <p>⚠ {t('HẾT HÀNG TẠI CỬA HÀNG: {list} → mang thêm ra quán!', { list: alerts.out.join(', ') })}</p>
+        <p>⚠ {restock ? t('HẾT: {list} → nhập thêm!', { list: alerts.out.join(', ') }) : t('HẾT HÀNG TẠI CỬA HÀNG: {list} → mang thêm ra quán!', { list: alerts.out.join(', ') })}</p>
       )}
       {alerts.check.length > 0 && <p>⚠ {t('KIỂM TRA số liệu: {list}', { list: alerts.check.join(', ') })}</p>}
       {alerts.low.length > 0 && <p>{t('SẮP HẾT: {list}', { list: alerts.low.join(', ') })}</p>}

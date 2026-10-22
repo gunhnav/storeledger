@@ -16,7 +16,8 @@ import { DatePicker } from '../components/DatePicker'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
-import { usesPartnerChannel } from '../lib/storeFeatures'
+import { usesIngredients, usesPartnerChannel } from '../lib/storeFeatures'
+import { BundauReport } from './BundauReport'
 import { OverviewExtras } from './OverviewExtras'
 import {
   addDays,
@@ -37,6 +38,16 @@ export function ReportsPage() {
 }
 
 function Reports({ storeId }: { storeId: string }) {
+  const { current } = useStore()
+  // Quán Bún đậu có báo cáo riêng (nguyên liệu, giờ đông khách, món bán chạy...) và vẫn giữ khối hoà vốn
+  if (usesIngredients(current?.code)) {
+    return (
+      <>
+        <BundauReport storeId={storeId} />
+        <BreakEvenBlock storeId={storeId} />
+      </>
+    )
+  }
   return (
     <>
       <OverviewExtras storeId={storeId} />

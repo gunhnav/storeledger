@@ -6,13 +6,14 @@ import { TabsLayout, type Tab } from './components/TabsLayout'
 import type { ReactNode } from 'react'
 import { useAuth } from './lib/auth'
 import { useStore } from './lib/store'
-import { usesDistribution } from './lib/storeFeatures'
+import { usesDistribution, usesIngredients } from './lib/storeFeatures'
 import { AccountPage } from './pages/AccountPage'
 import { BatchStatsPage } from './pages/BatchStatsPage'
 import { BestSellersPage } from './pages/BestSellersPage'
 import { DailyLogPage } from './pages/DailyLogPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { GuidePage } from './pages/GuidePage'
+import { IngredientsPage } from './pages/IngredientsPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProductsPage } from './pages/ProductsPage'
@@ -69,6 +70,13 @@ function InventoryLayout() {
   return <TabsLayout title="Kho hàng" tabs={tabs} />
 }
 
+// Quản lý: quán có nguyên liệu (Bún đậu) thêm tab Nguyên liệu & công thức
+function ManageLayout() {
+  const { current } = useStore()
+  const tabs = usesIngredients(current?.code) ? [...MANAGE_TABS, { to: '/manage/ingredients', label: 'Nguyên liệu', icon: 'stock' as const }] : MANAGE_TABS
+  return <TabsLayout title="Quản lý" tabs={tabs} />
+}
+
 // Mở thẳng link Phân phối ở quán không dùng bước này thì về Nhập hàng
 function DistributionOnly({ children }: { children: ReactNode }) {
   const { current } = useStore()
@@ -111,10 +119,11 @@ function App() {
               <Route path="best-sellers" element={<BestSellersPage />} />
               <Route path="daily-log" element={<DailyLogPage />} />
             </Route>
-            <Route path="manage" element={<TabsLayout title="Quản lý" tabs={MANAGE_TABS} />}>
+            <Route path="manage" element={<ManageLayout />}>
               <Route index element={<Navigate to="products" replace />} />
               <Route path="products" element={<ProductsPage />} />
               <Route path="expenses" element={<ExpensePage />} />
+              <Route path="ingredients" element={<IngredientsPage />} />
             </Route>
             <Route path="staff" element={<StaffPage />} />
           </Route>

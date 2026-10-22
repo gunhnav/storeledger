@@ -55,7 +55,7 @@ NHẬN DIỆN QUÁN VÀ CHỦ ĐỀ:
 3. Chỉ hỏi lại quán khi thật sự không đoán được từ món, ghi nhớ và lịch sử.
 
 SỐ LIỆU:
-- Công cụ có sẵn: tồn kho (get_stock), giá bán và giá vốn từng món (get_prices), món bán chạy (get_best_sellers), các đợt nhập hàng (get_purchases), lãi lỗ, chi phí, hoà vốn. Hỏi về giá vốn / giá quán / giá bán thì gọi get_prices, KHÔNG nói là không có công cụ.
+- Công cụ có sẵn: tồn kho đồ uống (get_stock), tồn nguyên liệu (get_ingredients), giá bán và giá vốn từng món (get_prices), món bán chạy (get_best_sellers), các đợt nhập hàng (get_purchases), lãi lỗ, chi phí, hoà vốn. Hỏi về giá vốn / giá quán / giá bán thì gọi get_prices, KHÔNG nói là không có công cụ.
 - Mọi con số về tồn kho, giá, doanh thu, lãi lỗ, chi phí, hoà vốn PHẢI lấy từ công cụ ngay trong lượt này. Không nhớ số cũ, không đoán.
 - Người dùng nghi ngờ ("chắc không", "sao tôi thấy khác") thì gọi lại công cụ và trả lời theo số mới; nếu số khác người dùng thấy thì nói rõ số hệ thống, đừng khẳng định "chắc 100%".
 - Tồn kho có ba nơi: ở nhà (chưa phân phối), ở quán, ở công ty (chỉ Hogi). Trả lời đúng nơi người dùng hỏi.
@@ -66,6 +66,7 @@ NGHIỆP VỤ (chỉ mô tả những gì có thật dưới đây, không bịa
 - Giá vốn FIFO: bán trừ lô nhập cũ nhất trước. Lãi gộp = doanh thu thuần - giá vốn; lãi ròng = lãi gộp - chi phí. Tiền nhập kho tự ghi của Bún đậu không tính lại vào lãi lỗ / hoà vốn.
 - Câu hỏi "làm sao để ...": Chọn cửa hàng: ô tên cửa hàng ở trên cùng. Thêm / sửa món, đặt giá bán và giá vốn (có ngày áp dụng): Quản lý → Sản phẩm (admin). Ghi chi phí: Quản lý → Chi phí (admin). Thêm nhân viên, cấp quyền admin, gán cửa hàng: menu tên góc phải → Nhân viên (admin). Đổi ngôn ngữ, giao diện sáng / tối: menu tên góc phải. Hướng dẫn sử dụng: menu tên → Hướng dẫn.
 - Thêm cửa hàng mới: app CHƯA có chức năng tự thêm cửa hàng trên giao diện; cần nhờ người phụ trách kỹ thuật của Sổ Xanh tạo cửa hàng, sau đó admin vào Nhân viên để gán người làm và vào Sản phẩm để thêm món.
+- Bún đậu có nguyên liệu (chả cốm, chả ốc, giò...) và công thức món (một phần dùng bao nhiêu miếng). Tồn nguyên liệu = tổng nhập - số phần đã bán × công thức. Nhập nguyên liệu ở Nhập hàng (gõ đúng tên); đặt công thức ở Quản lý → Nguyên liệu (admin). Báo cáo Bún đậu có doanh thu so kỳ trước, kênh bán, món bán chạy, giờ đông khách, tồn nguyên liệu và gợi ý.
 - Giảm giá / ưu đãi: ở trang Bán hàng, khung "Giảm giá / ưu đãi" nhập theo số tiền (đ) hoặc phần trăm (%) cho cả đơn, áp dụng cho mọi kênh (Quán, Đối tác, Công ty). Doanh thu, hoa hồng và lãi lỗ tính trên số tiền khách thực trả sau giảm.
 - Kênh bán: Hogi có Quán và Công ty (công ty mua set 4 hoặc 6 hũ mix vị, giá thoả thuận theo set, KHÔNG có hoa hồng). Bún đậu có Quán và Đối tác (giá đối tác, có hoa hồng % trừ vào doanh thu).
 
@@ -127,6 +128,11 @@ const TOOLS = [
         name: "get_purchases",
         description: "Các đợt nhập hàng trong khoảng ngày: ngày, món, số lượng, giá nhập (chỉ admin).",
         parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+      },
+      {
+        name: "get_ingredients",
+        description: "Tồn kho nguyên liệu của quán (chả cốm, chả ốc, giò...): đã nhập, đã dùng theo doanh thu × công thức, còn lại, lượng dùng 7 ngày gần nhất. Chỉ quán có nguyên liệu (Bún đậu).",
+        parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
       },
       {
         name: "remember",
@@ -212,6 +218,16 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
         return { name: p.name, sale_price: row?.sale_price ?? null, partner_price: row?.app_price ?? null, cost: costVisible ? (row?.unit_cost ?? null) : "chỉ admin xem được", applies_from: row?.effective_from ?? null };
       });
       return { store: store.name, date: today, note: "Giá hiện hành theo ngày áp dụng. null = chưa đặt giá. Đơn vị VND.", items };
+    }
+    if (name === "get_ingredients") {
+      const rows = (await rest(authHeader, "rpc/get_ingredient_stock", { rpc: { p_store_id: store.id, p_recent_days: 7 } })) as {
+        name: string; unit: string; low_stock_threshold: number; received: number; used: number; on_hand: number; used_recent: number; last_receipt: string | null;
+      }[];
+      return {
+        store: store.name,
+        note: "on_hand = đã nhập - đã dùng; đã dùng tính theo số phần món đã bán × công thức. used_recent là lượng dùng 7 ngày gần nhất (chia 7 ra mỗi ngày).",
+        items: rows.map((r) => ({ ...r, days_left: r.used_recent > 0 ? Math.floor(r.on_hand / (r.used_recent / 7)) : null })),
+      };
     }
     if (name === "get_break_even") {
       return { store: store.name, data: await rest(authHeader, "rpc/get_break_even", { rpc: { p_store_id: store.id } }) };

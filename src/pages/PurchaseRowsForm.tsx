@@ -8,7 +8,7 @@ import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, capitalizeFirst, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import { evalExpression, isExpression } from '../lib/calc'
 import { expenseLine, isBlankDraft, parseDraft, storedUnitPrice, type ExpenseDraft } from '../lib/expenses'
-import type { Expense } from '../types/database'
+import type { Expense, Ingredient } from '../types/database'
 
 // Món đếm tồn chỉ ghi vào Chi phí theo hai nhóm này (DB chỉ nhận hai nhóm)
 const STOCK_CATEGORIES = ['Đồ uống', 'Nguyên liệu']
@@ -24,6 +24,8 @@ let nextId = 1
 // Nhập hàng của Bún đậu: y như trang Chi phí (nhóm, tên hạng mục gõ tự do, số lượng, đơn giá, thành tiền).
 //  - Tên trùng một món đếm tồn (7Up, Coca...): vào tồn kho (tự ra quán), tiền nhập tự ghi vào Chi phí
 //    nhưng không tính lại vào lãi lỗ (giá vốn đã tính khi bán).
+//  - Tên trùng một nguyên liệu (chả cốm, chả ốc...): cộng vào kho nguyên liệu (tồn tính theo doanh thu × công thức),
+//    có tiền thì ghi thành khoản chi phí.
 //  - Tên khác (rau, xoài...): ghi thẳng thành khoản chi phí như trang Chi phí.
 // Nhân viên chỉ nhập món đếm tồn + số lượng, không thấy giá (DB dùng giá vốn hiện hành) và không ghi chi phí khác.
 export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: string; autoToShop: boolean; groups: readonly string[] }) {
@@ -39,6 +41,7 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
   // 20 khoản chi gần nhất của cửa hàng (chỉ admin đọc được), tải lại sau mỗi lần lưu
   const [recent, setRecent] = useState<{ rows: Expense[]; error: string | null } | null>(null)
   const [version, setVersion] = useState(0)
+  const [ingredients, setIngredients] = useState<Ingredient[]>([])
   // Bộ lọc danh sách: khoảng ngày (để trống = không giới hạn) và nhóm
   const [filter, setFilter] = useState({ from: '', to: '', category: '' })
   const filtered = filter.from !== '' || filter.to !== '' || filter.category !== ''
@@ -63,9 +66,29 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
     }
   }, [isAdmin, storeId, version, filter.from, filter.to, filter.category, filtered, badRange])
 
+  useEffect(() => {
+    let cancelled = false
+    supabase
+      .from('ingredients')
+      .select('*')
+      .eq('store_id', storeId)
+      .eq('is_active', true)
+      .order('name')
+      .then(({ data }) => {
+        if (!cancelled) setIngredients(data ?? [])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [storeId, version])
+
   const stocked = products.filter((p) => p.tracks_stock)
   const stockByName = new Map(stocked.map((p) => [normalize(p.name), p]))
   const stockOf = (r: Row) => stockByName.get(normalize(r.note))
+  const ingredientByName = new Map(ingredients.map((i) => [normalize(i.name), i]))
+  const ingredientOf = (r: Row) => (stockOf(r) ? undefined : ingredientByName.get(normalize(r.note)))
+  // Món đếm tồn / nguyên liệu được để trống giá (DB lấy giá vốn hiện hành / chỉ ghi số lượng)
+  const mayBlankPrice = (r: Row) => !!stockOf(r) || !!ingredientOf(r)
 
   const update = (id: number, change: Partial<Row>) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...change } : r)))
   // Dòng mới lấy nhóm của dòng cuối để nhập liền nhiều món cùng nhóm
@@ -74,9 +97,9 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
 
   const filled = rows.filter((r) => !isBlankDraft(r))
   // Nhân viên không có ô giá nên chỉ cần tên + số lượng
-  const parsed = filled.map((r) => ({ row: r, result: !isAdmin || (stockOf(r) && r.unitPrice.trim() === '' && r.total.trim() === '') ? null : parseDraft(r, MAX_MONEY) }))
+  const parsed = filled.map((r) => ({ row: r, result: !isAdmin || (mayBlankPrice(r) && r.unitPrice.trim() === '' && r.total.trim() === '') ? null : parseDraft(r, MAX_MONEY) }))
   const total = parsed.reduce((s, p) => s + (p.result?.ok ? p.result.total : 0), 0)
-  const hasBlankStockPrice = isAdmin && filled.some((r) => stockOf(r) && r.unitPrice.trim() === '' && r.total.trim() === '')
+  const hasBlankStockPrice = isAdmin && filled.some((r) => mayBlankPrice(r) && r.unitPrice.trim() === '' && r.total.trim() === '')
 
   const save = async () => {
     setResult(null)
@@ -85,6 +108,7 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
     if (filled.length === 0) return setResult({ ok: false, text: 'Nhập ít nhất một khoản' })
 
     const stockItems: { row: Row; product_id: string; quantity: number; unit_cost: number | null }[] = []
+    const ingredientItems: { row: Row; ingredient_id: string; quantity: number; amount: number | null }[] = []
     const expenseRows: { row: Row; parsed: Extract<NonNullable<(typeof parsed)[number]['result']>, { ok: true }> }[] = []
     for (const p of parsed) {
       const n = rows.indexOf(p.row) + 1
@@ -103,6 +127,11 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
           unitCost = storedUnitPrice(p.result.total / quantity)
         }
         stockItems.push({ row: r, product_id: product.id, quantity, unit_cost: unitCost })
+      } else if (ingredientOf(r)) {
+        const quantity = toNumber(r.quantity)
+        if (!Number.isFinite(quantity) || quantity <= 0 || quantity > MAX_QTY) return fail('Số lượng phải lớn hơn 0')
+        if (p.result && !p.result.ok) return fail(p.result.error)
+        ingredientItems.push({ row: r, ingredient_id: ingredientOf(r)!.id, quantity, amount: p.result?.ok ? p.result.total : null })
       } else {
         if (!isAdmin) return fail('Món này chưa có trong danh mục tồn kho, nhờ admin ghi vào Chi phí')
         if (!p.result || !p.result.ok) return fail(p.result && !p.result.ok ? p.result.error : 'Nhập đơn giá hoặc thành tiền')
@@ -169,7 +198,22 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
       }
     }
 
-    // Các khoản không phải món đếm tồn: ghi thẳng vào Chi phí (như trang Chi phí)
+    // Nguyên liệu: cộng vào kho nguyên liệu, có tiền thì ghi luôn khoản chi (một giao dịch)
+    if (ingredientItems.length > 0) {
+      const { error: ingError } = await supabase.rpc('receive_ingredients', {
+        p_store_id: storeId,
+        p_date: date,
+        p_items: ingredientItems.map((i) => ({ ingredient_id: i.ingredient_id, quantity: i.quantity, amount: i.amount, category: i.row.category })),
+      })
+      if (ingError) return finish(errorMessage(ingError))
+      const savedIds = new Set(ingredientItems.map((i) => i.row.id))
+      setRows((rs) => {
+        const left = rs.filter((r) => !savedIds.has(r.id))
+        return left.length > 0 ? left : [newRow()]
+      })
+    }
+
+    // Các khoản không phải món đếm tồn hay nguyên liệu: ghi thẳng vào Chi phí (như trang Chi phí)
     if (expenseRows.length > 0) {
       const { error: insertError } = await supabase.from('expenses').insert(
         expenseRows.map(({ row, parsed: r }) => ({
@@ -213,6 +257,9 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
           {stocked.map((p) => (
             <option key={p.id} value={p.name} />
           ))}
+          {ingredients.map((i) => (
+            <option key={i.id} value={i.name} />
+          ))}
         </datalist>
 
         <div className="expense-lines">
@@ -229,6 +276,7 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
               const error = p?.result && !p.result.ok ? p.result.error : null
               const line = expenseLine(toNumber(r.quantity), toNumber(r.unitPrice) || 0, r.total.trim() === '' ? null : toNumber(r.total))
               const isStock = r.note.trim() !== '' && !!stockOf(r)
+              const isIngredient = r.note.trim() !== '' && !!ingredientOf(r)
               return (
                 <div key={r.id} className={`${gridClass}${error ? ' has-error' : ''}`}>
                   {isAdmin && (
@@ -260,6 +308,7 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
                       onCompositionEnd={(e) => update(r.id, { note: capitalizeFirst(e.currentTarget.value) })}
                     />
                     {isStock && <small className="calc-result">{t('Vào tồn kho')}</small>}
+                    {isIngredient && <small className="calc-result">{t('Vào kho nguyên liệu')}</small>}
                   </label>
                   <label>
                     <span className="mobile-label">{t('Số lượng')}</span>
@@ -286,7 +335,7 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
                         aria-label={t('Đơn giá')}
                         className={line.overridden ? 'computed' : undefined}
                         readOnly={line.overridden}
-                        placeholder={isStock ? t('Giá vốn hiện hành') : undefined}
+                        placeholder={isStock ? t('Giá vốn hiện hành') : isIngredient ? t('Không bắt buộc') : undefined}
                         value={line.overridden ? (Number.isFinite(line.unitPrice) ? formatVND(line.unitPrice) : '') : r.unitPrice}
                         onChange={(e) => update(r.id, { unitPrice: cleanExpression(e.target.value) })}
                       />
@@ -339,7 +388,7 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
         </button>
         <small className="muted">
           {isAdmin
-            ? t('Tên trùng món đếm tồn (7Up, Coca…) thì vào tồn kho và tiền nhập tự ghi vào Chi phí; tên khác ghi thẳng thành khoản chi. Thành tiền tự tính = số lượng × đơn giá, gõ số hoặc phép tính để ghi đè.')
+            ? t('Tên trùng món đếm tồn (7Up, Coca…) thì vào tồn kho, trùng nguyên liệu (chả cốm…) thì vào kho nguyên liệu, tiền nhập tự ghi vào Chi phí; tên khác ghi thẳng thành khoản chi. Thành tiền tự tính = số lượng × đơn giá, gõ số hoặc phép tính để ghi đè.')
             : t('Gõ tên món đếm tồn và số lượng, giá nhập do hệ thống tự lấy.')}
         </small>
 

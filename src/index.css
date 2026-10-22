@@ -3397,3 +3397,72 @@ input.overridden {
   color: var(--accent);
   font-weight: 700;
 }
+
+/* Nguyên liệu và công thức (Bún đậu) */
+.recipe-list {
+  max-height: 420px;
+  overflow: auto;
+  margin-top: 8px;
+}
+.recipe-line {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 90px 48px 32px;
+  gap: 8px;
+  align-items: center;
+}
+.recipe-line select,
+.recipe-line input {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .recipe-line {
+    grid-template-columns: 1fr 80px 32px;
+  }
+  .recipe-line > span {
+    display: none;
+  }
+}
+
+/* Báo cáo Bún đậu */
+.preset-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.preset-chips button {
+  min-height: 36px;
+  padding: 6px 14px;
+}
+.preset-chips button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.insights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.insight {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  background: var(--surface);
+}
+.insight-warn {
+  border-left-color: #e0a800;
+}
+.insight-good {
+  border-left-color: var(--accent);
+}
+.insight-info {
+  border-left-color: var(--muted);
+}
+.bundau-report .stat-sub {
+  font-size: 12px;
+}

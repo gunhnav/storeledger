@@ -225,6 +225,40 @@ export type CompanySetDbRow = {
   note: string | null
 }
 
+// Nguyên liệu (Bún đậu): tồn tính theo doanh thu × công thức
+export type Ingredient = {
+  id: string
+  store_id: string
+  name: string
+  unit: string
+  low_stock_threshold: number
+  is_active: boolean
+  created_at: string
+}
+
+export type Recipe = { id: string; product_id: string; ingredient_id: string; qty: number }
+
+export type IngredientStockRow = {
+  ingredient_id: string
+  name: string
+  unit: string
+  low_stock_threshold: number
+  received: number
+  used: number
+  on_hand: number
+  used_recent: number
+  last_receipt: string | null
+}
+
+// get_bundau_report: số liệu bán hàng theo ngày / kênh / món / giờ (tiền là số đồng)
+export type BundauReport = {
+  totals: { orders: number; gross: number; commission: number; discount: number; portions: number }
+  days: { day: string; orders: number; gross: number; commission: number; discount: number }[]
+  channels: { channel: string; orders: number; gross: number; commission: number }[]
+  top: { name: string; qty: number; revenue: number }[]
+  hours: { hour: number; orders: number; gross: number }[]
+}
+
 export type CreateSaleArgs = {
   p_store_id: string
   p_sale_date: string | null
@@ -433,6 +467,18 @@ export type Database = {
           { foreignKeyName: 'expenses_created_by_fkey'; columns: ['created_by']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
         ]
       }
+      ingredients: {
+        Row: Ingredient
+        Insert: { store_id: string; name: string; unit?: string; low_stock_threshold?: number; is_active?: boolean }
+        Update: Partial<{ name: string; unit: string; low_stock_threshold: number; is_active: boolean }>
+        Relationships: [
+          { foreignKeyName: 'ingredients_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        ]
+      }
+      recipes: ReadOnlyTable<Recipe, [
+        { foreignKeyName: 'recipes_product_id_fkey'; columns: ['product_id']; isOneToOne: false; referencedRelation: 'products'; referencedColumns: ['id'] },
+        { foreignKeyName: 'recipes_ingredient_id_fkey'; columns: ['ingredient_id']; isOneToOne: false; referencedRelation: 'ingredients'; referencedColumns: ['id'] },
+      ]>
     }
     Views: Record<never, never>
     Functions: {
@@ -477,6 +523,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      // supabase/migrations/20261023090000_bundau_ingredients.sql
+      receive_ingredients: {
+        Args: { p_store_id: string; p_date: string; p_items: { ingredient_id: string; quantity: number; amount: number | null; category: string }[] }
+        Returns: number
+      }
+      set_recipe: { Args: { p_product_id: string; p_lines: { ingredient_id: string; qty: number }[] }; Returns: undefined }
+      get_ingredient_stock: { Args: { p_store_id: string; p_recent_days?: number }; Returns: IngredientStockRow[] }
+      get_bundau_report: { Args: { p_store_id: string; p_from: string; p_to: string }; Returns: BundauReport }
       // supabase/migrations/20261022100000_sale_discount.sql
       create_sale_discounted: {
         Args: {
