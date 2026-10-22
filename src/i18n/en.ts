@@ -668,4 +668,5 @@ export const en: Record<string, string> = {
   'Xoá lọc': 'Clear filters',
   'Không có khoản chi nào khớp bộ lọc.': 'No expenses match the filters.',
   'Tên món hoặc hạng mục': 'Item name or category',
+  'Danh sách chi phí': 'Expense list',
 }

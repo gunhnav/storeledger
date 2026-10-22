@@ -37,23 +37,29 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
   // Đang sửa khoản chi nào (null = thêm mới)
   const [editing, setEditing] = useState<Expense | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  // Bộ lọc danh sách: khoảng ngày (để trống = không giới hạn) và nhóm
+  const [filter, setFilter] = useState({ from: '', to: '', category: '' })
+  const filtered = filter.from !== '' || filter.to !== '' || filter.category !== ''
+  const badRange = filter.from !== '' && filter.to !== '' && filter.from > filter.to
 
   useEffect(() => {
+    if (badRange) return
     let cancelled = false
-    supabase
-      .from('expenses')
-      .select('*')
-      .eq('store_id', storeId)
+    let query = supabase.from('expenses').select('*').eq('store_id', storeId)
+    if (filter.from) query = query.gte('expense_date', filter.from)
+    if (filter.to) query = query.lte('expense_date', filter.to)
+    if (filter.category) query = query.eq('category', filter.category)
+    query
       .order('expense_date', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(filtered ? 500 : 20)
       .then(({ data, error }) => {
         if (!cancelled) setRecent({ rows: data ?? [], error: error ? errorMessage(error) : null })
       })
     return () => {
       cancelled = true
     }
-  }, [storeId, version])
+  }, [storeId, version, filter.from, filter.to, filter.category, filtered, badRange])
 
   const update = (id: number, change: Partial<ExpenseDraft>) =>
     setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...change } : d)))
@@ -297,13 +303,41 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
         {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
       </div>
 
-      <h2 className="section-title">{t('20 chi phí gần nhất')}</h2>
-      {!recent ? (
+      <h2 className="section-title">{t('Danh sách chi phí')}</h2>
+      <div className="filters">
+        <div className="field">
+          {t('Từ ngày')}
+          <DatePicker value={filter.from} onChange={(v) => setFilter((f) => ({ ...f, from: v }))} label={t('Từ ngày')} />
+        </div>
+        <div className="field">
+          {t('Đến ngày')}
+          <DatePicker value={filter.to} onChange={(v) => setFilter((f) => ({ ...f, to: v }))} label={t('Đến ngày')} />
+        </div>
+        <label>
+          {t('Nhóm')}
+          <select value={filter.category} onChange={(e) => setFilter((f) => ({ ...f, category: e.target.value }))}>
+            <option value="">{t('Tất cả')}</option>
+            {groups.map((g) => (
+              <option key={g} value={g}>
+                {t(g)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {filtered && (
+          <button type="button" onClick={() => setFilter({ from: '', to: '', category: '' })}>
+            {t('Xoá lọc')}
+          </button>
+        )}
+      </div>
+      {badRange ? (
+        <p className="error">{t('Khoảng ngày không hợp lệ: "Từ ngày" phải trước hoặc bằng "Đến ngày".')}</p>
+      ) : !recent ? (
         <p className="muted">{t('Đang tải…')}</p>
       ) : recent.error ? (
         <p className="error">{t(recent.error)}</p>
       ) : recent.rows.length === 0 ? (
-        <p className="muted">{t('Chưa có chi phí nào.')}</p>
+        <p className="muted">{filtered ? t('Không có khoản chi nào khớp bộ lọc.') : t('Chưa có chi phí nào.')}</p>
       ) : (
         <div className="table-wrap">
           <table>
@@ -342,6 +376,12 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
             </tbody>
           </table>
         </div>
+      )}
+      {filtered && recent && !recent.error && recent.rows.length > 0 && (
+        <p className="expense-footer">
+          <span>{t('{count} khoản', { count: recent.rows.length })}</span>
+          <strong>{formatVND(recent.rows.reduce((s, r) => s + r.amount, 0))}</strong>
+        </p>
       )}
     </section>
   )
