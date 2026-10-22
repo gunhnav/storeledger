@@ -10,6 +10,7 @@ import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
 import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import { usesDistribution, usesExpenseStylePurchase } from '../lib/storeFeatures'
+import { expenseGroupsFor } from '../lib/expenses'
 import { PurchaseRowsForm } from './PurchaseRowsForm'
 import type { Product, ProductPrice } from '../types/database'
 
@@ -25,7 +26,7 @@ export function PurchasePage() {
   if (!current) return null
   const autoToShop = !usesDistribution(current.code)
   return usesExpenseStylePurchase(current.code) ? (
-    <PurchaseRowsForm key={current.id} storeId={current.id} autoToShop={autoToShop} />
+    <PurchaseRowsForm key={current.id} storeId={current.id} autoToShop={autoToShop} groups={expenseGroupsFor(current.code)} />
   ) : (
     <PurchaseForm key={current.id} storeId={current.id} autoToShop={autoToShop} />
   )
