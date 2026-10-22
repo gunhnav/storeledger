@@ -13,6 +13,7 @@ import { MAX_MONEY, MAX_QTY, errorMessage, formatDate, formatVND, notFuture, tod
 import { salesChannels, usesDistribution, type SelectableChannel } from '../lib/storeFeatures'
 import { allocateSetTotal, allocatedTotal } from '../lib/companySale'
 import { saleFromSets, setKinds } from '../lib/companySets'
+import { discountAmount, discountError, type DiscountType } from '../lib/discount'
 import type { CompanySetDbRow, Product, SaleChannel, StorePriceRow } from '../types/database'
 
 type FormValues = { channel: SaleChannel; sale_date: string; note: string }
@@ -56,6 +57,9 @@ function SaleForm({
   const [picks, setPicks] = useState<Picks>({})
   const [setRows, setSetRows] = useState<{ version: number; rows: CompanySetDbRow[]; error: string | null } | null>(null)
   const [quickMode, setQuickMode] = useState<boolean | null>(null)
+  // Giảm giá đơn (không áp dụng kênh Công ty): loại, mức người bán nhập
+  const [discountType, setDiscountType] = useState<DiscountType>('amount')
+  const [discountValue, setDiscountValue] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const {
@@ -101,6 +105,10 @@ function SaleForm({
   const total = isCompany
     ? setSale.total
     : lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(priceText(l)) || 0), 0)
+  const discountInput = { type: discountType, value: discountValue }
+  const discountProblem = isCompany ? null : discountError(total, discountInput)
+  const discount = isCompany ? 0 : discountAmount(total, discountInput)
+  const payable = total - discount
   // Kênh Công ty: chia tổng tiền set cho từng loại theo giá tại quầy (chỉ để báo cáo theo loại)
   const companyLines = lines.map((l) => ({
     productId: l.product_id,
@@ -178,6 +186,7 @@ function SaleForm({
     setFormError(null)
     if (lines.length === 0) return setFormError(t('Đơn bán phải có ít nhất một món'))
     if (!prices) return setFormError(t('Đang tải giá, thử lại sau giây lát'))
+    if (discountProblem) return setFormError(discountProblem)
     if (isCompany) {
       const picked = kinds.filter((k) => (numericPicks[k.key]?.count ?? 0) > 0)
       if (picked.some((k) => !Number.isInteger(numericPicks[k.key].count))) return setFormError(t('Số set phải là số nguyên > 0'))
@@ -222,26 +231,37 @@ function SaleForm({
             .filter((k) => (numericPicks[k.key]?.count ?? 0) > 0)
             .map((k) => ({ size: k.size, mix: k.mix, count: numericPicks[k.key].count })),
         })
-      : await supabase.rpc('create_sale', {
-          p_store_id: storeId,
-          p_sale_date: values.sale_date || null,
-          p_channel: values.channel,
-          p_note: values.note.trim() || null,
-          p_items: items,
-        })
+      : discount > 0
+        ? await supabase.rpc('create_sale_discounted', {
+            p_store_id: storeId,
+            p_sale_date: values.sale_date || null,
+            p_channel: values.channel,
+            p_note: values.note.trim() || null,
+            p_items: items,
+            p_discount_type: discountType,
+            p_discount_value: Number(discountValue.replace(',', '.')),
+          })
+        : await supabase.rpc('create_sale', {
+            p_store_id: storeId,
+            p_sale_date: values.sale_date || null,
+            p_channel: values.channel,
+            p_note: values.note.trim() || null,
+            p_items: items,
+          })
     if (error) {
       setResult({ ok: false, text: errorMessage(error) })
       return
     }
     toast.success(
       t('Đã lưu đơn bán {amount} ngày {date}', {
-        amount: formatVND(companyPrices ? allocatedTotal(companyLines, companyPrices) : total),
+        amount: formatVND(companyPrices ? allocatedTotal(companyLines, companyPrices) : payable),
         date: formatDate(values.sale_date),
       }),
     )
     reset({ channel: values.channel, sale_date: values.sale_date, note: '' })
     setLines([])
     setPicks({})
+    setDiscountValue('')
     reload()
     setAlertVersion((v) => v + 1)
   }
@@ -478,9 +498,52 @@ function SaleForm({
             <span>{t('Tổng số lượng')}</span>
             <strong>{totalQty}</strong>
           </div>
+          {!isCompany && (
+            <div className="discount-box">
+              <div className="discount-head">
+                <span>{t('Giảm giá / ưu đãi')}</span>
+                <div className="discount-type" role="radiogroup" aria-label={t('Loại giảm giá')}>
+                  {(['amount', 'percent'] as const).map((ty) => (
+                    <button
+                      key={ty}
+                      type="button"
+                      role="radio"
+                      aria-checked={discountType === ty}
+                      className={discountType === ty ? 'active' : undefined}
+                      onClick={() => setDiscountType(ty)}
+                    >
+                      {ty === 'amount' ? 'đ' : '%'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <input
+                type="text"
+                inputMode="decimal"
+                className="discount-input"
+                placeholder={discountType === 'amount' ? t('Số tiền giảm') : t('% giảm')}
+                aria-label={t('Giảm giá / ưu đãi')}
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value.replace(/[^0-9.,]/g, ''))}
+              />
+              {discountProblem && <small className="error">{t(discountProblem)}</small>}
+              {discount > 0 && (
+                <>
+                  <div className="discount-line">
+                    <span>{t('Tiền hàng')}</span>
+                    <span>{formatVND(total)}</span>
+                  </div>
+                  <div className="discount-line discount-minus">
+                    <span>{t('Giảm giá')}</span>
+                    <span>− {formatVND(discount)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <div className="pos-total">
-            <span>{t('Tổng tiền')}</span>
-            <strong>{formatVND(total)}</strong>
+            <span>{discount > 0 ? t('Khách trả') : t('Tổng tiền')}</span>
+            <strong>{formatVND(payable)}</strong>
           </div>
 
           {formError && <p className="error">{t(formError)}</p>}
@@ -500,8 +563,8 @@ function SaleForm({
         {/* Điện thoại: tổng tiền + nút lưu luôn ở đáy màn hình */}
         <div className="pos-mobilebar">
           <div>
-            <small>{t('{count} món · SL {qty}', { count: lines.length, qty: totalQty })}</small>
-            <strong>{formatVND(total)}</strong>
+            <small>{discount > 0 ? t('{count} món · giảm {amount}', { count: lines.length, amount: formatVND(discount) }) : t('{count} món · SL {qty}', { count: lines.length, qty: totalQty })}</small>
+            <strong>{formatVND(payable)}</strong>
           </div>
           <button type="submit" className="primary" disabled={!canSubmit}>
             {submitLabel}

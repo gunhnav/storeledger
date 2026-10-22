@@ -3355,3 +3355,53 @@ input.overridden {
     opacity: 1;
   }
 }
+
+/* Giảm giá / ưu đãi trong đơn bán */
+.discount-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+.discount-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+.discount-type {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.discount-type button {
+  min-height: 0;
+  min-width: 40px;
+  padding: 4px 12px;
+  border: 0;
+  background: transparent;
+  font-weight: 700;
+}
+.discount-type button.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.discount-input {
+  width: 100%;
+}
+.discount-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--muted);
+}
+.discount-minus {
+  color: var(--accent);
+  font-weight: 700;
+}

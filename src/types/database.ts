@@ -477,6 +477,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      // supabase/migrations/20261022100000_sale_discount.sql
+      create_sale_discounted: {
+        Args: {
+          p_store_id: string
+          p_sale_date: string | null
+          p_channel: SaleChannel
+          p_note: string | null
+          p_items: CreateSaleArgs['p_items']
+          p_discount_type: 'amount' | 'percent'
+          p_discount_value: number
+          p_commission_rate?: number | null
+        }
+        Returns: string
+      }
       create_company_sale: {
         Args: { p_store_id: string; p_sale_date: string | null; p_note: string | null; p_items: CreateSaleArgs['p_items']; p_sets: { size: number; mix: Record<string, number>; count: number }[] }
         Returns: string
