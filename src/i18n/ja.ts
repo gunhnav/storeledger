@@ -667,4 +667,5 @@ export const ja: Record<string, string> = {
   'Khoản chi': '経費',
   'Xoá lọc': 'フィルタ解除',
   'Không có khoản chi nào khớp bộ lọc.': '条件に一致する経費はありません。',
+  'Tên món hoặc hạng mục': '品目名または項目',
 }

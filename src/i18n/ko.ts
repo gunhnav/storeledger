@@ -667,4 +667,5 @@ export const ko: Record<string, string> = {
   'Khoản chi': '비용',
   'Xoá lọc': '필터 해제',
   'Không có khoản chi nào khớp bộ lọc.': '필터에 맞는 비용이 없습니다.',
+  'Tên món hoặc hạng mục': '품목명 또는 항목',
 }

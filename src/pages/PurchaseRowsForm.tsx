@@ -250,9 +250,14 @@ export function PurchaseRowsForm({ storeId, autoToShop, groups }: { storeId: str
                       list="purchase-stock-names"
                       autoCapitalize="sentences"
                       aria-label={t('Hạng mục / ghi chú')}
-                      placeholder={i === 0 ? t('Gõ tên món (gợi ý: 7Up, Coca…) hoặc hạng mục khác') : undefined}
+                      placeholder={i === 0 ? t('Tên món hoặc hạng mục') : undefined}
                       value={r.note}
-                      onChange={(e) => update(r.id, { note: e.target.value })}
+                      onChange={(e) => {
+                        // Không đổi chữ khi bộ gõ tiếng Việt đang ghép dấu, viết hoa chữ đầu khi gõ xong
+                        const composing = (e.nativeEvent as InputEvent).isComposing
+                        update(r.id, { note: composing ? e.target.value : capitalizeFirst(e.target.value) })
+                      }}
+                      onCompositionEnd={(e) => update(r.id, { note: capitalizeFirst(e.currentTarget.value) })}
                     />
                     {isStock && <small className="calc-result">{t('Vào tồn kho')}</small>}
                   </label>

@@ -667,4 +667,5 @@ export const zh: Record<string, string> = {
   'Khoản chi': '费用',
   'Xoá lọc': '清除筛选',
   'Không có khoản chi nào khớp bộ lọc.': '没有符合筛选条件的费用。',
+  'Tên món hoặc hạng mục': '商品或项目名称',
 }
