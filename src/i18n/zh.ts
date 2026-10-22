@@ -664,4 +664,7 @@ export const zh: Record<string, string> = {
   'Lưu {count} khoản': '保存 {count} 项',
   '20 khoản chi gần nhất': '最近 20 笔费用',
   'Nhập kho': '进货',
+  'Khoản chi': '费用',
+  'Xoá lọc': '清除筛选',
+  'Không có khoản chi nào khớp bộ lọc.': '没有符合筛选条件的费用。',
 }

@@ -664,4 +664,7 @@ export const ja: Record<string, string> = {
   'Lưu {count} khoản': '{count}件を保存',
   '20 khoản chi gần nhất': '直近20件の経費',
   'Nhập kho': '入荷',
+  'Khoản chi': '経費',
+  'Xoá lọc': 'フィルタ解除',
+  'Không có khoản chi nào khớp bộ lọc.': '条件に一致する経費はありません。',
 }

@@ -664,4 +664,7 @@ export const ko: Record<string, string> = {
   'Lưu {count} khoản': '{count}건 저장',
   '20 khoản chi gần nhất': '최근 비용 20건',
   'Nhập kho': '입고',
+  'Khoản chi': '비용',
+  'Xoá lọc': '필터 해제',
+  'Không có khoản chi nào khớp bộ lọc.': '필터에 맞는 비용이 없습니다.',
 }

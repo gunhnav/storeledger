@@ -664,4 +664,7 @@ export const en: Record<string, string> = {
   'Lưu {count} khoản': 'Save {count} items',
   '20 khoản chi gần nhất': '20 most recent expenses',
   'Nhập kho': 'Stock purchase',
+  'Khoản chi': 'Expenses',
+  'Xoá lọc': 'Clear filters',
+  'Không có khoản chi nào khớp bộ lọc.': 'No expenses match the filters.',
 }
