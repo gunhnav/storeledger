@@ -492,7 +492,16 @@ export type Database = {
         Returns: string
       }
       create_company_sale: {
-        Args: { p_store_id: string; p_sale_date: string | null; p_note: string | null; p_items: CreateSaleArgs['p_items']; p_sets: { size: number; mix: Record<string, number>; count: number }[] }
+        Args: {
+          p_store_id: string
+          p_sale_date: string | null
+          p_note: string | null
+          p_items: CreateSaleArgs['p_items']
+          p_sets: { size: number; mix: Record<string, number>; count: number }[]
+          p_discount_type?: 'amount' | 'percent'
+          p_discount_value?: number
+          p_list_total?: number
+        }
         Returns: string
       }
       get_company_sets: { Args: { p_store_id: string; p_days?: number }; Returns: CompanySetDbRow[] }

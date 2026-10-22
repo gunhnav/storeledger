@@ -57,7 +57,7 @@ function SaleForm({
   const [picks, setPicks] = useState<Picks>({})
   const [setRows, setSetRows] = useState<{ version: number; rows: CompanySetDbRow[]; error: string | null } | null>(null)
   const [quickMode, setQuickMode] = useState<boolean | null>(null)
-  // Giảm giá đơn (không áp dụng kênh Công ty): loại, mức người bán nhập
+  // Giảm giá đơn (mọi kênh): loại, mức người bán nhập
   const [discountType, setDiscountType] = useState<DiscountType>('amount')
   const [discountValue, setDiscountValue] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
@@ -106,8 +106,8 @@ function SaleForm({
     ? setSale.total
     : lines.reduce((sum, l) => sum + (Number(l.qty) || 0) * (Number(priceText(l)) || 0), 0)
   const discountInput = { type: discountType, value: discountValue }
-  const discountProblem = isCompany ? null : discountError(total, discountInput)
-  const discount = isCompany ? 0 : discountAmount(total, discountInput)
+  const discountProblem = discountError(total, discountInput)
+  const discount = discountAmount(total, discountInput)
   const payable = total - discount
   // Kênh Công ty: chia tổng tiền set cho từng loại theo giá tại quầy (chỉ để báo cáo theo loại)
   const companyLines = lines.map((l) => ({
@@ -194,7 +194,8 @@ function SaleForm({
       if (picked.some((k) => numericPicks[k.key].count > k.distributed)) return setFormError(t('Số set bán nhiều hơn số set còn lại'))
       if (total > MAX_MONEY) return setFormError(t('Tổng tiền quá lớn, kiểm tra lại'))
     }
-    const companyPrices = isCompany ? allocateSetTotal(total, companyLines) : null
+    // Kênh Công ty: chia số tiền khách trả (đã giảm) cho từng loại
+    const companyPrices = isCompany ? allocateSetTotal(payable, companyLines) : null
     const items = []
     for (const line of lines) {
       const name = byId.get(line.product_id)?.name ?? ''
@@ -227,6 +228,9 @@ function SaleForm({
           p_sale_date: values.sale_date || null,
           p_note: [setNote(), values.note.trim()].filter(Boolean).join(' · ') || null,
           p_items: items,
+          ...(discount > 0
+            ? { p_discount_type: discountType, p_discount_value: Number(discountValue.replace(',', '.')), p_list_total: total }
+            : {}),
           p_sets: kinds
             .filter((k) => (numericPicks[k.key]?.count ?? 0) > 0)
             .map((k) => ({ size: k.size, mix: k.mix, count: numericPicks[k.key].count })),
@@ -498,49 +502,47 @@ function SaleForm({
             <span>{t('Tổng số lượng')}</span>
             <strong>{totalQty}</strong>
           </div>
-          {!isCompany && (
-            <div className="discount-box">
-              <div className="discount-head">
-                <span>{t('Giảm giá / ưu đãi')}</span>
-                <div className="discount-type" role="radiogroup" aria-label={t('Loại giảm giá')}>
-                  {(['amount', 'percent'] as const).map((ty) => (
-                    <button
-                      key={ty}
-                      type="button"
-                      role="radio"
-                      aria-checked={discountType === ty}
-                      className={discountType === ty ? 'active' : undefined}
-                      onClick={() => setDiscountType(ty)}
-                    >
-                      {ty === 'amount' ? 'đ' : '%'}
-                    </button>
-                  ))}
-                </div>
+          <div className="discount-box">
+            <div className="discount-head">
+              <span>{t('Giảm giá / ưu đãi')}</span>
+              <div className="discount-type" role="radiogroup" aria-label={t('Loại giảm giá')}>
+                {(['amount', 'percent'] as const).map((ty) => (
+                  <button
+                    key={ty}
+                    type="button"
+                    role="radio"
+                    aria-checked={discountType === ty}
+                    className={discountType === ty ? 'active' : undefined}
+                    onClick={() => setDiscountType(ty)}
+                  >
+                    {ty === 'amount' ? 'đ' : '%'}
+                  </button>
+                ))}
               </div>
-              <input
-                type="text"
-                inputMode="decimal"
-                className="discount-input"
-                placeholder={discountType === 'amount' ? t('Số tiền giảm') : t('% giảm')}
-                aria-label={t('Giảm giá / ưu đãi')}
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value.replace(/[^0-9.,]/g, ''))}
-              />
-              {discountProblem && <small className="error">{t(discountProblem)}</small>}
-              {discount > 0 && (
-                <>
-                  <div className="discount-line">
-                    <span>{t('Tiền hàng')}</span>
-                    <span>{formatVND(total)}</span>
-                  </div>
-                  <div className="discount-line discount-minus">
-                    <span>{t('Giảm giá')}</span>
-                    <span>− {formatVND(discount)}</span>
-                  </div>
-                </>
-              )}
             </div>
-          )}
+            <input
+              type="text"
+              inputMode="decimal"
+              className="discount-input"
+              placeholder={discountType === 'amount' ? t('Số tiền giảm') : t('% giảm')}
+              aria-label={t('Giảm giá / ưu đãi')}
+              value={discountValue}
+              onChange={(e) => setDiscountValue(e.target.value.replace(/[^0-9.,]/g, ''))}
+            />
+            {discountProblem && <small className="error">{t(discountProblem)}</small>}
+            {discount > 0 && (
+              <>
+                <div className="discount-line">
+                  <span>{t('Tiền hàng')}</span>
+                  <span>{formatVND(total)}</span>
+                </div>
+                <div className="discount-line discount-minus">
+                  <span>{t('Giảm giá')}</span>
+                  <span>− {formatVND(discount)}</span>
+                </div>
+              </>
+            )}
+          </div>
           <div className="pos-total">
             <span>{discount > 0 ? t('Khách trả') : t('Tổng tiền')}</span>
             <strong>{formatVND(payable)}</strong>

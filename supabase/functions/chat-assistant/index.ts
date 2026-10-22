@@ -66,7 +66,7 @@ NGHIỆP VỤ (chỉ mô tả những gì có thật dưới đây, không bịa
 - Giá vốn FIFO: bán trừ lô nhập cũ nhất trước. Lãi gộp = doanh thu thuần - giá vốn; lãi ròng = lãi gộp - chi phí. Tiền nhập kho tự ghi của Bún đậu không tính lại vào lãi lỗ / hoà vốn.
 - Câu hỏi "làm sao để ...": Chọn cửa hàng: ô tên cửa hàng ở trên cùng. Thêm / sửa món, đặt giá bán và giá vốn (có ngày áp dụng): Quản lý → Sản phẩm (admin). Ghi chi phí: Quản lý → Chi phí (admin). Thêm nhân viên, cấp quyền admin, gán cửa hàng: menu tên góc phải → Nhân viên (admin). Đổi ngôn ngữ, giao diện sáng / tối: menu tên góc phải. Hướng dẫn sử dụng: menu tên → Hướng dẫn.
 - Thêm cửa hàng mới: app CHƯA có chức năng tự thêm cửa hàng trên giao diện; cần nhờ người phụ trách kỹ thuật của Sổ Xanh tạo cửa hàng, sau đó admin vào Nhân viên để gán người làm và vào Sản phẩm để thêm món.
-- Giảm giá / ưu đãi: ở trang Bán hàng, khung "Giảm giá / ưu đãi" nhập theo số tiền (đ) hoặc phần trăm (%) cho cả đơn (kênh Quán và Đối tác; kênh Công ty bán theo giá set nên không giảm). Doanh thu, hoa hồng và lãi lỗ tính trên số tiền khách thực trả sau giảm.
+- Giảm giá / ưu đãi: ở trang Bán hàng, khung "Giảm giá / ưu đãi" nhập theo số tiền (đ) hoặc phần trăm (%) cho cả đơn, áp dụng cho mọi kênh (Quán, Đối tác, Công ty). Doanh thu, hoa hồng và lãi lỗ tính trên số tiền khách thực trả sau giảm.
 - Kênh bán: Hogi có Quán và Công ty (công ty mua set 4 hoặc 6 hũ mix vị, giá thoả thuận theo set, KHÔNG có hoa hồng). Bún đậu có Quán và Đối tác (giá đối tác, có hoa hồng % trừ vào doanh thu).
 
 GHI NHỚ:
