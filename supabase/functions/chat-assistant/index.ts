@@ -2,6 +2,7 @@
 // Gọi Gemini generateContent; model quá tải (503/429), hết hạn (404) hoặc quá chậm thì chuyển ngay
 // sang model khác thay vì gọi lại đúng model đó. Chi tiết lỗi chỉ ghi log, người dùng thấy thông báo gọn.
 import "@supabase/functions-js/edge-runtime.d.ts";
+import { historyContents, normalizeText, pickStore, sanitizeText, validRange, type Content, type Part } from "./lib.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -21,15 +22,6 @@ function reply(body: unknown) {
   return Response.json(body, { status: 200, headers: CORS_HEADERS });
 }
 
-function sanitizeText(text: string): string {
-  if (!text) return "";
-  return text
-    .replace(/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g, "[REDACTED_IP]")
-    .replace(/(postgres|postgresql|mysql|mongodb|redis):\/\/[^\s"']+/gi, "[REDACTED_DB_URL]")
-    .replace(/https?:\/\/[a-zA-Z0-9.-]+(?::[0-9]+)?/gi, "[REDACTED_URL]")
-    .replace(/(password|secret|token|api_key|jwt|credential)\s*[:=]\s*['"][^'"]+['"]/gi, '$1: "[REDACTED]"')
-    .replace(/[a-zA-Z0-9.-]+\.(internal|local|com\.vn)/gi, "[REDACTED_DOMAIN]");
-}
 
 type Catalog = { code: string; name: string; products: string[] }[];
 type Memory = { id: string; content: string };
@@ -89,8 +81,6 @@ CÁCH TRẢ LỜI:
 - Chỉ nói về những gì có trong hướng dẫn này và dữ liệu từ công cụ; điều gì không có thì nói "Roona không có thông tin này".`;
 };
 
-type Part = { text?: string; functionCall?: { name: string; args?: Record<string, unknown> }; functionResponse?: unknown; thoughtSignature?: string };
-type Content = { role: string; parts: Part[] };
 const MAX_TOOL_STEPS = 4;
 
 // Công cụ tra số liệu thật của cửa hàng (chạy bằng quyền của người dùng: RLS và các hàm admin vẫn áp dụng)
@@ -151,8 +141,6 @@ const TOOLS = [
   },
 ];
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 async function rest(authHeader: string, path: string, init?: { rpc?: Record<string, unknown>; method?: string }): Promise<unknown> {
   const url = Deno.env.get("SUPABASE_URL");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
@@ -171,9 +159,7 @@ async function rest(authHeader: string, path: string, init?: { rpc?: Record<stri
 
 async function resolveStore(authHeader: string, store: unknown): Promise<{ id: string; name: string }> {
   const rows = (await rest(authHeader, "stores?select=id,code,name")) as { id: string; code: string; name: string }[];
-  const key = String(store ?? "").toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d");
-  const norm = (v: string) => v.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d");
-  const hit = rows.find((r) => norm(r.code) === key) ?? rows.find((r) => norm(r.name).includes(key) || key.includes(norm(r.code)));
+  const hit = pickStore(rows, store);
   if (!hit) throw new Error(`Không tìm thấy cửa hàng "${store}". Cửa hàng bạn xem được: ${rows.map((r) => r.code).join(", ")}`);
   return hit;
 }
@@ -191,12 +177,14 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       const fact = String(args.fact ?? "").trim().slice(0, 300);
       if (!fact) throw new Error("Ghi nhớ trống");
       const rows = (await rest(authHeader, "assistant_memories", { rpc: { content: fact } })) as Memory[];
+      ctxCache.delete(authHeader);
       return { saved: true, id: rows?.[0]?.id, fact };
     }
     if (name === "forget") {
       const id = String(args.id ?? "");
       if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error("id không hợp lệ");
       const rows = (await rest(authHeader, `assistant_memories?id=eq.${id}`, { method: "DELETE" })) as Memory[];
+      ctxCache.delete(authHeader);
       return { deleted: rows.length > 0 };
     }
     const store = await resolveStore(authHeader, args.store);
@@ -205,7 +193,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
     }
     if (name === "get_prices") {
       const today = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-      const norm = (v: string) => v.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/đ/g, "d");
+      const norm = normalizeText;
       const products = (await rest(authHeader, `products?select=id,name,tracks_stock&store_id=eq.${store.id}&is_active=eq.true&order=name`)) as { id: string; name: string }[];
       const want = args.product ? norm(String(args.product)) : "";
       const picked = want ? products.filter((p) => norm(p.name).includes(want)) : products;
@@ -227,9 +215,9 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
     if (name === "get_break_even") {
       return { store: store.name, data: await rest(authHeader, "rpc/get_break_even", { rpc: { p_store_id: store.id } }) };
     }
-    const from = String(args.from ?? "");
-    const to = String(args.to ?? "");
-    if (!ISO_DATE.test(from) || !ISO_DATE.test(to) || from > to) throw new Error("Khoảng ngày không hợp lệ (cần YYYY-MM-DD, từ <= đến).");
+    const range = validRange(args.from, args.to);
+    if (!range) throw new Error("Khoảng ngày không hợp lệ (cần YYYY-MM-DD, từ <= đến).");
+    const { from, to } = range;
     if (name === "get_best_sellers") {
       const sales = (await rest(authHeader, `sales?select=channel,sale_items(quantity,unit_price,products(name))&store_id=eq.${store.id}&sale_date=gte.${from}&sale_date=lte.${to}&limit=5000`)) as {
         sale_items: { quantity: number; unit_price: number; products: { name: string } | null }[];
@@ -256,9 +244,16 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       const rows = (await rest(authHeader, "rpc/get_pnl", { rpc: { p_store_id: store.id, p_period: "day", p_from: from, p_to: to } })) as Record<string, number>[];
       const keys = ["gross_revenue", "commission", "net_revenue", "cogs", "gross_profit", "expenses", "net_profit"];
       const totals = Object.fromEntries(keys.map((k) => [k, rows.reduce((s, r) => s + Number(r[k] ?? 0), 0)]));
+      // Tiền đã bỏ ra nhập hàng trong kỳ: không phải chi phí kỳ này (chỉ thành giá vốn khi hàng được bán) nhưng cần để so với tiền thu
+      const batches = (await rest(authHeader, `stock_batches?select=initial_qty,unit_cost&store_id=eq.${store.id}&received_date=gte.${from}&received_date=lte.${to}&limit=5000`)) as { initial_qty: number; unit_cost: number }[];
+      const purchases = Math.round(batches.reduce((s, b) => s + b.initial_qty * b.unit_cost, 0));
+      const net = totals.net_revenue;
       return {
         store: store.name, from, to, totals,
-        note: "expenses ở đây KHÔNG gồm tiền nhập kho tự ghi (giá vốn đã tính). Đơn vị VND.",
+        margin_pct: net > 0 ? Math.round((totals.net_profit / net) * 1000) / 10 : null,
+        stock_purchases_in_period: purchases,
+        formulas: "lãi gộp = doanh thu thuần - giá vốn (FIFO, chỉ tính hàng ĐÃ BÁN); lãi ròng = lãi gộp - chi phí",
+        note: "expenses KHÔNG gồm tiền nhập hàng (đã vào giá vốn khi bán, hàng chưa bán nằm trong tồn kho nên chưa tính vào lãi). stock_purchases_in_period là tiền nhập hàng trong kỳ để tham khảo, KHÔNG trừ thêm vào lãi ròng. Đơn vị VND.",
         daily: rows.length <= 40 ? rows : undefined,
       };
     }
@@ -275,7 +270,20 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
 }
 
 // Danh mục quán + món đếm tồn mà người dùng xem được, và ghi nhớ của họ (đọc song song với xác thực)
+// Bộ nhớ đệm ngắn theo người dùng (cùng instance) để các câu hỏi liên tiếp không phải đọc lại danh mục / ghi nhớ
+const CTX_TTL_MS = 60 * 1000;
+const ctxCache = new Map<string, { at: number; catalog?: Catalog; memories?: Memory[] }>();
+const fresh = (e: { at: number } | undefined) => !!e && Date.now() - e.at < CTX_TTL_MS;
+
 async function loadCatalog(authHeader: string): Promise<Catalog> {
+  const hit = ctxCache.get(authHeader);
+  if (fresh(hit) && hit?.catalog) return hit.catalog;
+  const value = await fetchCatalog(authHeader);
+  if (value.length) ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: fresh(hit) ? hit!.at : Date.now(), catalog: value });
+  return value;
+}
+
+async function fetchCatalog(authHeader: string): Promise<Catalog> {
   try {
     const rows = (await rest(authHeader, "stores?select=code,name,products(name,tracks_stock,is_active)")) as {
       code: string; name: string; products: { name: string; tracks_stock: boolean; is_active: boolean }[];
@@ -292,31 +300,22 @@ async function loadCatalog(authHeader: string): Promise<Catalog> {
 }
 
 async function loadMemories(authHeader: string): Promise<Memory[]> {
+  const hit = ctxCache.get(authHeader);
+  if (fresh(hit) && hit?.memories) return hit.memories;
+  const value = await fetchMemories(authHeader);
+  const cur = ctxCache.get(authHeader);
+  ctxCache.set(authHeader, { ...(fresh(cur) ? cur : {}), at: fresh(cur) ? cur!.at : Date.now(), memories: value });
+  if (ctxCache.size > 200) ctxCache.delete(ctxCache.keys().next().value as string);
+  return value;
+}
+
+async function fetchMemories(authHeader: string): Promise<Memory[]> {
   try {
     return (await rest(authHeader, "assistant_memories?select=id,content&order=created_at&limit=30")) as Memory[];
   } catch (err) {
     console.error(`[chat-assistant] memories: ${(err as Error).message}`);
     return [];
   }
-}
-
-type HistoryItem = { role?: string; text?: string };
-const MAX_HISTORY = 16;
-
-// Lịch sử từ client -> contents của Gemini (user / model xen kẽ, gộp lượt liền nhau cùng vai)
-function historyContents(history: unknown): Content[] {
-  if (!Array.isArray(history)) return [];
-  const out: Content[] = [];
-  for (const h of (history as HistoryItem[]).slice(-MAX_HISTORY)) {
-    const text = String(h?.text ?? "").trim().slice(0, 1500);
-    if (!text) continue;
-    const role = h?.role === "assistant" ? "model" : "user";
-    const last = out.at(-1);
-    if (last?.role === role) last.parts.push({ text: sanitizeText(text) });
-    else out.push({ role, parts: [{ text: sanitizeText(text) }] });
-  }
-  while (out[0]?.role === "model") out.shift();
-  return out;
 }
 
 type Failure = { model: string; status: number | "timeout" | "error"; retryable: boolean; ms?: number };
