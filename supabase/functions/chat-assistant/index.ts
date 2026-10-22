@@ -349,7 +349,7 @@ async function discoverModels(apiKey: string): Promise<string[]> {
       .filter((m: { name: string; supportedGenerationMethods?: string[] }) =>
         m.supportedGenerationMethods?.includes("generateContent") &&
         /flash/.test(m.name) &&
-        !/(image|tts|audio|live|embedding|robotics|computer|thinking|exp)/.test(m.name))
+        !/(image|tts|audio|live|embedding|robotics|computer|thinking|exp|preview|omni)/.test(m.name))
       .map((m: { name: string }) => m.name.replace(/^models\//, ""))
       // Bản không "lite" trước, mới nhất (tên dài hơn / lớn hơn) trước
       .sort((a: string, b: string) => Number(/lite/.test(a)) - Number(/lite/.test(b)) || b.localeCompare(a));
@@ -367,6 +367,11 @@ const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingLevel: "mi
 let thinkingMode = 0;
 // Model đã bị gỡ / không tồn tại (404): bỏ qua ở các lần sau trong cùng instance
 const deadModels = new Set<string>();
+// Model bị 429 (hết hạn mức) / 503 (quá tải): tạm bỏ qua để không phải thử lại từ đầu mỗi lần; model vừa chạy tốt được thử trước
+const cooldownUntil = new Map<string, number>();
+let lastGood: string | null = null;
+const COOLDOWN_MS: Record<number, number> = { 429: 120_000, 503: 30_000 };
+const available = (m: string) => !deadModels.has(m) && (cooldownUntil.get(m) ?? 0) <= Date.now();
 
 async function callModel(apiKey: string, model: string, system: string, contents: Content[], timeoutMs: number, outer: AbortSignal, trace: string[]): Promise<{ content?: Content; failure?: Failure }> {
   const started = Date.now();
@@ -398,13 +403,18 @@ async function callModel(apiKey: string, model: string, system: string, contents
       const content: Content | undefined = data?.candidates?.[0]?.content;
       console.log(`[chat-assistant] ${model} ok ${Date.now() - started}ms finish=${data?.candidates?.[0]?.finishReason}`);
       trace.push(`${model} ${((Date.now() - started) / 1000).toFixed(1)}s`);
-      if (content?.parts?.some((p) => p.text || p.functionCall)) return { content };
+      if (content?.parts?.some((p) => p.text || p.functionCall)) {
+        lastGood = model;
+        cooldownUntil.delete(model);
+        return { content };
+      }
       return { failure: { model, status: "error", retryable: true, ms: Date.now() - started } };
     }
     trace.push(`${model} ${res.status} ${((Date.now() - started) / 1000).toFixed(1)}s`);
     console.error(`[chat-assistant] ${model} -> ${res.status} sau ${Date.now() - started}ms: ${(await res.text()).slice(0, 300)}`);
     // 503/429/5xx: model đang quá tải; 404: model đã gỡ; 400/403: lỗi cấu hình / key (không thử lại được)
     if (res.status === 404) deadModels.add(model);
+    if (COOLDOWN_MS[res.status]) cooldownUntil.set(model, Date.now() + COOLDOWN_MS[res.status]);
     const retryable = res.status === 503 || res.status === 429 || res.status === 404 || res.status >= 500;
     return { failure: { model, status: res.status, retryable, ms: Date.now() - started } };
   } catch (err) {
@@ -433,9 +443,12 @@ function friendlyError(failures: Failure[]): string {
 // Chạy các model theo kiểu "hedge": model đầu chạy ngay; sau HEDGE_MS chưa có kết quả (hoặc nó vừa lỗi)
 // thì chạy thêm model kế tiếp song song. Có câu trả lời đầu tiên là dùng và huỷ các lượt còn lại.
 async function askModels(apiKey: string, system: string, contents: Content[], failures: Failure[], elapsed: () => number, trace: string[]): Promise<{ content: Content; model: string } | null> {
-  const queue = PREFERRED_MODELS.filter((m) => !deadModels.has(m));
+  // Thứ tự thử: model vừa chạy tốt, model ưu tiên, rồi các model tìm được; bỏ model đã gỡ hoặc đang nghỉ
+  const queue = [...new Set([...(lastGood ? [lastGood] : []), ...PREFERRED_MODELS])].filter(available);
   const discovery = discoverModels(apiKey).then((names) => {
-    for (const m of names) if (!queue.includes(m) && !deadModels.has(m)) queue.push(m);
+    for (const m of names) if (!queue.includes(m) && available(m)) queue.push(m);
+    // Mọi model đều đang nghỉ thì vẫn phải thử, đừng trả lời "quá tải" ngay
+    if (queue.length === 0) for (const m of [...PREFERRED_MODELS, ...names]) if (!deadModels.has(m) && !queue.includes(m)) queue.push(m);
   });
   const controllers: AbortController[] = [];
   return await new Promise<{ content: Content; model: string } | null>((resolve) => {
