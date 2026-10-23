@@ -782,4 +782,11 @@ export const zh: Record<string, string> = {
   'Tổng số hũ theo loại': '按口味总罐数',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '每行是一种套餐；列中是该口味的罐数（1 套里的罐数 × 套数）。',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': '每行是一种套餐；列中是该口味的罐数（1 套里的罐数 × 套数）。日期行为当天各口味合计。',
+  'Tỷ lệ đã bán': '已售比例',
+  'Hết sau': '售罄用时',
+  'Bán / ngày': '日销量',
+  'Chưa hết': '未售罄',
+  '{days} ngày': '{days} 天',
+  'Loại hết nhanh nhất: {name} → nên nhập nhiều nhất': '最快售罄：{name} → 建议多进货',
+  'Xếp hạng theo tốc độ bán hết (tỷ lệ đã bán ÷ số ngày), không theo số lượng bán vì mỗi loại nhập số lượng khác nhau. Gợi ý chia theo số hũ bán mỗi ngày; loại đã hết hàng được cộng thêm 25% vì nhu cầu thật có thể cao hơn số đã bán.': '因为每种口味的进货量不同，排名按售罄速度（已售比例 ÷ 天数），而不是按销量。建议按每日销量分配；已售罄的口味加 25%，因为实际需求可能高于已售数量。',
 }

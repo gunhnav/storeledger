@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { allocateFifo, dailyResults, priceOn } from './core'
 import { batchStats } from './batches'
-import { salesPeriods, sellThrough, suggestNextBatch } from './bestSellers'
+import { demandStats, salesPeriods, sellThrough, suggestNextBatch } from './bestSellers'
 import { financialSummary, productResults, stockAlerts, stockRows } from './overview'
 import type { AnalyticsInput, ASaleLine } from './types'
 
@@ -240,5 +240,50 @@ describe('tổng quan & banner (phần 3)', () => {
     expect(s.breakEvenDate).toBeNull()
     // 16/10 + ceil(819.480 / 154.500) = 16/10 + 6 ngày
     expect(s.projectedBreakEven).toBe('2026-10-22')
+  })
+})
+
+describe('gợi ý theo tốc độ bán hết (không theo số lượng)', () => {
+  // Loại A nhập 50, bán 10 trong 5 ngày (chưa hết); loại B nhập 5, hết sạch ngay ngày đầu
+  const input: AnalyticsInput = {
+    products: [
+      { id: 'a', name: 'A', threshold: 3, tracksStock: true },
+      { id: 'b', name: 'B', threshold: 3, tracksStock: true },
+    ],
+    purchases: [{ id: 'p1', date: '2026-10-10', note: null }],
+    batchLines: [
+      { id: 'la', purchaseId: 'p1', date: '2026-10-10', productId: 'a', qty: 50, unitCost: 1000 },
+      { id: 'lb', purchaseId: 'p1', date: '2026-10-10', productId: 'b', qty: 5, unitCost: 1000 },
+    ],
+    sales: [
+      { date: '2026-10-10', productId: 'b', qty: 5, unitPrice: 2000, commissionRate: 0 },
+      { date: '2026-10-12', productId: 'a', qty: 10, unitPrice: 2000, commissionRate: 0 },
+    ],
+    transfers: [],
+    expenses: [],
+    prices: [],
+  }
+  const { batches } = batchStats(input, allocateFifo(input).allocations, new Map(), '2026-10-14')
+
+  it('loại hết trước xếp hạng cao hơn dù nhập ít hơn', () => {
+    const rows = demandStats(batches, ['a', 'b'], '2026-10-14', 'all', 100)!
+    expect(rows[0]).toMatchObject({ productId: 'b', rank: 1, soldOut: true, daysToSellOut: 1 })
+    expect(rows[1]).toMatchObject({ productId: 'a', rank: 2, soldOut: false })
+    // A: 10 hũ / 5 ngày = 2 mỗi ngày; B: 5 hũ / 1 ngày = 5 mỗi ngày (cộng 25% vì đã hết)
+    expect(rows[1].perDay).toBeCloseTo(2)
+    expect(rows[0].perDay).toBeCloseTo(5)
+    expect(rows[0].suggested + rows[1].suggested).toBeGreaterThanOrEqual(99)
+    expect(rows[0].suggested).toBeGreaterThan(rows[1].suggested)
+  })
+
+  it('loại bán hết nhanh nhất của đợt là B', () => {
+    const [st] = sellThrough(batches, '2026-10-14')
+    expect(st.fastestProductId).toBe('b')
+  })
+
+  it('chưa bán gì thì không gợi ý', () => {
+    const empty = { ...input, sales: [] }
+    const { batches: b2 } = batchStats(empty, allocateFifo(empty).allocations, new Map(), '2026-10-14')
+    expect(demandStats(b2, ['a', 'b'], '2026-10-14', 'all', 100)).toBeNull()
   })
 })

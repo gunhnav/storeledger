@@ -782,4 +782,11 @@ export const ko: Record<string, string> = {
   'Tổng số hũ theo loại': '종류별 총 병 수',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '각 행은 세트 종류이며 열은 종류별 병 수(1세트의 병 수 × 세트 수)입니다.',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': '각 행은 세트 종류이며 열은 종류별 병 수(1세트의 병 수 × 세트 수)입니다. 날짜 행은 그날의 종류별 합계입니다.',
+  'Tỷ lệ đã bán': '판매율',
+  'Hết sau': '소진까지',
+  'Bán / ngày': '일 판매량',
+  'Chưa hết': '소진 전',
+  '{days} ngày': '{days}일',
+  'Loại hết nhanh nhất: {name} → nên nhập nhiều nhất': '가장 빨리 소진: {name} → 가장 많이 입고하세요',
+  'Xếp hạng theo tốc độ bán hết (tỷ lệ đã bán ÷ số ngày), không theo số lượng bán vì mỗi loại nhập số lượng khác nhau. Gợi ý chia theo số hũ bán mỗi ngày; loại đã hết hàng được cộng thêm 25% vì nhu cầu thật có thể cao hơn số đã bán.': '종류마다 입고량이 다르므로 판매 수량이 아니라 소진 속도(판매 비율 ÷ 일수)로 순위를 매깁니다. 제안은 일 판매량 기준으로 나누며, 품절된 종류는 실제 수요가 더 높을 수 있어 25%를 더합니다.',
 }

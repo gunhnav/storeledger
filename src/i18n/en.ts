@@ -782,4 +782,11 @@ export const en: Record<string, string> = {
   'Tổng số hũ theo loại': 'Total jars by type',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': 'Each row is a set type; a column shows jars of that kind (jars in 1 set × number of sets).',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': 'Each row is a set type; a column shows jars of that kind (jars in 1 set × number of sets). The date row is the day’s total per type.',
+  'Tỷ lệ đã bán': 'Sold rate',
+  'Hết sau': 'Sold out after',
+  'Bán / ngày': 'Sold / day',
+  'Chưa hết': 'Not sold out',
+  '{days} ngày': '{days} days',
+  'Loại hết nhanh nhất: {name} → nên nhập nhiều nhất': 'Sells out fastest: {name} → order the most',
+  'Xếp hạng theo tốc độ bán hết (tỷ lệ đã bán ÷ số ngày), không theo số lượng bán vì mỗi loại nhập số lượng khác nhau. Gợi ý chia theo số hũ bán mỗi ngày; loại đã hết hàng được cộng thêm 25% vì nhu cầu thật có thể cao hơn số đã bán.': 'Ranked by sell-out speed (share sold ÷ days), not by quantity sold, because each type is bought in a different amount. The suggestion splits by jars sold per day; types that sold out get +25% because real demand may be higher than what was sold.',
 }

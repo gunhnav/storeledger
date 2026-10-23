@@ -782,4 +782,11 @@ export const ja: Record<string, string> = {
   'Tổng số hũ theo loại': '種類別の合計個数',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '各行はセットの種類で、列は種類別の個数（1セットの個数 × セット数）です。',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': '各行はセットの種類で、列は種類別の個数（1セットの個数 × セット数）です。日付行はその日の種類別合計です。',
+  'Tỷ lệ đã bán': '販売率',
+  'Hết sau': '完売まで',
+  'Bán / ngày': '1日の販売数',
+  'Chưa hết': '未完売',
+  '{days} ngày': '{days}日',
+  'Loại hết nhanh nhất: {name} → nên nhập nhiều nhất': '最も早く完売: {name} → 多めに入荷を',
+  'Xếp hạng theo tốc độ bán hết (tỷ lệ đã bán ÷ số ngày), không theo số lượng bán vì mỗi loại nhập số lượng khác nhau. Gợi ý chia theo số hũ bán mỗi ngày; loại đã hết hàng được cộng thêm 25% vì nhu cầu thật có thể cao hơn số đã bán.': '種類ごとに入荷量が違うため、販売数ではなく完売の速さ（販売率 ÷ 日数）で順位付けします。提案は1日の販売数で配分し、完売した種類は実需要がもっと多い可能性があるため25%加算します。',
 }

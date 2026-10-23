@@ -1,5 +1,5 @@
 import { addDays } from '../format'
-import { sum } from './core'
+import { daysInclusive, sum } from './core'
 import type { BatchStat } from './batches'
 import type { AnalyticsInput } from './types'
 
@@ -44,19 +44,80 @@ export type SellThrough = {
   fastestProductId: string | null
 }
 
-export function sellThrough(batches: BatchStat[]): SellThrough[] {
+export function sellThrough(batches: BatchStat[], today?: string): SellThrough[] {
   return batches.map((b) => {
     const rates: Record<string, number> = {}
     for (const line of b.lines) rates[line.productId] = line.qty > 0 ? line.sold / line.qty : 0
+    // Hết nhanh nhất = bán được nhiều phần của lô nhất trong mỗi ngày (tỷ lệ ÷ số ngày), không phụ thuộc số lượng nhập
+    const speed = (l: BatchStat['lines'][number]) => (today ? rates[l.productId] / lineDays(b.date, l.soldOutDate, today) : rates[l.productId])
     const ranked = [...b.lines]
       .filter((l) => l.sold > 0)
       .sort(
         (x, y) =>
+          speed(y) - speed(x) ||
           rates[y.productId] - rates[x.productId] ||
           (x.soldOutDate ?? '9999').localeCompare(y.soldOutDate ?? '9999'),
       )
     return { purchaseId: b.purchaseId, rates, fastestProductId: ranked[0]?.productId ?? null }
   })
+}
+
+// Số ngày một lô đã bán: từ ngày nhập đến ngày hết (hoặc hôm nay nếu chưa hết), tối thiểu 1
+function lineDays(batchDate: string, soldOutDate: string | null, today: string): number {
+  const end = soldOutDate ?? today
+  return end < batchDate ? 1 : Math.max(1, daysInclusive(batchDate, end))
+}
+
+// Nhu cầu từng loại, tính theo tốc độ bán hết thay vì số lượng bán (mỗi loại nhập số lượng khác nhau)
+export type DemandRow = {
+  productId: string
+  rank: number
+  qty: number
+  sold: number
+  // Tỷ lệ đã bán / đã nhập (0..1)
+  rate: number
+  // Số hũ bán mỗi ngày (tổng bán ÷ tổng số ngày bán)
+  perDay: number
+  // Trung bình số ngày bán hết của các lô đã hết; null nếu chưa lô nào hết
+  daysToSellOut: number | null
+  soldOut: boolean
+  // Tốc độ bán hết: phần của lô bán được mỗi ngày (tỷ lệ ÷ số ngày), trung bình các lô
+  speed: number
+  share: number
+  suggested: number
+}
+
+// Hệ số cộng thêm cho loại đã hết hàng: số đã bán chỉ là mức thấp nhất của nhu cầu thật
+const SOLD_OUT_BOOST = 1.25
+
+export function demandStats(batches: BatchStat[], productIds: string[], today: string, basis: SuggestionBasis, plannedTotal: number): DemandRow[] | null {
+  const source = basis === 'last' ? batches.slice(-1) : batches
+  const raw = productIds.map((productId, order) => {
+    const lines = source.flatMap((b) => b.lines.filter((l) => l.productId === productId && l.qty > 0).map((l) => ({ b, l })))
+    const qty = sum(lines.map((x) => x.l.qty))
+    const sold = sum(lines.map((x) => x.l.sold))
+    const days = lines.map((x) => lineDays(x.b.date, x.l.soldOutDate, today))
+    const speed = lines.length ? sum(lines.map((x, i) => x.l.sold / x.l.qty / days[i])) / lines.length : 0
+    const out = lines.filter((x) => x.l.soldOutDate !== null)
+    return {
+      productId,
+      order,
+      qty,
+      sold,
+      rate: qty > 0 ? sold / qty : 0,
+      perDay: sum(days) > 0 ? sold / sum(days) : 0,
+      daysToSellOut: out.length ? sum(out.map((x) => days[lines.indexOf(x)])) / out.length : null,
+      soldOut: out.length > 0,
+      speed,
+    }
+  })
+  const weights = raw.map((r) => r.perDay * (r.soldOut ? SOLD_OUT_BOOST : 1))
+  const totalWeight = sum(weights)
+  if (!(totalWeight > 0)) return null
+  return raw
+    .map((r, i) => ({ ...r, share: weights[i] / totalWeight, suggested: Math.round(plannedTotal * (weights[i] / totalWeight)) }))
+    .sort((a, b) => b.speed - a.speed || b.perDay - a.perDay || a.order - b.order)
+    .map(({ order: _order, ...r }, index) => ({ ...r, rank: index + 1 }))
 }
 
 export type SuggestionBasis = 'last' | 'all'

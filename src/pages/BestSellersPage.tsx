@@ -3,7 +3,7 @@ import { useStore } from '../lib/store'
 import { useI18n } from '../lib/i18n'
 import { formatDate } from '../lib/format'
 import { batchStats } from '../lib/analytics/batches'
-import { salesPeriods, sellThrough, suggestNextBatch, type SuggestionBasis } from '../lib/analytics/bestSellers'
+import { demandStats, salesPeriods, sellThrough, type SuggestionBasis } from '../lib/analytics/bestSellers'
 import { useAnalyticsData } from '../lib/useAnalyticsData'
 
 const pct = (value: number | null) => (value === null ? '—' : `${(value * 100).toFixed(1).replace('.', ',')}%`)
@@ -31,15 +31,18 @@ function BestSellers({ storeId }: { storeId: string }) {
     return <p className="pos-empty muted">{t('Chưa có đợt nhập nào. Nhập hàng ở Kho hàng → Nhập hàng.')}</p>
   }
   const { batches } = batchStats(data.input, data.allocations, data.currentPrice, data.today)
-  const rates = sellThrough(batches)
+  const rates = sellThrough(batches, data.today)
   const plannedTotal = Math.max(0, Math.floor(Number(planned) || 0))
-  const suggestion = suggestNextBatch(
-    periods,
+  const suggestion = demandStats(
+    batches,
     stocked.map((p) => p.id),
-    plannedTotal,
+    data.today,
     basis,
+    plannedTotal,
   )
   const batchIndex = new Map(batches.map((b, i) => [b.purchaseId, i + 1]))
+  const fastest = (purchaseId: string) => rates.find((r) => r.purchaseId === purchaseId)?.fastestProductId ?? null
+  const rateOf = (purchaseId: string, productId: string) => rates.find((r) => r.purchaseId === purchaseId)?.rates[productId] ?? 0
 
   return (
     <section className="report-stack">
@@ -59,9 +62,8 @@ function BestSellers({ storeId }: { storeId: string }) {
                   </th>
                 ))}
                 <th className="num">{t('Tổng')}</th>
-                <th>{t('Bán chạy nhất')}</th>
-                <th className="num">{t('Số hũ')}</th>
-                <th className="num">{t('Tỷ trọng')}</th>
+                <th>{t('Bán hết nhanh nhất')}</th>
+                <th className="num">{t('Tỷ lệ đã bán')}</th>
               </tr>
             </thead>
             <tbody>
@@ -79,9 +81,8 @@ function BestSellers({ storeId }: { storeId: string }) {
                   <td className="num">
                     <strong>{period.total}</strong>
                   </td>
-                  <td>{period.topProductId ? names.get(period.topProductId) : '—'}</td>
-                  <td className="num">{period.topQty || '—'}</td>
-                  <td className="num">{pct(period.topShare)}</td>
+                  <td>{fastest(period.purchaseId) ? names.get(fastest(period.purchaseId)!) : '—'}</td>
+                  <td className="num">{fastest(period.purchaseId) ? pct(rateOf(period.purchaseId, fastest(period.purchaseId)!)) : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -175,8 +176,11 @@ function BestSellers({ storeId }: { storeId: string }) {
                   <tr>
                     <th className="num">{t('Hạng')}</th>
                     <th>{t('Loại')}</th>
+                    <th className="num">{t('Đã nhập')}</th>
                     <th className="num">{t('Đã bán')}</th>
-                    <th className="num">{t('Tỷ trọng')}</th>
+                    <th className="num">{t('Tỷ lệ đã bán')}</th>
+                    <th className="num">{t('Hết sau')}</th>
+                    <th className="num">{t('Bán / ngày')}</th>
                     <th className="num">{t('Gợi ý nhập')}</th>
                   </tr>
                 </thead>
@@ -185,8 +189,11 @@ function BestSellers({ storeId }: { storeId: string }) {
                     <tr key={row.productId}>
                       <td className="num">#{row.rank}</td>
                       <td>{names.get(row.productId)}</td>
+                      <td className="num">{row.qty}</td>
                       <td className="num">{row.sold}</td>
-                      <td className="num">{pct(row.share)}</td>
+                      <td className="num">{pct(row.rate)}</td>
+                      <td className="num">{row.daysToSellOut === null ? <span className="muted">{t('Chưa hết')}</span> : t('{days} ngày', { days: Math.round(row.daysToSellOut * 10) / 10 })}</td>
+                      <td className="num">{row.perDay.toFixed(1).replace('.', ',')}</td>
                       <td className="num">
                         <strong>{row.suggested}</strong>
                       </td>
@@ -196,9 +203,12 @@ function BestSellers({ storeId }: { storeId: string }) {
               </table>
             </div>
             <p className="success">
-              {t('Loại bán chạy nhất: {name} → nên nhập nhiều nhất', { name: names.get(suggestion[0].productId) ?? '' })}
+              {t('Loại hết nhanh nhất: {name} → nên nhập nhiều nhất', { name: names.get(suggestion[0].productId) ?? '' })}
             </p>
-            <p className="muted section-note">{t('Tổng gợi ý có thể lệch vài hũ so với tổng dự định do làm tròn.')}</p>
+            <p className="muted section-note">
+              {t('Xếp hạng theo tốc độ bán hết (tỷ lệ đã bán ÷ số ngày), không theo số lượng bán vì mỗi loại nhập số lượng khác nhau. Gợi ý chia theo số hũ bán mỗi ngày; loại đã hết hàng được cộng thêm 25% vì nhu cầu thật có thể cao hơn số đã bán.')}{' '}
+              {t('Tổng gợi ý có thể lệch vài hũ so với tổng dự định do làm tròn.')}
+            </p>
           </>
         )}
       </div>
