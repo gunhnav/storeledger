@@ -3466,3 +3466,9 @@ input.overridden {
 .bundau-report .stat-sub {
   font-size: 12px;
 }
+
+/* Lịch sử phân phối */
+.history-day {
+  margin: 8px 0;
+  font-size: 15px;
+}

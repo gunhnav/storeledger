@@ -772,4 +772,8 @@ export const ko: Record<string, string> = {
   'Ra quán {shop} · Cho công ty {company} · Về nhà {home}': '매장 {shop} · 회사 {company} · 집으로 {home}',
   'Chưa phân phối set nào cho công ty.': '회사에 배분한 세트가 없습니다.',
   'Set': '세트',
+  'Chưa có lần phân phối ra quán nào.': '매장 배분 내역이 없습니다.',
+  'Số hũ đã phân phối ra quán mỗi ngày. Số đỏ nhỏ (−n) là hũ chuyển lại từ quán về nhà trong ngày.': '매일 매장으로 배분한 병 수입니다. 작은 빨간 숫자(−n)는 그날 매장에서 집으로 되돌린 병 수입니다.',
+  '{sets} set · đã bán {sold}': '{sets}세트 · {sold} 판매',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.': '각 행은 세트 종류이며 열의 숫자는 1세트에 든 종류별 병 수입니다.',
 }

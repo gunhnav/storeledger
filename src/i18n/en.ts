@@ -772,4 +772,8 @@ export const en: Record<string, string> = {
   'Ra quán {shop} · Cho công ty {company} · Về nhà {home}': 'To shop {shop} · To company {company} · Back home {home}',
   'Chưa phân phối set nào cho công ty.': 'No sets distributed to the company yet.',
   'Set': 'Set',
+  'Chưa có lần phân phối ra quán nào.': 'No distributions to the shop yet.',
+  'Số hũ đã phân phối ra quán mỗi ngày. Số đỏ nhỏ (−n) là hũ chuyển lại từ quán về nhà trong ngày.': 'Jars distributed to the shop each day. A small red number (−n) is jars moved back from the shop to home that day.',
+  '{sets} set · đã bán {sold}': '{sets} sets · {sold} sold',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.': 'Each row is a set type; the number in a column is the jars of that kind in 1 set.',
 }

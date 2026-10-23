@@ -5,77 +5,49 @@ import { useI18n } from '../lib/i18n'
 import { errorMessage, formatDate } from '../lib/format'
 import type { CompanySetHistoryRow } from '../types/database'
 
-type Kind = '' | 'shop' | 'company' | 'home'
-type Transfer = { id: string; transfer_date: string; product_id: string; quantity: number; destination: string; note: string | null; created_at: string }
-type Loaded = { key: string; transfers: Transfer[]; sets: CompanySetHistoryRow[]; names: Map<string, string> }
+type Transfer = { transfer_date: string; product_id: string; quantity: number; destination: string }
+type Item = { id: string; name: string }
+type Loaded = { key: string; transfers: Transfer[]; sets: CompanySetHistoryRow[]; items: Item[] }
 
-const KINDS: { value: Kind; label: string }[] = [
-  { value: '', label: 'Tất cả' },
-  { value: 'shop', label: 'Ra quán' },
-  { value: 'company', label: 'Cho công ty' },
-  { value: 'home', label: 'Về nhà' },
-]
-const DIRECTION: Record<string, string> = { shop: 'Nhà → Quán', company: 'Nhà → Công ty', home: 'Quán → Nhà' }
-
-// Tab Phân phối → Lịch sử: các lần chuyển hàng (ra quán, cho công ty, về nhà) và các set đã phân phối cho công ty
+// Tab Phân phối → Lịch sử, hai phần riêng:
+//  - Nhà: mỗi loại sữa chua một cột, mỗi ngày một dòng, ô là số hũ đã phân phối ra quán (chuyển về nhà hiện số âm)
+//  - Công ty: theo từng ngày, mỗi set một dòng với số hũ từng loại trong 1 set, số set, đã bán, còn lại
 export function TransferHistory({ storeId }: { storeId: string }) {
   const { t } = useI18n()
-  const [filter, setFilter] = useState({ from: '', to: '', kind: '' as Kind })
+  const [filter, setFilter] = useState({ from: '', to: '' })
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
   const badRange = filter.from !== '' && filter.to !== '' && filter.from > filter.to
-  const filtered = filter.from !== '' || filter.to !== '' || filter.kind !== ''
-  const key = `${storeId}|${filter.from}|${filter.to}|${filter.kind}`
+  const filtered = filter.from !== '' || filter.to !== ''
+  const key = `${storeId}|${filter.from}|${filter.to}`
 
   useEffect(() => {
     if (badRange) return
     let cancelled = false
-    let query = supabase.from('stock_transfers').select('id, transfer_date, product_id, quantity, destination, note, created_at').eq('store_id', storeId)
+    let query = supabase.from('stock_transfers').select('transfer_date, product_id, quantity, destination').eq('store_id', storeId)
     if (filter.from) query = query.gte('transfer_date', filter.from)
     if (filter.to) query = query.lte('transfer_date', filter.to)
-    if (filter.kind) query = query.eq('destination', filter.kind)
     Promise.all([
-      query.order('transfer_date', { ascending: false }).order('created_at', { ascending: false }).limit(filtered ? 500 : 100),
+      query.order('transfer_date', { ascending: false }).limit(2000),
       supabase.rpc('get_company_sets_history', { p_store_id: storeId, p_from: filter.from || null, p_to: filter.to || null }),
-      supabase.from('products').select('id, name').eq('store_id', storeId),
+      supabase.from('products').select('id, name').eq('store_id', storeId).eq('tracks_stock', true).order('name'),
     ]).then(([transfers, sets, products]) => {
       if (cancelled) return
       const err = transfers.error ?? sets.error ?? products.error
       if (err) return setError(errorMessage(err))
       setError(null)
-      setLoaded({
-        key,
-        transfers: (transfers.data ?? []) as Transfer[],
-        sets: sets.data ?? [],
-        names: new Map((products.data ?? []).map((p) => [p.id, p.name])),
-      })
+      setLoaded({ key, transfers: transfers.data ?? [], sets: sets.data ?? [], items: products.data ?? [] })
     })
     return () => {
       cancelled = true
     }
-  }, [storeId, key, badRange, filter.from, filter.to, filter.kind, filtered])
-
-  const nameOf = (l: Loaded, id: string) => l.names.get(id) ?? '?'
-  const mixText = (l: Loaded, mix: Record<string, number>) =>
-    Object.entries(mix)
-      .filter(([, n]) => n > 0)
-      .map(([id, n]) => `${n} ${nameOf(l, id)}`)
-      .join(' + ')
+  }, [storeId, key, badRange, filter.from, filter.to])
 
   const data = loaded?.key === key ? loaded : null
-  const showSets = filter.kind === '' || filter.kind === 'company'
-  const sum = (kind: string) => (data?.transfers ?? []).filter((x) => x.destination === kind).reduce((s, x) => s + x.quantity, 0)
 
   return (
     <section className="report-stack">
       <div className="filters">
-        <div className="preset-chips" role="group" aria-label={t('Loại')}>
-          {KINDS.map((k) => (
-            <button key={k.value} type="button" className={filter.kind === k.value ? 'active' : undefined} onClick={() => setFilter((f) => ({ ...f, kind: k.value }))}>
-              {t(k.label)}
-            </button>
-          ))}
-        </div>
         <div className="field">
           {t('Từ ngày')}
           <DatePicker value={filter.from} onChange={(v) => setFilter((f) => ({ ...f, from: v }))} label={t('Từ ngày')} />
@@ -85,7 +57,7 @@ export function TransferHistory({ storeId }: { storeId: string }) {
           <DatePicker value={filter.to} onChange={(v) => setFilter((f) => ({ ...f, to: v }))} label={t('Đến ngày')} />
         </div>
         {filtered && (
-          <button type="button" onClick={() => setFilter({ from: '', to: '', kind: '' })}>
+          <button type="button" onClick={() => setFilter({ from: '', to: '' })}>
             {t('Xoá lọc')}
           </button>
         )}
@@ -99,90 +71,158 @@ export function TransferHistory({ storeId }: { storeId: string }) {
         <p className="muted">{t('Đang tải…')}</p>
       ) : (
         <>
-          <div>
-            <h2>{filtered ? t('Lịch sử chuyển hàng') : t('Lịch sử chuyển hàng gần nhất')}</h2>
-            {data.transfers.length === 0 ? (
-              <p className="muted">{filtered ? t('Không có lần chuyển nào khớp bộ lọc.') : t('Chưa có lần chuyển hàng nào.')}</p>
-            ) : (
-              <>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t('Ngày')}</th>
-                        <th>{t('Hướng')}</th>
-                        <th>{t('Món')}</th>
-                        <th className="num">{t('Số lượng')}</th>
-                        <th>{t('Ghi chú')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.transfers.map((x) => (
-                        <tr key={x.id}>
-                          <td>{formatDate(x.transfer_date)}</td>
-                          <td>
-                            <span className={`badge ${x.destination === 'home' ? 'badge-warn' : x.destination === 'company' ? 'badge-low' : 'badge-ok'}`}>
-                              {t(DIRECTION[x.destination] ?? x.destination)}
-                            </span>
-                          </td>
-                          <td>{nameOf(data, x.product_id)}</td>
-                          <td className="num">
-                            <strong>{x.quantity}</strong>
-                          </td>
-                          <td>{x.note ?? ''}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="expense-footer">
-                  <span>
-                    {t('Ra quán {shop} · Cho công ty {company} · Về nhà {home}', { shop: sum('shop'), company: sum('company'), home: sum('home') })}
-                  </span>
-                </p>
-              </>
-            )}
-          </div>
+          <HomeHistory data={data} />
+          <CompanyHistory data={data} />
+        </>
+      )}
+    </section>
+  )
+}
 
-          {showSets && (
-            <div>
-              <h2>{t('Set đã phân phối cho công ty')}</h2>
-              {data.sets.length === 0 ? (
-                <p className="muted">{t('Chưa phân phối set nào cho công ty.')}</p>
-              ) : (
+function HomeHistory({ data }: { data: Loaded }) {
+  const { t } = useI18n()
+  // ngày -> món -> { ra quán, về nhà }
+  const days = new Map<string, Map<string, { out: number; back: number }>>()
+  for (const x of data.transfers) {
+    if (x.destination !== 'shop' && x.destination !== 'home') continue
+    const day = days.get(x.transfer_date) ?? new Map()
+    const cell = day.get(x.product_id) ?? { out: 0, back: 0 }
+    if (x.destination === 'shop') cell.out += x.quantity
+    else cell.back += x.quantity
+    day.set(x.product_id, cell)
+    days.set(x.transfer_date, day)
+  }
+  const dates = [...days.keys()].sort().reverse()
+  const total = (id: string) => dates.reduce((s, d) => s + (days.get(d)?.get(id)?.out ?? 0) - (days.get(d)?.get(id)?.back ?? 0), 0)
+  const rowTotal = (d: string) => data.items.reduce((s, i) => s + (days.get(d)?.get(i.id)?.out ?? 0) - (days.get(d)?.get(i.id)?.back ?? 0), 0)
+  const grand = data.items.reduce((s, i) => s + total(i.id), 0)
+
+  return (
+    <div>
+      <h2>{t('Nhà → Quán')}</h2>
+      {dates.length === 0 ? (
+        <p className="muted">{t('Chưa có lần phân phối ra quán nào.')}</p>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t('Ngày')}</th>
+                {data.items.map((i) => (
+                  <th key={i.id} className="num">
+                    {i.name}
+                  </th>
+                ))}
+                <th className="num">{t('Tổng')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dates.map((d) => (
+                <tr key={d}>
+                  <td>{formatDate(d)}</td>
+                  {data.items.map((i) => {
+                    const c = days.get(d)?.get(i.id)
+                    return (
+                      <td key={i.id} className="num">
+                        {c?.out ? <strong>{c.out}</strong> : <span className="muted">—</span>}
+                        {c?.back ? <small className="warn"> −{c.back}</small> : null}
+                      </td>
+                    )
+                  })}
+                  <td className="num">
+                    <strong>{rowTotal(d)}</strong>
+                  </td>
+                </tr>
+              ))}
+              <tr>
+                <td>
+                  <strong>{t('Tổng cộng')}</strong>
+                </td>
+                {data.items.map((i) => (
+                  <td key={i.id} className="num">
+                    <strong>{total(i.id)}</strong>
+                  </td>
+                ))}
+                <td className="num">
+                  <strong>{grand}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      <small className="muted">{t('Số hũ đã phân phối ra quán mỗi ngày. Số đỏ nhỏ (−n) là hũ chuyển lại từ quán về nhà trong ngày.')}</small>
+    </div>
+  )
+}
+
+function CompanyHistory({ data }: { data: Loaded }) {
+  const { t } = useI18n()
+  const byDate = new Map<string, CompanySetHistoryRow[]>()
+  for (const s of data.sets) byDate.set(s.distribution_date, [...(byDate.get(s.distribution_date) ?? []), s])
+  const dates = [...byDate.keys()].sort().reverse()
+  // Chỉ hiện cột của loại có trong set của ngày đó
+  const usedIds = (rows: CompanySetHistoryRow[]) => data.items.filter((i) => rows.some((r) => (r.mix[i.id] ?? 0) > 0))
+
+  return (
+    <div>
+      <h2>{t('Công ty')}</h2>
+      {dates.length === 0 ? (
+        <p className="muted">{t('Chưa phân phối set nào cho công ty.')}</p>
+      ) : (
+        <div className="report-stack">
+          {dates.map((d) => {
+            const rows = byDate.get(d) ?? []
+            const cols = usedIds(rows)
+            const sets = rows.reduce((s, r) => s + r.set_count, 0)
+            const sold = rows.reduce((s, r) => s + r.sold_count, 0)
+            return (
+              <div key={d}>
+                <h3 className="history-day">
+                  {formatDate(d)} <span className="muted">· {t('{sets} set · đã bán {sold}', { sets, sold })}</span>
+                </h3>
                 <div className="table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        <th>{t('Ngày')}</th>
                         <th>{t('Set')}</th>
+                        {cols.map((i) => (
+                          <th key={i.id} className="num">
+                            {i.name}
+                          </th>
+                        ))}
                         <th className="num">{t('Số set')}</th>
                         <th className="num">{t('Đã bán')}</th>
                         <th className="num">{t('Còn lại')}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {data.sets.map((s) => (
-                        <tr key={s.id}>
-                          <td>{formatDate(s.distribution_date)}</td>
+                      {rows.map((r) => (
+                        <tr key={r.id}>
                           <td>
-                            <span className="badge badge-ok">{t('Set {size}', { size: s.set_size })}</span> {mixText(data, s.mix)}
+                            <span className="badge badge-ok">{t('Set {size}', { size: r.set_size })}</span>
                           </td>
-                          <td className="num">{s.set_count}</td>
-                          <td className="num">{s.sold_count}</td>
+                          {cols.map((i) => (
+                            <td key={i.id} className="num">
+                              {(r.mix[i.id] ?? 0) > 0 ? <strong>{r.mix[i.id]}</strong> : <span className="muted">—</span>}
+                            </td>
+                          ))}
+                          <td className="num">{r.set_count}</td>
+                          <td className="num">{r.sold_count}</td>
                           <td className="num">
-                            <strong>{s.set_count - s.sold_count}</strong>
+                            <strong>{r.set_count - r.sold_count}</strong>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-          )}
-        </>
+              </div>
+            )
+          })}
+        </div>
       )}
-    </section>
+      <small className="muted">{t('Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.')}</small>
+    </div>
   )
 }

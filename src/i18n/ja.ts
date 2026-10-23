@@ -772,4 +772,8 @@ export const ja: Record<string, string> = {
   'Ra quán {shop} · Cho công ty {company} · Về nhà {home}': '店舗へ {shop} · 会社へ {company} · 自宅へ {home}',
   'Chưa phân phối set nào cho công ty.': '会社に配分したセットはまだありません。',
   'Set': 'セット',
+  'Chưa có lần phân phối ra quán nào.': '店舗への配分はまだありません。',
+  'Số hũ đã phân phối ra quán mỗi ngày. Số đỏ nhỏ (−n) là hũ chuyển lại từ quán về nhà trong ngày.': '毎日店舗へ配分した個数です。小さな赤い数字（−n）はその日に店舗から自宅へ戻した個数です。',
+  '{sets} set · đã bán {sold}': '{sets}セット · 販売{sold}',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.': '各行はセットの種類で、列の数字は1セットに入る種類別の個数です。',
 }
