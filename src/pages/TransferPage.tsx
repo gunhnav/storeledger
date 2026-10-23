@@ -12,6 +12,7 @@ import { MAX_QTY, errorMessage, formatDate, notFuture, todayVN } from '../lib/fo
 import type { Product } from '../types/database'
 import { TransferGrid } from './TransferGrid'
 import { CompanyDistribution } from './CompanyDistribution'
+import { TransferHistory } from './TransferHistory'
 
 type FormValues = { transfer_date: string; note: string }
 type Line = { product_id: string; qty: string }
@@ -24,7 +25,8 @@ export function TransferPage() {
   const { t } = useI18n()
   const { current } = useStore()
   const [params, setParams] = useSearchParams()
-  const to = params.get('to') === 'company' ? 'company' : params.get('to') === 'home' ? 'home' : 'shop'
+  const toParam = params.get('to')
+  const to = toParam === 'company' || toParam === 'home' || toParam === 'history' ? toParam : 'shop'
   const view = params.get('view') === 'grid' ? 'grid' : 'form'
   if (!current) return null
   const go = (next: { to?: string; view?: string }) => {
@@ -32,6 +34,7 @@ export function TransferPage() {
     const search: Record<string, string> = {}
     if (merged.to === 'company') search.to = 'company'
     else if (merged.to === 'home') search.to = 'home'
+    else if (merged.to === 'history') search.to = 'history'
     else if (merged.view === 'grid') search.view = 'grid'
     setParams(search, { replace: true })
   }
@@ -58,6 +61,7 @@ export function TransferPage() {
           ['shop', 'Ra quán'],
           ['company', 'Cho công ty'],
           ['home', 'Về nhà'],
+          ['history', 'Lịch sử'],
         ], (v) => go({ to: v }))}
         {to === 'shop' &&
           segmented('Cách nhập', view, [
@@ -65,7 +69,9 @@ export function TransferPage() {
             ['grid', 'Dạng lưới theo ngày'],
           ], (v) => go({ view: v }))}
       </div>
-      {to === 'company' ? (
+      {to === 'history' ? (
+        <TransferHistory key={current.id} storeId={current.id} />
+      ) : to === 'company' ? (
         <CompanyDistribution key={current.id} storeId={current.id} />
       ) : to === 'home' ? (
         <TransferForm key={`${current.id}-back`} storeId={current.id} mode="back" />

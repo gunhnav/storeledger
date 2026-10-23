@@ -259,6 +259,17 @@ export type BundauReport = {
   hours: { hour: number; orders: number; gross: number }[]
 }
 
+export type CompanySetHistoryRow = {
+  id: string
+  distribution_date: string
+  set_size: number
+  set_count: number
+  sold_count: number
+  mix: Record<string, number>
+  note: string | null
+  created_at: string
+}
+
 export type CreateSaleArgs = {
   p_store_id: string
   p_sale_date: string | null
@@ -486,6 +497,8 @@ export type Database = {
       is_store_member: { Args: { p_store_id: string }; Returns: boolean }
       create_purchase: { Args: CreatePurchaseArgs; Returns: string }
       create_transfer: { Args: CreateTransferArgs; Returns: string }
+      // supabase/migrations/20261023160000_company_sets_history.sql
+      get_company_sets_history: { Args: { p_store_id: string; p_from?: string | null; p_to?: string | null }; Returns: CompanySetHistoryRow[] }
       // supabase/migrations/20261023120000_shop_return.sql
       create_shop_return: {
         Args: { p_store_id: string; p_product_id: string; p_quantity: number; p_transfer_date: string | null; p_note: string | null }
