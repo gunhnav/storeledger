@@ -5,7 +5,7 @@ import { join } from 'node:path'
 
 const VN = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸ]/
 // Không phải chữ hiển thị: dữ liệu ghi vào DB, log console, tên thương hiệu / ngôn ngữ
-const IGNORE = new Set(['Giá ban đầu', 'Tự vào quán khi nhập hàng', 'Lỗi giao diện:', 'Sổ Xanh', 'Tiếng Việt', 'đ', 'Đ'])
+const IGNORE = new Set(['Giá ban đầu', 'Tự vào quán khi nhập hàng', 'Lấy từ quán cho công ty', 'Lỗi giao diện:', 'Sổ Xanh', 'Tiếng Việt', 'đ', 'Đ'])
 const EXTRA = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'Email']
 
 const files = []

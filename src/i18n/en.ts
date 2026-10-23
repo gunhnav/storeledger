@@ -776,4 +776,6 @@ export const en: Record<string, string> = {
   'Số hũ đã phân phối ra quán mỗi ngày. Số đỏ nhỏ (−n) là hũ chuyển lại từ quán về nhà trong ngày.': 'Jars distributed to the shop each day. A small red number (−n) is jars moved back from the shop to home that day.',
   '{sets} set · đã bán {sold}': '{sets} sets · {sold} sold',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.': 'Each row is a set type; the number in a column is the jars of that kind in 1 set.',
+  'Trong đó lấy từ hàng ở quán: {list}': 'Of which taken from shop stock: {list}',
+  'Số hũ đã phân phối ra quán mỗi ngày. Số nhỏ (−n) là hũ chuyển lại từ quán về nhà (mục Về nhà) trong ngày.': 'Jars distributed to the shop each day. A small number (−n) is jars moved back from the shop to home (Back home tab) that day.',
 }

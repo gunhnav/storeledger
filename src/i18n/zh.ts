@@ -776,4 +776,6 @@ export const zh: Record<string, string> = {
   'Số hũ đã phân phối ra quán mỗi ngày. Số đỏ nhỏ (−n) là hũ chuyển lại từ quán về nhà trong ngày.': '每天分配到店里的罐数。红色小数字（−n）是当天从店里转回仓库的罐数。',
   '{sets} set · đã bán {sold}': '{sets} 套 · 已售 {sold}',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.': '每行是一种套餐；列中的数字是 1 套里该口味的罐数。',
+  'Trong đó lấy từ hàng ở quán: {list}': '其中取自店里库存：{list}',
+  'Số hũ đã phân phối ra quán mỗi ngày. Số nhỏ (−n) là hũ chuyển lại từ quán về nhà (mục Về nhà) trong ngày.': '每天分配到店里的罐数。小数字（−n）是当天从店里转回仓库（“退回仓库”）的罐数。',
 }

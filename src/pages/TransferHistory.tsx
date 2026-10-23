@@ -5,7 +5,9 @@ import { useI18n } from '../lib/i18n'
 import { errorMessage, formatDate } from '../lib/format'
 import type { CompanySetHistoryRow } from '../types/database'
 
-type Transfer = { transfer_date: string; product_id: string; quantity: number; destination: string }
+type Transfer = { transfer_date: string; product_id: string; quantity: number; destination: string; note: string | null }
+// Ghi chú của bước tự chuyển quán -> nhà khi phân phối cho công ty mà nhà thiếu hàng (xem create_company_distribution)
+const FROM_SHOP_NOTE = 'Lấy từ quán cho công ty'
 type Item = { id: string; name: string }
 type Loaded = { key: string; transfers: Transfer[]; sets: CompanySetHistoryRow[]; items: Item[] }
 
@@ -24,7 +26,7 @@ export function TransferHistory({ storeId }: { storeId: string }) {
   useEffect(() => {
     if (badRange) return
     let cancelled = false
-    let query = supabase.from('stock_transfers').select('transfer_date, product_id, quantity, destination').eq('store_id', storeId)
+    let query = supabase.from('stock_transfers').select('transfer_date, product_id, quantity, destination, note').eq('store_id', storeId)
     if (filter.from) query = query.gte('transfer_date', filter.from)
     if (filter.to) query = query.lte('transfer_date', filter.to)
     Promise.all([
@@ -85,6 +87,8 @@ function HomeHistory({ data }: { data: Loaded }) {
   const days = new Map<string, Map<string, { out: number; back: number }>>()
   for (const x of data.transfers) {
     if (x.destination !== 'shop' && x.destination !== 'home') continue
+    // Hàng lấy từ quán cho công ty chỉ đi qua nhà trong một thao tác, không phải chuyển về nhà: tính ở phần Công ty
+    if (x.destination === 'home' && x.note === FROM_SHOP_NOTE) continue
     const day = days.get(x.transfer_date) ?? new Map()
     const cell = day.get(x.product_id) ?? { out: 0, back: 0 }
     if (x.destination === 'shop') cell.out += x.quantity
@@ -151,7 +155,7 @@ function HomeHistory({ data }: { data: Loaded }) {
           </table>
         </div>
       )}
-      <small className="muted">{t('Số hũ đã phân phối ra quán mỗi ngày. Số đỏ nhỏ (−n) là hũ chuyển lại từ quán về nhà trong ngày.')}</small>
+      <small className="muted">{t('Số hũ đã phân phối ra quán mỗi ngày. Số nhỏ (−n) là hũ chuyển lại từ quán về nhà (mục Về nhà) trong ngày.')}</small>
     </div>
   )
 }
@@ -161,6 +165,15 @@ function CompanyHistory({ data }: { data: Loaded }) {
   const byDate = new Map<string, CompanySetHistoryRow[]>()
   for (const s of data.sets) byDate.set(s.distribution_date, [...(byDate.get(s.distribution_date) ?? []), s])
   const dates = [...byDate.keys()].sort().reverse()
+  // Hàng lấy thẳng từ quán cho công ty: ngày -> món -> số hũ
+  const fromShop = new Map<string, Map<string, number>>()
+  for (const x of data.transfers) {
+    if (x.destination !== 'home' || x.note !== FROM_SHOP_NOTE) continue
+    const day = fromShop.get(x.transfer_date) ?? new Map<string, number>()
+    day.set(x.product_id, (day.get(x.product_id) ?? 0) + x.quantity)
+    fromShop.set(x.transfer_date, day)
+  }
+  const names = new Map(data.items.map((i) => [i.id, i.name]))
   // Chỉ hiện cột của loại có trong set của ngày đó
   const usedIds = (rows: CompanySetHistoryRow[]) => data.items.filter((i) => rows.some((r) => (r.mix[i.id] ?? 0) > 0))
 
@@ -181,6 +194,13 @@ function CompanyHistory({ data }: { data: Loaded }) {
                 <h3 className="history-day">
                   {formatDate(d)} <span className="muted">· {t('{sets} set · đã bán {sold}', { sets, sold })}</span>
                 </h3>
+                {fromShop.get(d) && (
+                  <p className="muted">
+                    {t('Trong đó lấy từ hàng ở quán: {list}', {
+                      list: [...(fromShop.get(d) ?? [])].map(([id, n]) => `${n} ${names.get(id) ?? '?'}`).join(', '),
+                    })}
+                  </p>
+                )}
                 <div className="table-wrap">
                   <table>
                     <thead>
