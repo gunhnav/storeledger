@@ -86,7 +86,7 @@ export type StockTransfer = {
   quantity: number
   transfer_date: string
   note: string | null
-  destination: TransferDestination
+  destination: TransferDestination | 'home'
   created_by: string | null
   created_at: string
 }
@@ -486,6 +486,11 @@ export type Database = {
       is_store_member: { Args: { p_store_id: string }; Returns: boolean }
       create_purchase: { Args: CreatePurchaseArgs; Returns: string }
       create_transfer: { Args: CreateTransferArgs; Returns: string }
+      // supabase/migrations/20261023120000_shop_return.sql
+      create_shop_return: {
+        Args: { p_store_id: string; p_product_id: string; p_quantity: number; p_transfer_date: string | null; p_note: string | null }
+        Returns: string
+      }
       create_sale: { Args: CreateSaleArgs; Returns: string }
       get_stock_status: { Args: { p_store_id: string }; Returns: StockStatusRow[] }
       get_pnl: { Args: GetPnlArgs; Returns: PnlRow[] }

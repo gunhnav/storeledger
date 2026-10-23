@@ -24,13 +24,14 @@ export function TransferPage() {
   const { t } = useI18n()
   const { current } = useStore()
   const [params, setParams] = useSearchParams()
-  const to = params.get('to') === 'company' ? 'company' : 'shop'
+  const to = params.get('to') === 'company' ? 'company' : params.get('to') === 'home' ? 'home' : 'shop'
   const view = params.get('view') === 'grid' ? 'grid' : 'form'
   if (!current) return null
   const go = (next: { to?: string; view?: string }) => {
     const merged = { to, view, ...next }
     const search: Record<string, string> = {}
     if (merged.to === 'company') search.to = 'company'
+    else if (merged.to === 'home') search.to = 'home'
     else if (merged.view === 'grid') search.view = 'grid'
     setParams(search, { replace: true })
   }
@@ -56,6 +57,7 @@ export function TransferPage() {
         {segmented('Nơi nhận', to, [
           ['shop', 'Ra quán'],
           ['company', 'Cho công ty'],
+          ['home', 'Về nhà'],
         ], (v) => go({ to: v }))}
         {to === 'shop' &&
           segmented('Cách nhập', view, [
@@ -65,6 +67,8 @@ export function TransferPage() {
       </div>
       {to === 'company' ? (
         <CompanyDistribution key={current.id} storeId={current.id} />
+      ) : to === 'home' ? (
+        <TransferForm key={`${current.id}-back`} storeId={current.id} mode="back" />
       ) : view === 'grid' ? (
         <TransferGrid key={current.id} storeId={current.id} />
       ) : (
@@ -74,7 +78,10 @@ export function TransferPage() {
   )
 }
 
-function TransferForm({ storeId }: { storeId: string }) {
+// mode 'out': nhà -> quán (Phân phối). mode 'back': quán -> nhà (chuyển lại, ví dụ lấy hũ từ quán lên công ty bán:
+// chuyển về nhà rồi phân phối cho công ty).
+function TransferForm({ storeId, mode = 'out' }: { storeId: string; mode?: 'out' | 'back' }) {
+  const back = mode === 'back'
   const { t } = useI18n()
   const toast = useToast()
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
@@ -94,9 +101,15 @@ function TransferForm({ storeId }: { storeId: string }) {
   const quick = quickMode ?? stocked.length <= QUICK_MAX
   const byId = new Map(stocked.map((p) => [p.id, p]))
 
-  // Chuyển nhiều hơn số ở nhà thì cảnh báo và không cho lưu
+  // Chuyển nhiều hơn số đang có ở nơi chuyển đi (nhà, hoặc quán khi chuyển về nhà) thì cảnh báo và không cho lưu
   const overHome = (line: Line) => {
-    const home = stock.get(line.product_id)?.qty_home ?? 0
+    const row = stock.get(line.product_id)
+    if (back) {
+      const shop = row?.qty_shop ?? 0
+      if ((Number(line.qty) || 0) <= shop) return null
+      return shop === 0 ? t('Ở quán hết hàng') : t('Vượt số ở quán (còn {shop})', { shop })
+    }
+    const home = row?.qty_home ?? 0
     if ((Number(line.qty) || 0) <= home) return null
     return home === 0 ? t('Ở nhà hết hàng: nhập hàng trước') : t('Vượt số ở nhà (còn {home})', { home })
   }
@@ -142,14 +155,16 @@ function TransferForm({ storeId }: { storeId: string }) {
     const done: string[] = []
     const failed: { line: Line; message: string }[] = []
     for (const line of lines) {
-      const { error } = await supabase.rpc('create_transfer', {
+      const args = {
         p_store_id: storeId,
         p_product_id: line.product_id,
         p_quantity: Number(line.qty),
         p_transfer_date: values.transfer_date || null,
         p_note: values.note.trim() || null,
-        p_destination: 'shop',
-      })
+      }
+      const { error } = back
+        ? await supabase.rpc('create_shop_return', args)
+        : await supabase.rpc('create_transfer', { ...args, p_destination: 'shop' })
       const name = byId.get(line.product_id)?.name ?? ''
       if (error) failed.push({ line, message: `${name}: ${errorMessage(error)}` })
       else done.push(`${line.qty} ${name}`)
@@ -158,7 +173,9 @@ function TransferForm({ storeId }: { storeId: string }) {
     reload()
     if (failed.length === 0) {
       toast.success(
-        t('Đã phân phối ngày {date}: {list}', { date: formatDate(values.transfer_date), list: done.join(', ') }),
+        back
+          ? t('Đã chuyển về nhà ngày {date}: {list}', { date: formatDate(values.transfer_date), list: done.join(', ') })
+          : t('Đã phân phối ngày {date}: {list}', { date: formatDate(values.transfer_date), list: done.join(', ') }),
       )
       reset({ transfer_date: values.transfer_date, note: '' })
       setLines([])
@@ -168,8 +185,8 @@ function TransferForm({ storeId }: { storeId: string }) {
     setResult({
       ok: false,
       text:
-        (done.length > 0 ? t('Đã phân phối: {list}. ', { list: done.join(', ') }) : '') +
-        t('Chưa phân phối (còn trong form để lưu lại): {list}', { list: failed.map((f) => f.message).join('; ') }),
+        (done.length > 0 ? t(back ? 'Đã chuyển về nhà: {list}. ' : 'Đã phân phối: {list}. ', { list: done.join(', ') }) : '') +
+        t(back ? 'Chưa chuyển (còn trong form để lưu lại): {list}' : 'Chưa phân phối (còn trong form để lưu lại): {list}', { list: failed.map((f) => f.message).join('; ') }),
     })
   }
 
@@ -180,12 +197,19 @@ function TransferForm({ storeId }: { storeId: string }) {
     const row = stock.get(p.id)
     return t('Ở nhà: {value} · Ở quán: {value2}', { value: row?.qty_home ?? 0, value2: row?.qty_shop ?? 0 })
   }
-  const badge = (p: Product) => ((stock.get(p.id)?.qty_home ?? 0) === 0 ? t('Ở nhà hết') : null)
+  const badge = (p: Product) =>
+    back
+      ? (stock.get(p.id)?.qty_shop ?? 0) === 0
+        ? t('Ở quán hết')
+        : null
+      : (stock.get(p.id)?.qty_home ?? 0) === 0
+        ? t('Ở nhà hết')
+        : null
   const lineFor = (id: string) => lines.find((l) => l.product_id === id)
   const hasWarning = lines.some((l) => overHome(l) !== null)
   const totalQty = lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0)
 
-  const submitLabel = isSubmitting ? t('Đang lưu…') : t('Phân phối')
+  const submitLabel = isSubmitting ? t('Đang lưu…') : back ? t('Chuyển về nhà') : t('Phân phối')
   const canSubmit = !isSubmitting && !hasWarning && lines.length > 0
 
   return (
@@ -193,7 +217,7 @@ function TransferForm({ storeId }: { storeId: string }) {
       <form className="pos" onSubmit={handleSubmit(onSubmit)}>
         <div className="pos-main card">
           <div className="field">
-            {t('Ngày phân phối')}
+            {back ? t('Ngày chuyển') : t('Ngày phân phối')}
             <Controller
               control={control}
               name="transfer_date"
@@ -203,7 +227,7 @@ function TransferForm({ storeId }: { storeId: string }) {
                   value={field.value}
                   onChange={field.onChange}
                   max={todayVN()}
-                  label={t('Ngày phân phối')}
+                  label={back ? t('Ngày chuyển') : t('Ngày phân phối')}
                   invalid={!!fieldState.error}
                 />
               )}
@@ -243,7 +267,7 @@ function TransferForm({ storeId }: { storeId: string }) {
 
         <aside className="pos-side card">
           <div className="pos-side-head">
-            <h3>{t('Phân phối')}</h3>
+            <h3>{back ? t('Chuyển về nhà') : t('Phân phối')}</h3>
             <span className="count-pill">{t('{count} món', { count: lines.length })}</span>
           </div>
 
@@ -289,7 +313,11 @@ function TransferForm({ storeId }: { storeId: string }) {
                         min={1}
                         label={t('số lượng phân phối {name}', { name })}
                       />
-                      <span className="subtotal">{t('Ở nhà còn {count}', { count: stock.get(line.product_id)?.qty_home ?? 0 })}</span>
+                      <span className="subtotal">
+                        {back
+                          ? t('Ở quán còn {count}', { count: stock.get(line.product_id)?.qty_shop ?? 0 })
+                          : t('Ở nhà còn {count}', { count: stock.get(line.product_id)?.qty_home ?? 0 })}
+                      </span>
                     </div>
                     {warn && <small className="warn">{warn}</small>}
                   </div>

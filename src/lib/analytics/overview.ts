@@ -48,8 +48,10 @@ export function stockRows(input: AnalyticsInput): StockRow[] {
       const transfers = input.transfers.filter((t) => t.productId === p.id)
       const sales = input.sales.filter((s) => s.productId === p.id)
       const isCompany = (x: { destination?: string; channel?: string }) => x.destination === 'company' || x.channel === 'company'
-      const moved = sum(transfers.map((t) => t.qty))
-      const movedShop = sum(transfers.filter((t) => !isCompany(t)).map((t) => t.qty))
+      // Chuyển về nhà (destination 'home') trừ khỏi số đã mang khỏi nhà và số đã ra quán
+      const signed = (t: { qty: number; destination?: string }) => (t.destination === 'home' ? -t.qty : t.qty)
+      const moved = sum(transfers.map(signed))
+      const movedShop = sum(transfers.filter((t) => !isCompany(t)).map(signed))
       const sold = sum(sales.filter((s) => !isCompany(s)).map((s) => s.qty))
       const company = moved - movedShop - sum(sales.filter(isCompany).map((s) => s.qty))
       const home = purchased - moved

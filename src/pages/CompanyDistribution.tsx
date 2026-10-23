@@ -193,6 +193,17 @@ export function CompanyDistribution({ storeId }: { storeId: string }) {
             })}
           </p>
         )}
+        {/* Đã lấy hũ từ quán lên công ty: chuyển lại từ quán về nhà (Phân phối → Về nhà) rồi phân phối cho công ty */}
+        {over.some((o) => (stock.get(o.productId)?.qty_shop ?? 0) >= o.want - o.home) && (
+          <p className="muted">
+            {t('Quán còn hàng: {list}. Vào Phân phối → Về nhà để chuyển lại, rồi phân phối cho công ty.', {
+              list: over
+                .filter((o) => (stock.get(o.productId)?.qty_shop ?? 0) >= o.want - o.home)
+                .map((o) => `${names.get(o.productId)} (${stock.get(o.productId)?.qty_shop ?? 0})`)
+                .join(', '),
+            })}
+          </p>
+        )}
         {result && <p className="error">{result}</p>}
         <button type="button" className="primary block" disabled={!canSave} onClick={save}>
           {saving ? t('Đang lưu…') : t('Phân phối cho công ty')}

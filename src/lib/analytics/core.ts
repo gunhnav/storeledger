@@ -154,7 +154,7 @@ export function dailyResults(input: AnalyticsInput, fifo: FifoResult, from: stri
   const results: DailyResult[] = []
   for (const day of dayRange(start, to)) {
     for (const b of input.batchLines) if (b.date === day && b.productId in purchased) purchased[b.productId] += b.qty
-    for (const t of input.transfers) if (t.date === day && t.productId in moved) moved[t.productId] += t.qty
+    for (const t of input.transfers) if (t.date === day && t.productId in moved) moved[t.productId] += t.destination === 'home' ? -t.qty : t.qty
     for (const s of input.sales) if (s.date === day && s.productId in sold) sold[s.productId] += s.qty
 
     const revenue = revenueByDay.get(day) ?? 0
