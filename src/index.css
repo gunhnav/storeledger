@@ -3480,3 +3480,12 @@ input.overridden {
 .total-row td {
   border-top: 2px solid var(--border);
 }
+.history-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 640px;
+}
+.history-table th.num,
+.history-table td.num {
+  width: 110px;
+}

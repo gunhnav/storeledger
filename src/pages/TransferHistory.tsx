@@ -103,12 +103,12 @@ function HomeHistory({ data }: { data: Loaded }) {
 
   return (
     <div>
-      <h2>{t('Nhà → Quán')}</h2>
+      <h2>{t('Quán')}</h2>
       {dates.length === 0 ? (
         <p className="muted">{t('Chưa có lần phân phối ra quán nào.')}</p>
       ) : (
         <div className="table-wrap">
-          <table>
+          <table className="history-table">
             <thead>
               <tr>
                 <th>{t('Ngày')}</th>
@@ -174,8 +174,8 @@ function CompanyHistory({ data }: { data: Loaded }) {
     fromShop.set(x.transfer_date, day)
   }
   const names = new Map(data.items.map((i) => [i.id, i.name]))
-  // Chỉ hiện cột của loại có trong ít nhất một set
-  const cols = data.items.filter((i) => data.sets.some((r) => (r.mix[i.id] ?? 0) > 0))
+  // Cùng các cột loại như bảng Quán để hai bảng thẳng hàng
+  const cols = data.items
   // Tổng hũ của một dòng (mỗi loại × số set) và của cả bảng theo từng loại
   const jars = (r: CompanySetHistoryRow, id: string) => (r.mix[id] ?? 0) * r.set_count
   const colTotal = (id: string) => data.sets.reduce((s, r) => s + jars(r, id), 0)
@@ -187,7 +187,7 @@ function CompanyHistory({ data }: { data: Loaded }) {
         <p className="muted">{t('Chưa phân phối set nào cho công ty.')}</p>
       ) : (
         <div className="table-wrap">
-          <table>
+          <table className="history-table">
             <thead>
               <tr>
                 <th>{t('Set')}</th>
