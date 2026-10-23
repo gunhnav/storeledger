@@ -758,4 +758,6 @@ export const ko: Record<string, string> = {
   'Đã chuyển về nhà: {list}. ': '집으로 이동됨: {list}. ',
   'Chưa chuyển (còn trong form để lưu lại): {list}': '아직 이동 안 됨 (다시 저장하도록 폼에 남김): {list}',
   'Quán còn hàng: {list}. Vào Phân phối → Về nhà để chuyển lại, rồi phân phối cho công ty.': '매장에 재고가 있습니다: {list}. 배분 → 집으로 반환에서 되돌린 뒤 회사에 배분하세요.',
+  'Vượt số hàng (nhà + quán): {list}': '보유 수량 초과 (집 + 매장): {list}',
+  'Nhà {home} · Quán {shop}': '집 {home} · 매장 {shop}',
 }

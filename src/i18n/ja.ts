@@ -758,4 +758,6 @@ export const ja: Record<string, string> = {
   'Đã chuyển về nhà: {list}. ': '自宅へ移動済み: {list}。',
   'Chưa chuyển (còn trong form để lưu lại): {list}': '未移動（再保存のためフォームに残しています）: {list}',
   'Quán còn hàng: {list}. Vào Phân phối → Về nhà để chuyển lại, rồi phân phối cho công ty.': '店舗に在庫があります: {list}。配分 → 自宅へ戻すで戻してから会社に配分してください。',
+  'Vượt số hàng (nhà + quán): {list}': '在庫超過（自宅＋店舗）: {list}',
+  'Nhà {home} · Quán {shop}': '自宅 {home} · 店舗 {shop}',
 }

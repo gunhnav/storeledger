@@ -44,7 +44,8 @@ export function CompanyDistribution({ storeId }: { storeId: string }) {
 
   const stocked = products.filter((p) => p.tracks_stock)
   const names = new Map(stocked.map((p) => [p.id, p.name]))
-  const home = new Map(stocked.map((p) => [p.id, stock.get(p.id)?.qty_home ?? 0]))
+  // Công ty lấy được cả hàng ở nhà lẫn ở quán (thiếu ở nhà thì DB tự chuyển phần thiếu từ quán về nhà)
+  const home = new Map(stocked.map((p) => [p.id, (stock.get(p.id)?.qty_home ?? 0) + (stock.get(p.id)?.qty_shop ?? 0)]))
   const totals = setTotals(groups)
   const over = overHomeSets(totals, home)
   const issues = groups.map(groupIssue)
@@ -176,7 +177,7 @@ export function CompanyDistribution({ storeId }: { storeId: string }) {
               return (
                 <li key={productId} className={warn ? 'has-warn' : undefined}>
                   <span className="summary-name">{names.get(productId)}</span>
-                  <span className="summary-qty">{t('Ở nhà còn {count}', { count: home.get(productId) ?? 0 })}</span>
+                  <span className="summary-qty">{t('Nhà {home} · Quán {shop}', { home: stock.get(productId)?.qty_home ?? 0, shop: stock.get(productId)?.qty_shop ?? 0 })}</span>
                   <strong>{qty}</strong>
                 </li>
               )
@@ -188,19 +189,8 @@ export function CompanyDistribution({ storeId }: { storeId: string }) {
         </div>
         {over.length > 0 && (
           <p className="error">
-            {t('Vượt số ở nhà: {list}', {
+            {t('Vượt số hàng (nhà + quán): {list}', {
               list: over.map((o) => `${names.get(o.productId)} (${o.want}/${o.home})`).join(', '),
-            })}
-          </p>
-        )}
-        {/* Đã lấy hũ từ quán lên công ty: chuyển lại từ quán về nhà (Phân phối → Về nhà) rồi phân phối cho công ty */}
-        {over.some((o) => (stock.get(o.productId)?.qty_shop ?? 0) >= o.want - o.home) && (
-          <p className="muted">
-            {t('Quán còn hàng: {list}. Vào Phân phối → Về nhà để chuyển lại, rồi phân phối cho công ty.', {
-              list: over
-                .filter((o) => (stock.get(o.productId)?.qty_shop ?? 0) >= o.want - o.home)
-                .map((o) => `${names.get(o.productId)} (${stock.get(o.productId)?.qty_shop ?? 0})`)
-                .join(', '),
             })}
           </p>
         )}

@@ -758,4 +758,6 @@ export const en: Record<string, string> = {
   'Đã chuyển về nhà: {list}. ': 'Moved back home: {list}. ',
   'Chưa chuyển (còn trong form để lưu lại): {list}': 'Not moved yet (kept in the form to retry): {list}',
   'Quán còn hàng: {list}. Vào Phân phối → Về nhà để chuyển lại, rồi phân phối cho công ty.': 'The shop still has stock: {list}. Go to Distribution → Back home to move it back, then distribute to the company.',
+  'Vượt số hàng (nhà + quán): {list}': 'More than available (home + shop): {list}',
+  'Nhà {home} · Quán {shop}': 'Home {home} · Shop {shop}',
 }

@@ -758,4 +758,6 @@ export const zh: Record<string, string> = {
   'Đã chuyển về nhà: {list}. ': '已转回仓库：{list}。',
   'Chưa chuyển (còn trong form để lưu lại): {list}': '尚未转移（保留在表单中以重新保存）：{list}',
   'Quán còn hàng: {list}. Vào Phân phối → Về nhà để chuyển lại, rồi phân phối cho công ty.': '店里还有货：{list}。请到“分配 → 退回仓库”转回后，再分配给公司。',
+  'Vượt số hàng (nhà + quán): {list}': '超过可用数量（仓库 + 店里）：{list}',
+  'Nhà {home} · Quán {shop}': '仓库 {home} · 店里 {shop}',
 }
