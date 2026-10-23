@@ -8,13 +8,16 @@ const VN = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềế
 const IGNORE = new Set(['Giá ban đầu', 'Tự vào quán khi nhập hàng', 'Lấy từ quán cho công ty', 'Lỗi giao diện:', 'Sổ Xanh', 'Tiếng Việt', 'đ', 'Đ'])
 const EXTRA = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'Email']
 
+// Trang bán hàng công khai: tiếng Việt cố định cho khách, không đi qua bộ dịch
+const SKIP_FILES = new Set(['ShopPage.tsx', 'storefront.ts'])
+
 const files = []
 const walk = (dir) => {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) {
       if (name !== 'i18n') walk(p)
-    } else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) files.push(p)
+    } else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) && !SKIP_FILES.has(name)) files.push(p)
   }
 }
 walk('src')

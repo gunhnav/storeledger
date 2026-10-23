@@ -19,6 +19,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { PurchasePage } from './pages/PurchasePage'
 import { ReportsPage } from './pages/ReportsPage'
+import { ShopPage } from './pages/ShopPage'
 import { SalePage } from './pages/SalePage'
 import { StaffPage } from './pages/StaffPage'
 import { StockPage } from './pages/StockPage'
@@ -98,6 +99,9 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* Trang bán hàng công khai, không cần đăng nhập */}
+      <Route path="/hogi" element={<ShopPage code="hogi" />} />
+      <Route path="/shop/:code" element={<ShopPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
           <Route index element={<Navigate to="/sales" replace />} />

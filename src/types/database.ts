@@ -259,6 +259,12 @@ export type BundauReport = {
   hours: { hour: number; orders: number; gross: number }[]
 }
 
+// get_public_menu: trang bán hàng công khai (không có số lượng, giá vốn). null = quán không công khai
+export type PublicMenuResult = {
+  store: { name: string; phone: string | null; tagline: string | null }
+  items: { id: string; name: string; category: string | null; price: number | null; status: 'in_stock' | 'low' | 'out' }[]
+} | null
+
 export type CompanySetHistoryRow = {
   id: string
   distribution_date: string
@@ -497,6 +503,8 @@ export type Database = {
       is_store_member: { Args: { p_store_id: string }; Returns: boolean }
       create_purchase: { Args: CreatePurchaseArgs; Returns: string }
       create_transfer: { Args: CreateTransferArgs; Returns: string }
+      // supabase/migrations/20261024090000_public_storefront.sql (gọi được cả khi chưa đăng nhập)
+      get_public_menu: { Args: { p_store_code: string }; Returns: PublicMenuResult }
       // supabase/migrations/20261023160000_company_sets_history.sql
       get_company_sets_history: { Args: { p_store_id: string; p_from?: string | null; p_to?: string | null }; Returns: CompanySetHistoryRow[] }
       // supabase/migrations/20261023120000_shop_return.sql
