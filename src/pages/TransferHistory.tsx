@@ -174,8 +174,13 @@ function CompanyHistory({ data }: { data: Loaded }) {
     fromShop.set(x.transfer_date, day)
   }
   const names = new Map(data.items.map((i) => [i.id, i.name]))
-  // Chỉ hiện cột của loại có trong set của ngày đó
-  const usedIds = (rows: CompanySetHistoryRow[]) => data.items.filter((i) => rows.some((r) => (r.mix[i.id] ?? 0) > 0))
+  // Chỉ hiện cột của loại có trong ít nhất một set
+  const cols = data.items.filter((i) => data.sets.some((r) => (r.mix[i.id] ?? 0) > 0))
+  // Tổng hũ của một dòng (mỗi loại × số set) và của cả bảng theo từng loại
+  const jars = (r: CompanySetHistoryRow, id: string) => (r.mix[id] ?? 0) * r.set_count
+  const rowJars = (r: CompanySetHistoryRow) => cols.reduce((s, i) => s + jars(r, i.id), 0)
+  const colTotal = (id: string) => data.sets.reduce((s, r) => s + jars(r, id), 0)
+  const grand = cols.reduce((s, i) => s + colTotal(i.id), 0)
 
   return (
     <div>
@@ -183,66 +188,66 @@ function CompanyHistory({ data }: { data: Loaded }) {
       {dates.length === 0 ? (
         <p className="muted">{t('Chưa phân phối set nào cho công ty.')}</p>
       ) : (
-        <div className="report-stack">
-          {dates.map((d) => {
-            const rows = byDate.get(d) ?? []
-            const cols = usedIds(rows)
-            const sets = rows.reduce((s, r) => s + r.set_count, 0)
-            const sold = rows.reduce((s, r) => s + r.sold_count, 0)
-            return (
-              <div key={d}>
-                <h3 className="history-day">
-                  {formatDate(d)} <span className="muted">· {t('{sets} set · đã bán {sold}', { sets, sold })}</span>
-                </h3>
-                {fromShop.get(d) && (
-                  <p className="muted">
-                    {t('Trong đó lấy từ hàng ở quán: {list}', {
-                      list: [...(fromShop.get(d) ?? [])].map(([id, n]) => `${n} ${names.get(id) ?? '?'}`).join(', '),
-                    })}
-                  </p>
-                )}
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t('Set')}</th>
-                        {cols.map((i) => (
-                          <th key={i.id} className="num">
-                            {i.name}
-                          </th>
-                        ))}
-                        <th className="num">{t('Số set')}</th>
-                        <th className="num">{t('Đã bán')}</th>
-                        <th className="num">{t('Còn lại')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r) => (
-                        <tr key={r.id}>
-                          <td>
-                            <span className="badge badge-ok">{t('Set {size}', { size: r.set_size })}</span>
-                          </td>
-                          {cols.map((i) => (
-                            <td key={i.id} className="num">
-                              {(r.mix[i.id] ?? 0) > 0 ? <strong>{r.mix[i.id]}</strong> : <span className="muted">—</span>}
-                            </td>
-                          ))}
-                          <td className="num">{r.set_count}</td>
-                          <td className="num">{r.sold_count}</td>
-                          <td className="num">
-                            <strong>{r.set_count - r.sold_count}</strong>
-                          </td>
-                        </tr>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t('Set')}</th>
+                {cols.map((i) => (
+                  <th key={i.id} className="num">
+                    {i.name}
+                  </th>
+                ))}
+                <th className="num">{t('Tổng số hũ')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dates.map((d) => {
+                const rows = byDate.get(d) ?? []
+                const taken = [...(fromShop.get(d) ?? [])].map(([id, n]) => `${n} ${names.get(id) ?? '?'}`).join(', ')
+                return [
+                  <tr key={d} className="group-row">
+                    <td colSpan={cols.length + 2}>
+                      <strong>{formatDate(d)}</strong>
+                      {taken && <span className="muted"> · {t('Trong đó lấy từ hàng ở quán: {list}', { list: taken })}</span>}
+                    </td>
+                  </tr>,
+                  ...rows.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <span className="badge badge-ok">{t('Set {size}', { size: r.set_size })}</span>
+                        {r.set_count > 1 && <small className="muted"> × {r.set_count}</small>}
+                      </td>
+                      {cols.map((i) => (
+                        <td key={i.id} className="num">
+                          {jars(r, i.id) > 0 ? <strong>{jars(r, i.id)}</strong> : <span className="muted">—</span>}
+                        </td>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
-          })}
+                      <td className="num">
+                        <strong>{rowJars(r)}</strong>
+                      </td>
+                    </tr>
+                  )),
+                ]
+              })}
+              <tr className="total-row">
+                <td>
+                  <strong>{t('Tổng số hũ theo loại')}</strong>
+                </td>
+                {cols.map((i) => (
+                  <td key={i.id} className="num">
+                    <strong>{colTotal(i.id)}</strong>
+                  </td>
+                ))}
+                <td className="num">
+                  <strong>{grand}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
-      <small className="muted">{t('Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.')}</small>
+      <small className="muted">{t('Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).')}</small>
     </div>
   )
 }

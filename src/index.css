@@ -3472,3 +3472,11 @@ input.overridden {
   margin: 8px 0;
   font-size: 15px;
 }
+.group-row td {
+  background: var(--surface-2);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.total-row td {
+  border-top: 2px solid var(--border);
+}

@@ -778,4 +778,7 @@ export const ja: Record<string, string> = {
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.': '各行はセットの種類で、列の数字は1セットに入る種類別の個数です。',
   'Trong đó lấy từ hàng ở quán: {list}': 'うち店舗在庫から: {list}',
   'Số hũ đã phân phối ra quán mỗi ngày. Số nhỏ (−n) là hũ chuyển lại từ quán về nhà (mục Về nhà) trong ngày.': '毎日店舗へ配分した個数です。小さな数字（−n）はその日に店舗から自宅へ戻した個数（「自宅へ戻す」）です。',
+  'Tổng số hũ': '合計個数',
+  'Tổng số hũ theo loại': '種類別の合計個数',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '各行はセットの種類で、列は種類別の個数（1セットの個数 × セット数）です。',
 }

@@ -778,4 +778,7 @@ export const ko: Record<string, string> = {
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại trong 1 set.': '각 행은 세트 종류이며 열의 숫자는 1세트에 든 종류별 병 수입니다.',
   'Trong đó lấy từ hàng ở quán: {list}': '이 중 매장 재고에서 가져옴: {list}',
   'Số hũ đã phân phối ra quán mỗi ngày. Số nhỏ (−n) là hũ chuyển lại từ quán về nhà (mục Về nhà) trong ngày.': '매일 매장으로 배분한 병 수입니다. 작은 숫자(−n)는 그날 매장에서 집으로 되돌린 병 수(집으로 반환 메뉴)입니다.',
+  'Tổng số hũ': '총 병 수',
+  'Tổng số hũ theo loại': '종류별 총 병 수',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '각 행은 세트 종류이며 열은 종류별 병 수(1세트의 병 수 × 세트 수)입니다.',
 }
