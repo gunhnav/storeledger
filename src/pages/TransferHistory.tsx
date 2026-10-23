@@ -178,9 +178,7 @@ function CompanyHistory({ data }: { data: Loaded }) {
   const cols = data.items.filter((i) => data.sets.some((r) => (r.mix[i.id] ?? 0) > 0))
   // Tổng hũ của một dòng (mỗi loại × số set) và của cả bảng theo từng loại
   const jars = (r: CompanySetHistoryRow, id: string) => (r.mix[id] ?? 0) * r.set_count
-  const rowJars = (r: CompanySetHistoryRow) => cols.reduce((s, i) => s + jars(r, i.id), 0)
   const colTotal = (id: string) => data.sets.reduce((s, r) => s + jars(r, id), 0)
-  const grand = cols.reduce((s, i) => s + colTotal(i.id), 0)
 
   return (
     <div>
@@ -198,7 +196,6 @@ function CompanyHistory({ data }: { data: Loaded }) {
                     {i.name}
                   </th>
                 ))}
-                <th className="num">{t('Tổng số hũ')}</th>
               </tr>
             </thead>
             <tbody>
@@ -207,10 +204,18 @@ function CompanyHistory({ data }: { data: Loaded }) {
                 const taken = [...(fromShop.get(d) ?? [])].map(([id, n]) => `${n} ${names.get(id) ?? '?'}`).join(', ')
                 return [
                   <tr key={d} className="group-row">
-                    <td colSpan={cols.length + 2}>
+                    <td>
                       <strong>{formatDate(d)}</strong>
-                      {taken && <span className="muted"> · {t('Trong đó lấy từ hàng ở quán: {list}', { list: taken })}</span>}
+                      {taken && <small className="muted"> · {t('Trong đó lấy từ hàng ở quán: {list}', { list: taken })}</small>}
                     </td>
+                    {cols.map((i) => {
+                      const sum = rows.reduce((n, r) => n + jars(r, i.id), 0)
+                      return (
+                        <td key={i.id} className="num">
+                          <strong>{sum > 0 ? sum : '—'}</strong>
+                        </td>
+                      )
+                    })}
                   </tr>,
                   ...rows.map((r) => (
                     <tr key={r.id}>
@@ -223,9 +228,6 @@ function CompanyHistory({ data }: { data: Loaded }) {
                           {jars(r, i.id) > 0 ? <strong>{jars(r, i.id)}</strong> : <span className="muted">—</span>}
                         </td>
                       ))}
-                      <td className="num">
-                        <strong>{rowJars(r)}</strong>
-                      </td>
                     </tr>
                   )),
                 ]
@@ -239,15 +241,12 @@ function CompanyHistory({ data }: { data: Loaded }) {
                     <strong>{colTotal(i.id)}</strong>
                   </td>
                 ))}
-                <td className="num">
-                  <strong>{grand}</strong>
-                </td>
               </tr>
             </tbody>
           </table>
         </div>
       )}
-      <small className="muted">{t('Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).')}</small>
+      <small className="muted">{t('Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.')}</small>
     </div>
   )
 }

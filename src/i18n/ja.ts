@@ -781,4 +781,5 @@ export const ja: Record<string, string> = {
   'Tổng số hũ': '合計個数',
   'Tổng số hũ theo loại': '種類別の合計個数',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '各行はセットの種類で、列は種類別の個数（1セットの個数 × セット数）です。',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': '各行はセットの種類で、列は種類別の個数（1セットの個数 × セット数）です。日付行はその日の種類別合計です。',
 }

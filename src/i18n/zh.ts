@@ -781,4 +781,5 @@ export const zh: Record<string, string> = {
   'Tổng số hũ': '总罐数',
   'Tổng số hũ theo loại': '按口味总罐数',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '每行是一种套餐；列中是该口味的罐数（1 套里的罐数 × 套数）。',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': '每行是一种套餐；列中是该口味的罐数（1 套里的罐数 × 套数）。日期行为当天各口味合计。',
 }

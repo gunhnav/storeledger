@@ -781,4 +781,5 @@ export const ko: Record<string, string> = {
   'Tổng số hũ': '총 병 수',
   'Tổng số hũ theo loại': '종류별 총 병 수',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': '각 행은 세트 종류이며 열은 종류별 병 수(1세트의 병 수 × 세트 수)입니다.',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': '각 행은 세트 종류이며 열은 종류별 병 수(1세트의 병 수 × 세트 수)입니다. 날짜 행은 그날의 종류별 합계입니다.',
 }

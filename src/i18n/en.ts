@@ -781,4 +781,5 @@ export const en: Record<string, string> = {
   'Tổng số hũ': 'Total jars',
   'Tổng số hũ theo loại': 'Total jars by type',
   'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set).': 'Each row is a set type; a column shows jars of that kind (jars in 1 set × number of sets).',
+  'Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.': 'Each row is a set type; a column shows jars of that kind (jars in 1 set × number of sets). The date row is the day’s total per type.',
 }
