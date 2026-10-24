@@ -6,9 +6,12 @@ import { LANGUAGES, useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { errorMessage, formatCompact, formatDate, formatVND, todayVN } from '../lib/format'
 import { pctChange, presetRange, previousRange, type Preset, type Range } from '../lib/bundauReport'
-import { summarize, type RevenueSummary } from '../lib/revenue'
+import { REVENUE_CHANNELS, channelLabel, summarize, type RevenueChannel, type RevenueSummary } from '../lib/revenue'
 
 type Loaded = { key: string; current: RevenueSummary; previous: RevenueSummary; expensesByCategory: { category: string; amount: number }[] }
+
+// Màu mỗi kênh trên biểu đồ (chi phí dùng --chart-2, lãi dùng màu chữ)
+const CHANNEL_COLOR: Record<RevenueChannel, string> = { in_store: 'var(--chart-1)', shopeefood: 'var(--chart-3)', nem_cuon: 'var(--chart-4)' }
 
 const PRESETS: { value: Preset; label: string }[] = [
   { value: 'today', label: 'Hôm nay' },
@@ -118,7 +121,9 @@ export function RevenueReport({ storeId }: { storeId: string }) {
   const compact = (v: unknown) => (Number(v) === 0 ? '' : formatCompact(Number(v), locale))
   const chartData = cur.days.map((d) => ({
     label: `${d.date.slice(8, 10)}/${d.date.slice(5, 7)}`,
-    revenue: d.gross - d.commission,
+    in_store: d.byChannel.in_store,
+    shopeefood: d.byChannel.shopeefood,
+    nem_cuon: d.byChannel.nem_cuon,
     cost: d.expenses,
     profit: d.gross - d.commission - d.expenses,
   }))
@@ -138,12 +143,31 @@ export function RevenueReport({ storeId }: { storeId: string }) {
         </div>
       </section>
 
+      <section className="report-block">
+        <h2>{t('Doanh thu theo kênh')}</h2>
+        <div className="stats">
+          {REVENUE_CHANNELS.map((c) => (
+            <div key={c} className="stat">
+              <div className="stat-label">
+                <span className="channel-dot" style={{ background: CHANNEL_COLOR[c] }} aria-hidden="true" />
+                {t(channelLabel(c))}
+              </div>
+              <div className="stat-value">{formatVND(cur.byChannel[c])}</div>
+              <div className="stat-sub">
+                {cur.gross > 0 ? t('{pct}% doanh thu', { pct: Math.round((cur.byChannel[c] / cur.gross) * 100) }) : '—'}
+                {c === 'shopeefood' && cur.commission > 0 ? ` · ${t('Hoa hồng đối tác {fee}', { fee: formatVND(cur.commission) })}` : ''}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {empty ? (
         <p className="muted">{t('Chưa có doanh thu hay chi phí nào trong kỳ này.')}</p>
       ) : (
         <>
           <section className="report-block">
-            <h2>{t('Doanh thu, chi phí và lãi theo ngày')}</h2>
+            <h2>{t('Doanh thu theo kênh, chi phí và lãi theo ngày')}</h2>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height={260}>
                 <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -158,44 +182,15 @@ export function RevenueReport({ storeId }: { storeId: string }) {
                     cursor={{ fill: 'var(--border)', fillOpacity: 0.4 }}
                   />
                   <Legend wrapperStyle={{ fontSize: 13 }} />
-                  <Bar dataKey="revenue" name={t('Thực thu')} fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={26} />
+                  {REVENUE_CHANNELS.map((c, i) => (
+                    <Bar key={c} dataKey={c} stackId="revenue" name={t(channelLabel(c))} fill={CHANNEL_COLOR[c]} radius={i === REVENUE_CHANNELS.length - 1 ? [4, 4, 0, 0] : 0} maxBarSize={26} />
+                  ))}
                   <Bar dataKey="cost" name={t('Chi phí')} fill="var(--chart-2)" radius={[4, 4, 0, 0]} maxBarSize={26} />
-                  <Line dataKey="profit" name={t('Lãi ròng')} type="monotone" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line dataKey="profit" name={t('Lãi ròng')} type="monotone" stroke="var(--text-h)" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           </section>
-
-          <div className="two-col">
-            <section className="report-block">
-              <h2>{t('Kênh bán')}</h2>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>{t('Kênh')}</th>
-                      <th className="num">{t('Doanh thu')}</th>
-                      <th className="num">{t('Tỷ trọng')}</th>
-                      <th className="num">{t('Hoa hồng')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{t('Quán')}</td>
-                      <td className="num">{formatVND(cur.byChannel.in_store)}</td>
-                      <td className="num">{cur.gross > 0 ? `${Math.round((cur.byChannel.in_store / cur.gross) * 100)}%` : '—'}</td>
-                      <td className="num">—</td>
-                    </tr>
-                    <tr>
-                      <td>{t('Đối tác (app)')}</td>
-                      <td className="num">{formatVND(cur.byChannel.shopeefood)}</td>
-                      <td className="num">{cur.gross > 0 ? `${Math.round((cur.byChannel.shopeefood / cur.gross) * 100)}%` : '—'}</td>
-                      <td className="num">{cur.commission > 0 ? formatVND(cur.commission) : '—'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
 
             <section className="report-block">
               <h2>{t('Chi phí theo nhóm')}</h2>
@@ -224,7 +219,6 @@ export function RevenueReport({ storeId }: { storeId: string }) {
                 </div>
               )}
             </section>
-          </div>
 
           <section className="report-block">
             <h2>{t('Chi tiết theo ngày')}</h2>
@@ -233,6 +227,11 @@ export function RevenueReport({ storeId }: { storeId: string }) {
                 <thead>
                   <tr>
                     <th>{t('Ngày')}</th>
+                    {REVENUE_CHANNELS.map((c) => (
+                      <th key={c} className="num">
+                        {t(channelLabel(c))}
+                      </th>
+                    ))}
                     <th className="num">{t('Doanh thu')}</th>
                     <th className="num">{t('Hoa hồng')}</th>
                     <th className="num">{t('Chi phí')}</th>
@@ -245,6 +244,11 @@ export function RevenueReport({ storeId }: { storeId: string }) {
                     return (
                       <tr key={d.date}>
                         <td>{formatDate(d.date)}</td>
+                        {REVENUE_CHANNELS.map((c) => (
+                          <td key={c} className="num">
+                            {d.byChannel[c] > 0 ? formatVND(d.byChannel[c]) : '—'}
+                          </td>
+                        ))}
                         <td className="num">{formatVND(d.gross)}</td>
                         <td className="num">{d.commission > 0 ? formatVND(d.commission) : '—'}</td>
                         <td className="num">{d.expenses > 0 ? formatVND(d.expenses) : '—'}</td>

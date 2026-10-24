@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { filterItems, groupItems, totalsOf } from './itemSales'
+import { reconcile, visibleItems, applyFilter, filterItems, groupByDay, groupItems, isDayRow, mergeItems, totalsOf } from './itemSales'
 import type { MonthlyItemSale } from '../types/database'
 
 const row = (item_name: string, category: string | null, qty: number, net: number, item_code = item_name): MonthlyItemSale => ({
-  id: item_name, store_id: 's', month: '2026-10-01', period_end: '2026-10-24', category, item_code, item_name, qty, gross: net + 10, discount: 10, net, created_by: null, created_at: '',
+  id: item_name, store_id: 's', month: '2026-10-01', period_start: '2026-10-01', period_end: '2026-10-24', category, item_code, item_name, qty, gross: net + 10, discount: 10, net, created_by: null, created_at: '',
 })
 
 describe('tổng kết mặt hàng theo tháng', () => {
@@ -24,5 +24,54 @@ describe('tổng kết mặt hàng theo tháng', () => {
     expect(filterItems(rows, 'tra da').map((r) => r.item_name)).toEqual(['Trà đá'])
     expect(filterItems(rows, 'MET').map((r) => r.item_name)).toEqual(['Mẹt đầy đủ'])
     expect(filterItems(rows, '  ')).toHaveLength(4)
+  })
+})
+
+describe('xem mặt hàng theo ngày', () => {
+  const day = (date: string, name: string, cat: string | null, qty: number, net: number): MonthlyItemSale => ({
+    ...row(name, cat, qty, net), period_start: date, period_end: date,
+  })
+  const rows = [day('2026-10-10', 'Trà đá', 'Đồ uống', 20, 60_000), day('2026-10-10', 'Mẹt', 'Best Seller', 5, 300_000), day('2026-10-11', 'Trà đá', 'Đồ uống', 30, 90_000)]
+
+  it('nhận ra báo cáo một ngày', () => {
+    expect(isDayRow(rows[0])).toBe(true)
+    expect(isDayRow(row('A', null, 1, 1))).toBe(false)
+  })
+
+  it('lọc theo khoảng ngày, nhóm và từ khoá', () => {
+    expect(applyFilter(rows, { from: '2026-10-11' }).map((r) => r.item_name)).toEqual(['Trà đá'])
+    expect(applyFilter(rows, { category: 'Best Seller' }).map((r) => r.item_name)).toEqual(['Mẹt'])
+    expect(applyFilter(rows, { query: 'tra', to: '2026-10-10' })).toHaveLength(1)
+  })
+
+  it('gom theo ngày mới nhất trước, mỗi ngày có tổng', () => {
+    const d = groupByDay(rows)
+    expect(d.map((x) => [x.date, x.qty, x.net])).toEqual([['2026-10-11', 30, 90_000], ['2026-10-10', 25, 360_000]])
+    expect(d[1].groups[0].category).toBe('Best Seller')
+  })
+
+  it('cộng các ngày theo mặt hàng', () => {
+    const m = mergeItems(rows)
+    expect(m.find((r) => r.item_code === 'Trà đá')).toMatchObject({ qty: 50, net: 150_000 })
+    expect(m).toHaveLength(2)
+  })
+})
+
+describe('đối chiếu doanh thu với mặt hàng', () => {
+  const d = (date: string, net: number) => ({ period_start: date, period_end: date, net })
+  it('báo ngày lệch, bỏ qua ngày khớp', () => {
+    const revenue = new Map([['2026-10-10', 1000], ['2026-10-11', 500]])
+    const m = reconcile([d('2026-10-10', 1000), d('2026-10-10', 0), d('2026-10-11', 450)], revenue)
+    expect(m).toEqual([{ start: '2026-10-11', end: '2026-10-11', revenue: 500, items: 450, diff: 50 }])
+  })
+
+  it('báo khi có mặt hàng mà không có doanh thu; khoảng nhiều ngày cộng doanh thu các ngày trong khoảng', () => {
+    expect(reconcile([d('2026-10-12', 300)], new Map())).toEqual([{ start: '2026-10-12', end: '2026-10-12', revenue: 0, items: 300, diff: -300 }])
+    const range = { period_start: '2026-10-01', period_end: '2026-10-03', net: 90 }
+    expect(reconcile([range], new Map([['2026-10-01', 30], ['2026-10-02', 30], ['2026-10-03', 30], ['2026-10-04', 999]]))).toEqual([])
+  })
+
+  it('nhóm Bún bò bị ẩn khỏi danh sách', () => {
+    expect(visibleItems([row('A', 'Bún bò', 1, 1), row('B', 'Đồ uống', 1, 1)]).map((r) => r.item_name)).toEqual(['B'])
   })
 })

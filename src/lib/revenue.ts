@@ -2,15 +2,15 @@
 import type { DailyRevenue } from '../types/database'
 
 export type RevenueChannel = DailyRevenue['channel']
-export const REVENUE_CHANNELS: RevenueChannel[] = ['in_store', 'shopeefood']
+export const REVENUE_CHANNELS: RevenueChannel[] = ['in_store', 'shopeefood', 'nem_cuon']
 
-export const channelLabel = (channel: RevenueChannel) => (channel === 'shopeefood' ? 'Đối tác (app)' : 'Quán')
+export const channelLabel = (channel: RevenueChannel) => (channel === 'shopeefood' ? 'Đối tác (app)' : channel === 'nem_cuon' ? 'Bán nem cuốn' : 'Quán')
 
 // Hoa hồng chỉ tính cho kênh đối tác, theo tỷ lệ mặc định của cửa hàng (0,25 = 25%)
 export const commissionOf = (amount: number, channel: RevenueChannel, rate: number) =>
   channel === 'shopeefood' ? Math.round(amount * rate) : 0
 
-export type RevenueDay = { date: string; gross: number; commission: number; expenses: number }
+export type RevenueDay = { date: string; gross: number; commission: number; expenses: number; byChannel: Record<RevenueChannel, number> }
 export type RevenueSummary = {
   gross: number
   commission: number
@@ -31,14 +31,15 @@ export function summarize(
   const days = new Map<string, RevenueDay>()
   const day = (date: string) => {
     let d = days.get(date)
-    if (!d) days.set(date, (d = { date, gross: 0, commission: 0, expenses: 0 }))
+    if (!d) days.set(date, (d = { date, gross: 0, commission: 0, expenses: 0, byChannel: { in_store: 0, shopeefood: 0, nem_cuon: 0 } }))
     return d
   }
-  const byChannel: Record<RevenueChannel, number> = { in_store: 0, shopeefood: 0 }
+  const byChannel: Record<RevenueChannel, number> = { in_store: 0, shopeefood: 0, nem_cuon: 0 }
   for (const r of revenue) {
     const amount = Number(r.amount)
     const d = day(r.revenue_date)
     d.gross += amount
+    d.byChannel[r.channel] += amount
     d.commission += commissionOf(amount, r.channel, rate)
     byChannel[r.channel] += amount
   }

@@ -34,6 +34,7 @@
   --chart-1: #2a78d6;
   --chart-2: #eb6834;
   --chart-3: #1baf7a;
+  --chart-4: #8a63d2;
 
   font: 16px/1.5 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, 'Noto Sans KR', 'Noto Sans SC', 'Noto Sans JP',
     'Malgun Gothic', 'Microsoft YaHei', 'Hiragino Sans', sans-serif;
@@ -74,6 +75,7 @@
     --chart-1: #3987e5;
     --chart-2: #d95926;
     --chart-3: #199e70;
+  --chart-4: #9f7ae0;
   }
 }
 :root[data-theme='dark'] {
@@ -106,6 +108,7 @@
   --chart-1: #3987e5;
   --chart-2: #d95926;
   --chart-3: #199e70;
+  --chart-4: #9f7ae0;
 }
 
 * {
@@ -3895,4 +3898,44 @@ input.overridden {
     padding: 7px 10px;
     font-size: 12px;
   }
+}
+
+/* Nhập file từ máy POS (doanh thu, mặt hàng) */
+.import-box {
+  margin-bottom: 20px;
+}
+.import-file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+.import-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.import-warn {
+  padding: 10px 12px;
+  border: 1px solid var(--warn-border, #c98a00);
+  border-radius: 8px;
+  background: var(--warn-bg, rgba(201, 138, 0, 0.12));
+}
+.import-diffs {
+  margin: 6px 0 10px;
+  padding-left: 18px;
+  font-size: 14px;
+}
+.tabs-hint {
+  margin: 2px 0 8px;
+  font-size: 14px;
+}
+.channel-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
 }

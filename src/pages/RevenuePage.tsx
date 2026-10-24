@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DatePicker } from '../components/DatePicker'
+import { ImportInvoices } from '../components/ImportInvoices'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
@@ -99,6 +100,7 @@ function RevenueForm({ storeId, rate }: { storeId: string; rate: number }) {
 
   return (
     <section>
+      <ImportInvoices storeId={storeId} onDone={() => setVersion((v) => v + 1)} />
       <h2>{t('Nhập doanh thu')}</h2>
       <div className="card form">
         <div className="row">

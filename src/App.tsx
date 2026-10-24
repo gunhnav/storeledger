@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
 import { RequireAdmin, RequireAuth } from './components/RequireAuth'
 import { StoreProvider } from './components/StoreProvider'
@@ -15,6 +15,7 @@ import { DishRecipesPage } from './pages/DishRecipesPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { GuidePage } from './pages/GuidePage'
 import { IngredientsPage } from './pages/IngredientsPage'
+import { ItemImportPage } from './pages/ItemImportPage'
 import { ItemSalesPage } from './pages/ItemSalesPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -40,10 +41,17 @@ const REPORT_TABS: Tab[] = [
   { to: '/reports/best-sellers', label: 'Bán chạy & gợi ý', icon: 'sale' },
   { to: '/reports/daily-log', label: 'Nhật ký ngày', icon: 'log' },
 ]
-// Quán nhập doanh thu theo ngày (Bún đậu) thay các tab theo món bằng tab Mặt hàng
+// Quán nhập doanh thu theo ngày (Bún đậu): menu chia hai phần. Nhập liệu = những gì người dùng tự nhập hoặc tải file lên;
+// Báo cáo = số liệu hệ thống tự tính từ dữ liệu đã nhập.
+const ENTRY_TABS: Tab[] = [
+  { to: '/entry/revenue', label: 'Doanh thu', icon: 'sale' },
+  { to: '/entry/expenses', label: 'Chi phí', icon: 'expense' },
+  { to: '/entry/items', label: 'Nhập mặt hàng', icon: 'purchase' },
+  { to: '/entry/recipes', label: 'Định lượng', icon: 'stock' },
+]
 const REVENUE_REPORT_TABS: Tab[] = [
   { to: '/reports/overview', label: 'Tổng quan', icon: 'report' },
-  { to: '/reports/items', label: 'Mặt hàng', icon: 'product' },
+  { to: '/reports/items', label: 'Mặt hàng bán', icon: 'product' },
 ]
 const MANAGE_TABS: Tab[] = [
   { to: '/manage/products', label: 'Sản phẩm', icon: 'product' },
@@ -80,13 +88,12 @@ function InventoryLayout() {
   return <TabsLayout title="Kho hàng" tabs={tabs} />
 }
 
-// Quản lý: quán nhập doanh thu theo ngày (Bún đậu) chỉ còn Chi phí và Định lượng
+// Quản lý: quán nhập doanh thu theo ngày (Bún đậu) đã chuyển sang menu Nhập liệu
 function ManageLayout() {
   const { current } = useStore()
-  const tabs = usesRevenueEntry(current?.code)
-    ? [...MANAGE_TABS.filter((tab) => tab.to === '/manage/expenses'), { to: '/manage/recipes', label: 'Định lượng', icon: 'stock' as const }]
-    : MANAGE_TABS
-  return <TabsLayout title="Quản lý" tabs={tabs} />
+  const { pathname } = useLocation()
+  if (usesRevenueEntry(current?.code)) return <Navigate to={pathname.endsWith('/recipes') ? '/entry/recipes' : '/entry/expenses'} replace />
+  return <TabsLayout title="Quản lý" tabs={MANAGE_TABS} />
 }
 
 // Trang theo món (sản phẩm, nguyên liệu, báo cáo theo món...) không có ở quán nhập doanh thu: về trang chính của nhóm
@@ -105,14 +112,20 @@ function ItemBased({ children, fallback }: { children: ReactNode; fallback: stri
 // /sales: quán nhập doanh thu thì hiện form doanh thu, còn lại là màn hình bán theo món
 function SalesRoute() {
   const { current } = useStore()
-  return usesRevenueEntry(current?.code) ? <RevenuePage /> : <SalePage />
+  const { isAdmin } = useAuth()
+  if (!usesRevenueEntry(current?.code)) return <SalePage />
+  return isAdmin ? <Navigate to="/entry/revenue" replace /> : <RevenuePage />
 }
 
 // Báo cáo: quán nhập doanh thu chỉ còn tab Tổng quan và Mặt hàng
 function ReportsLayout() {
   const { current } = useStore()
   const tabs = usesRevenueEntry(current?.code) ? REVENUE_REPORT_TABS : REPORT_TABS
-  return <TabsLayout title="Báo cáo" tabs={tabs} />
+  return usesRevenueEntry(current?.code) ? (
+    <TabsLayout title="Báo cáo" hint="Hệ thống tự tính từ dữ liệu đã nhập, không cần nhập gì ở đây." tabs={tabs} />
+  ) : (
+    <TabsLayout title="Báo cáo" tabs={tabs} />
+  )
 }
 
 // Mở thẳng link Phân phối ở quán không dùng bước này thì về Nhập hàng
@@ -165,8 +178,14 @@ function App() {
               <Route index element={<ItemBased fallback="/manage/expenses"><Navigate to="products" replace /></ItemBased>} />
               <Route path="products" element={<ItemBased fallback="/manage/expenses"><ProductsPage /></ItemBased>} />
               <Route path="expenses" element={<ExpensePage />} />
-              <Route path="recipes" element={<RevenueOnly fallback="/manage/products"><DishRecipesPage /></RevenueOnly>} />
               <Route path="ingredients" element={<ItemBased fallback="/manage/expenses"><IngredientsPage /></ItemBased>} />
+            </Route>
+            <Route path="entry" element={<RevenueOnly fallback="/sales"><TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập hoặc tải file lên." tabs={ENTRY_TABS} /></RevenueOnly>}>
+              <Route index element={<Navigate to="revenue" replace />} />
+              <Route path="revenue" element={<RevenuePage />} />
+              <Route path="expenses" element={<ExpensePage />} />
+              <Route path="items" element={<ItemImportPage />} />
+              <Route path="recipes" element={<DishRecipesPage />} />
             </Route>
             <Route path="staff" element={<StaffPage />} />
           </Route>

@@ -23,6 +23,11 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/manage', label: 'Quản lý', icon: 'manage', adminOnly: true },
 ]
 
+const REVENUE_NAV_ITEMS: NavItem[] = [
+  { to: '/entry', label: 'Nhập liệu', icon: 'sale', adminOnly: true },
+  { to: '/reports', label: 'Báo cáo', icon: 'report', adminOnly: true },
+]
+
 // Chữ cái đầu của tên để làm avatar
 function initials(name: string): string {
   const words = name.trim().split(/\s+/)
@@ -35,11 +40,9 @@ export function AppLayout() {
   const navigate = useNavigate()
   const { t } = useI18n()
 
-  // Quán nhập doanh thu theo ngày (Bún đậu): "Bán hàng" thành "Doanh thu", không có Kho hàng
+  // Quán nhập doanh thu theo ngày (Bún đậu): menu chỉ có hai phần, Nhập liệu và Báo cáo
   const revenueStore = usesRevenueEntry(current?.code)
-  const items = NAV_ITEMS.filter((item) => (!item.adminOnly || isAdmin) && !(revenueStore && item.to === '/inventory')).map((item) =>
-    revenueStore && item.to === '/sales' ? { ...item, label: 'Doanh thu' } : item,
-  )
+  const items = (revenueStore ? REVENUE_NAV_ITEMS : NAV_ITEMS).filter((item) => !item.adminOnly || isAdmin)
   const displayName = profile?.full_name || (isAdmin ? 'Admin' : t('Nhân viên'))
 
   return (

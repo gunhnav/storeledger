@@ -25,9 +25,15 @@ describe('doanh thu nhập tay', () => {
     expect(s.net).toBe(5_750_000)
     expect(s.expenses).toBe(1_700_000)
     expect(s.profit).toBe(4_050_000)
-    expect(s.byChannel).toEqual({ in_store: 5_000_000, shopeefood: 1_000_000 })
+    expect(s.byChannel).toEqual({ in_store: 5_000_000, shopeefood: 1_000_000, nem_cuon: 0 })
+    expect(s.days[1].byChannel).toEqual({ in_store: 3_000_000, shopeefood: 1_000_000, nem_cuon: 0 })
     expect(s.days.map((d) => d.date)).toEqual(['2026-10-01', '2026-10-02', '2026-10-03'])
-    expect(s.days[2]).toEqual({ date: '2026-10-03', gross: 0, commission: 0, expenses: 200_000 })
+    expect(s.days[2]).toEqual({ date: '2026-10-03', gross: 0, commission: 0, expenses: 200_000, byChannel: { in_store: 0, shopeefood: 0, nem_cuon: 0 } })
+  })
+
+  it('doanh thu bán nem cuốn tính vào doanh thu nhưng không có hoa hồng', () => {
+    const s = summarize([{ revenue_date: '2026-10-04', channel: 'nem_cuon', amount: 2_142_000 }], [], 0.25)
+    expect([s.gross, s.commission, s.net, s.byChannel.nem_cuon]).toEqual([2_142_000, 0, 2_142_000, 2_142_000])
   })
 
   it('không có dữ liệu thì mọi số bằng 0', () => {

@@ -5,12 +5,13 @@ import { Icon, type IconName } from './Icon'
 export type Tab = { to: string; label: string; icon: IconName }
 
 // Trang nhóm: tiêu đề + hàng tab, nội dung tab hiện qua <Outlet />
-export function TabsLayout({ title, tabs }: { title: string; tabs: Tab[] }) {
+export function TabsLayout({ title, hint, tabs }: { title: string; hint?: string; tabs: Tab[] }) {
   const { t } = useI18n()
   return (
     <div className="tabs-page">
       <div className="tabs-head">
         <h2>{t(title)}</h2>
+        {hint && <p className="tabs-hint muted">{t(hint)}</p>}
         <nav className="tabs" aria-label={t(title)}>
           {tabs.map((tab) => (
             <NavLink key={tab.to} to={tab.to} className="tab">

@@ -128,7 +128,8 @@ export type DailyRevenue = {
   id: string
   store_id: string
   revenue_date: string
-  channel: 'in_store' | 'shopeefood'
+  // nem_cuon: doanh thu bán nem cuốn riêng (không qua máy POS)
+  channel: 'in_store' | 'shopeefood' | 'nem_cuon'
   amount: number
   note: string | null
   created_by: string | null
@@ -148,6 +149,8 @@ export type MonthlyItemSale = {
   id: string
   store_id: string
   month: string
+  // Ngày đầu / cuối của báo cáo POS: cả tháng (từ ngày 1) hoặc một ngày (đầu = cuối)
+  period_start: string
   period_end: string
   category: string | null
   item_code: string
@@ -187,6 +190,25 @@ export type DishRecipeLine = {
   is_extra: boolean
   note: string | null
   sort_order: number
+}
+
+// Hoá đơn POS đã nhập (supabase/migrations/20261024190000_revenue_invoices.sql, chỉ admin)
+export type RevenueInvoice = {
+  id: string
+  store_id: string
+  invoice_code: string
+  status: 'Đã thanh toán' | 'Đã hủy'
+  source: string | null
+  payment_method: string | null
+  channel: 'in_store' | 'shopeefood'
+  revenue_date: string
+  created_time: string | null
+  paid_time: string | null
+  goods_total: number
+  discount: number
+  total_paid: number
+  created_by: string | null
+  created_at: string
 }
 
 export type Expense = {
@@ -572,6 +594,14 @@ export type Database = {
           { foreignKeyName: 'dish_recipe_lines_recipe_id_fkey'; columns: ['recipe_id']; isOneToOne: false; referencedRelation: 'dish_recipes'; referencedColumns: ['id'] },
         ]
       }
+      revenue_invoices: {
+        Row: RevenueInvoice
+        Insert: never
+        Update: never
+        Relationships: [
+          { foreignKeyName: 'revenue_invoices_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        ]
+      }
       daily_revenue: {
         Row: DailyRevenue
         Insert: DailyRevenueInsert
@@ -639,6 +669,11 @@ export type Database = {
         Returns: undefined
       }
       delete_expense: { Args: { p_expense_id: string }; Returns: undefined }
+      // supabase/migrations/20261024190000_revenue_invoices.sql
+      import_revenue_invoices: {
+        Args: { p_store_id: string; p_rows: unknown }
+        Returns: { inserted: number; updated: number; days: number }
+      }
       // supabase/migrations/20261019090000_purchase_expenses.sql
       record_purchase_expenses: {
         Args: { p_purchase_id: string; p_category: string; p_categories?: Record<string, string> }
