@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
-import { StorefrontSettings } from '../components/StorefrontSettings'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
@@ -75,11 +74,11 @@ function effectiveAt(history: ProductPrice[], productId: string, date: string) {
 
 export function ProductsPage() {
   const { current } = useStore()
-  return current ? <ProductsManager key={current.id} storeId={current.id} code={current.code} partner={usesPartnerChannel(current.code)} /> : null
+  return current ? <ProductsManager key={current.id} storeId={current.id} partner={usesPartnerChannel(current.code)} /> : null
 }
 
 // Chỉ admin (route bọc RequireAdmin, RLS cũng chặn ghi)
-function ProductsManager({ storeId, code, partner }: { storeId: string; code: string; partner: boolean }) {
+function ProductsManager({ storeId, partner }: { storeId: string; partner: boolean }) {
   const { t } = useI18n()
   const toast = useToast()
   const [catalog, setCatalog] = useState<Catalog | null>(null)
@@ -414,7 +413,6 @@ function ProductsManager({ storeId, code, partner }: { storeId: string; code: st
         </div>
       )}
 
-      {!pricing && !bulk && <StorefrontSettings storeId={storeId} code={code} />}
     </section>
   )
 }

@@ -9,7 +9,7 @@ const IGNORE = new Set(['Giá ban đầu', 'Tự vào quán khi nhập hàng', '
 const EXTRA = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'Email']
 
 // Trang bán hàng công khai: tiếng Việt cố định cho khách, không đi qua bộ dịch
-const SKIP_FILES = new Set(['ShopPage.tsx', 'storefront.ts'])
+const SKIP_FILES = new Set(['ShopPage.tsx', 'storefront.ts', 'invoiceImage.ts'])
 
 const files = []
 const walk = (dir) => {

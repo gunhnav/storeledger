@@ -27,6 +27,13 @@ export type Store = {
   is_public: boolean
   public_phone: string | null
   public_tagline: string | null
+  // Chuyển khoản hiện trên trang công khai, 20261025150000_public_storefront_bank.sql (cần đủ cả ba)
+  public_bank_code: string | null
+  public_bank_account: string | null
+  public_bank_holder: string | null
+  // QR thanh toán gốc (EMVCo) và tên ví / ngân hàng hiện cho khách, 20261025200000_storefront_payment_qr.sql
+  public_qr_payload: string | null
+  public_qr_label: string | null
   created_at: string
 }
 
@@ -211,6 +218,17 @@ export type RevenueInvoice = {
   created_at: string
 }
 
+// Bảng giá set của trang đặt trước (supabase/migrations/20261025180000_storefront_set_prices.sql, chỉ admin)
+export type StorefrontSetPrice = {
+  id: string
+  store_id: string
+  set_size: 4 | 6
+  // null = giá mặc định cho set mix vị
+  product_id: string | null
+  price: number
+  created_at: string
+}
+
 export type Expense = {
   id: string
   store_id: string
@@ -237,6 +255,11 @@ export type StoreInsert = {
   is_public?: boolean
   public_phone?: string | null
   public_tagline?: string | null
+  public_bank_code?: string | null
+  public_bank_account?: string | null
+  public_bank_holder?: string | null
+  public_qr_payload?: string | null
+  public_qr_label?: string | null
   created_at?: string
 }
 export type StoreUpdate = Partial<StoreInsert>
@@ -354,10 +377,17 @@ export type BundauReport = {
   hours: { hour: number; orders: number; gross: number }[]
 }
 
-// get_public_menu: trang bán hàng công khai (không có số lượng, giá vốn). null = quán không công khai
+// get_public_menu: trang đặt trước công khai (chỉ tên, nhóm, giá, giá set; không có tồn kho hay giá vốn). null = quán không công khai
 export type PublicMenuResult = {
-  store: { name: string; phone: string | null; tagline: string | null }
-  items: { id: string; name: string; category: string | null; price: number | null; status: 'in_stock' | 'low' | 'out' }[]
+  store: {
+    name: string
+    phone: string | null
+    tagline: string | null
+    set_prices: { size: 4 | 6; product_id: string | null; price: number }[]
+    bank: { code: string; account: string; holder: string } | null
+    pay: { payload: string; label: string | null; holder: string } | null
+  }
+  items: { id: string; name: string; category: string | null; price: number | null }[]
 } | null
 
 export type CompanySetHistoryRow = {
@@ -602,6 +632,14 @@ export type Database = {
           { foreignKeyName: 'revenue_invoices_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
         ]
       }
+      storefront_set_prices: {
+        Row: StorefrontSetPrice
+        Insert: never
+        Update: never
+        Relationships: [
+          { foreignKeyName: 'storefront_set_prices_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        ]
+      }
       daily_revenue: {
         Row: DailyRevenue
         Insert: DailyRevenueInsert
@@ -673,6 +711,11 @@ export type Database = {
       import_revenue_invoices: {
         Args: { p_store_id: string; p_rows: unknown }
         Returns: { inserted: number; updated: number; days: number }
+      }
+      // supabase/migrations/20261025180000_storefront_set_prices.sql
+      save_storefront_set_prices: {
+        Args: { p_store_id: string; p_rules: unknown }
+        Returns: number
       }
       // supabase/migrations/20261019090000_purchase_expenses.sql
       record_purchase_expenses: {

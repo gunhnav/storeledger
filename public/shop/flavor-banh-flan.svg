@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+  <linearGradient id="pot-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="55%" stop-color="#fcfbf8"/>
+    <stop offset="100%" stop-color="#ebe2d3"/>
+  </linearGradient>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+  <linearGradient id="leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#256b40"/>
+    <stop offset="100%" stop-color="#52b788"/>
+  </linearGradient>
+  <linearGradient id="wood-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#dcb183"/>
+    <stop offset="100%" stop-color="#8d5b2d"/>
+  </linearGradient>
+
+  <!-- Flan custard body gradient: creamy, pale custard yellow -->
+  <linearGradient id="flan-custard" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#fffde7"/>
+    <stop offset="40%" stop-color="#fef08a"/>
+    <stop offset="80%" stop-color="#fde047"/>
+    <stop offset="100%" stop-color="#facc15"/>
+  </linearGradient>
+
+  <!-- Luscious glossy caramel sauce gradient: warm amber to rich caramel -->
+  <linearGradient id="caramel-sauce" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#d97706"/>
+    <stop offset="30%" stop-color="#b45309"/>
+    <stop offset="70%" stop-color="#92400e"/>
+    <stop offset="100%" stop-color="#78350f"/>
+  </linearGradient>
+
+  <!-- Caramel surface gradient on jar top -->
+  <linearGradient id="caramel-surface" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#d97706"/>
+    <stop offset="45%" stop-color="#b45309"/>
+    <stop offset="100%" stop-color="#78350f"/>
+  </linearGradient>
+
+  <!-- Clip path matching jar interior so custard and caramel fit perfectly -->
+  <clipPath id="jar-interior">
+    <path d="M -65 -50 
+             C -90 -50 -105 -20 -102 30 
+             C -98 80 -60 100 0 100 
+             C 60 100 98 80 102 30 
+             C 105 -20 90 -50 65 -50 Z"/>
+  </clipPath>
+</defs>
+
+  <g id="illustration" transform="translate(300, 300) scale(1.22) translate(-300, -320)">
+  <!-- Ambient organic watercolor blob: warm caramel-honey glow -->
+  <circle cx="300" cy="320" r="220" fill="#fef3c7" opacity="0.85"/>
+  <circle cx="300" cy="320" r="185" fill="#fde68a" opacity="0.6"/>
+
+  <!-- Wooden Platter Base -->
+  <ellipse cx="300" cy="460" rx="200" ry="45" fill="#c69255" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="300" cy="456" rx="185" ry="38" fill="#ddb080" opacity="0.5"/>
+
+  <!-- The Flan Caramel Jar -->
+  <g transform="translate(290, 340)">
+    <!-- Jar Shadow -->
+    <ellipse cx="0" cy="98" rx="85" ry="20" fill="#16301f" opacity="0.18"/>
+
+    <!-- Jar Contents clipped to inner contour -->
+    <g clip-path="url(#jar-interior)">
+      <!-- Smooth Pale Custard Flan Base -->
+      <rect x="-115" y="-60" width="230" height="170" fill="url(#flan-custard)"/>
+
+      <!-- Ambient bottom shadow in custard -->
+      <path d="M -102 30 C -98 80 -60 100 0 100 C 60 100 98 80 102 30 C 75 75 25 85 0 85 C -25 85 -75 75 -102 30 Z" fill="#eab308" opacity="0.35"/>
+
+      <!-- Backing drop-shadow for caramel depth -->
+      <path d="M -95 -20
+               C -95 0 -85 10 -76 12
+               C -65 14 -58 4 -56 -4
+               C -52 -16 -42 -14 -36 0
+               C -26 22 -20 38 -6 38
+               C 8 38 12 18 16 6
+               C 20 -4 28 -8 34 2
+               C 42 16 48 24 58 24
+               C 68 24 74 12 76 0
+               C 78 -10 88 -8 95 -18
+               L 110 -60 L -110 -60 Z"
+            fill="#451a03" opacity="0.25" transform="translate(0, 3)"/>
+
+      <!-- Luscious Amber Caramel Dripping Down from Under the Rim -->
+      <path d="M -95 -20
+               C -95 0 -85 10 -76 12
+               C -65 14 -58 4 -56 -4
+               C -52 -16 -42 -14 -36 0
+               C -26 22 -20 38 -6 38
+               C 8 38 12 18 16 6
+               C 20 -4 28 -8 34 2
+               C 42 16 48 24 58 24
+               C 68 24 74 12 76 0
+               C 78 -10 88 -8 95 -18
+               L 110 -60 L -110 -60 Z"
+            fill="url(#caramel-sauce)"
+            stroke="#16301f"
+            stroke-width="2.5"
+            stroke-linejoin="round"/>
+
+      <!-- Glossy caramel highlights on rounded drip tips -->
+      <ellipse cx="-6" cy="32" rx="5" ry="2.5" fill="#ffffff" opacity="0.8"/>
+      <ellipse cx="-76" cy="7" rx="4" ry="2" fill="#ffffff" opacity="0.75"/>
+      <ellipse cx="58" cy="19" rx="4" ry="2" fill="#ffffff" opacity="0.75"/>
+      <path d="M -60 -25 Q -15 -18 20 -24 Q 45 -28 70 -20" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.45"/>
+
+      <!-- Falling caramel teardrop bead -->
+      <ellipse cx="-6" cy="54" rx="3.5" ry="5" fill="#b45309" stroke="#16301f" stroke-width="2"/>
+      <ellipse cx="-7" cy="52" rx="1.2" ry="2" fill="#ffffff" opacity="0.85"/>
+    </g>
+
+    <!-- Glass Jar Outer Stroke -->
+    <path d="M -65 -50 
+             C -90 -50 -105 -20 -102 30 
+             C -98 80 -60 100 0 100 
+             C 60 100 98 80 102 30 
+             C 105 -20 90 -50 65 -50 Z" 
+          fill="none" 
+          stroke="#16301f" 
+          stroke-width="5.5" 
+          stroke-linejoin="round"/>
+
+    <!-- Glass gloss reflections -->
+    <path d="M -80 -10 C -85 25 -82 60 -65 80 C -68 70 -72 30 -66 -10 Z" fill="#ffffff" opacity="0.75"/>
+    <circle cx="-60" cy="-25" r="4" fill="#ffffff" opacity="0.85"/>
+
+    <!-- Jar Rim & Opening -->
+    <ellipse cx="0" cy="-50" rx="65" ry="18" fill="#ffffff" stroke="#16301f" stroke-width="5"/>
+    <!-- Deep glossy caramel pool on jar top surface -->
+    <ellipse cx="0" cy="-50" rx="58" ry="14" fill="url(#caramel-surface)"/>
+    <ellipse cx="14" cy="-53" rx="28" ry="6" fill="#ffffff" opacity="0.35"/>
+    <ellipse cx="-18" cy="-48" rx="16" ry="3.5" fill="#ffffff" opacity="0.55"/>
+
+    <!-- Unmolded Mini Bánh Flan on Ceramic Saucer (Right side) -->
+    <g transform="translate(80, 42)">
+      <!-- Saucer shadow on wood platter -->
+      <ellipse cx="0" cy="42" rx="42" ry="13" fill="#16301f" opacity="0.18"/>
+
+      <!-- Little white ceramic saucer -->
+      <ellipse cx="0" cy="40" rx="42" ry="13" fill="#fdfcf8" stroke="#16301f" stroke-width="3.2"/>
+      <ellipse cx="0" cy="38" rx="36" ry="10" fill="#f5ede0"/>
+      <!-- Caramel sauce pool on the plate -->
+      <ellipse cx="0" cy="38" rx="31" ry="8" fill="url(#caramel-sauce)" stroke="#16301f" stroke-width="2"/>
+      <ellipse cx="-10" cy="37" rx="12" ry="2.5" fill="#ffffff" opacity="0.5"/>
+
+      <!-- Unmolded Custard Flan Body -->
+      <path d="M -22 6 
+               C -24 16 -27 26 -29 32 
+               C -16 37 16 37 29 32 
+               C 27 26 24 16 22 6 Z" 
+            fill="url(#flan-custard)" 
+            stroke="#16301f" 
+            stroke-width="3.2" 
+            stroke-linejoin="round"/>
+
+      <!-- Caramel dripping down the flan slope -->
+      <path d="M -22 6 
+               C -17 14 -15 22 -11 25 
+               C -7 27 -5 18 -3 14 
+               C 0 10 3 13 6 22 
+               C 9 28 12 25 15 17 
+               C 17 12 19 10 22 6 Z" 
+            fill="#78350f" 
+            stroke="#16301f" 
+            stroke-width="2"/>
+      <!-- Drip highlights -->
+      <path d="M -11 17 L -11 23" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.85"/>
+      <path d="M 6 15 L 6 20" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.85"/>
+
+      <!-- Caramel Glazed Crown on Top -->
+      <ellipse cx="0" cy="6" rx="22" ry="7.5" fill="url(#caramel-sauce)" stroke="#16301f" stroke-width="2.5"/>
+      <ellipse cx="4" cy="5" rx="13" ry="3.5" fill="#ffffff" opacity="0.45"/>
+      <circle cx="-8" cy="5" r="2" fill="#ffffff" opacity="0.85"/>
+    </g>
+
+    <!-- Wooden Spoon lifting flan custard with caramel on Left -->
+    <g transform="translate(-100, 20) rotate(-22)">
+      <!-- Spoon Handle & Bowl -->
+      <path d="M -4 20 L -2 -90 Q 0 -95 4 -95 Q 8 -95 6 -90 L 4 20 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+      <ellipse cx="0" cy="25" rx="18" ry="26" fill="#c69255" stroke="#8d5b2d" stroke-width="3"/>
+      <!-- Luscious pale-yellow flan custard dollop -->
+      <path d="M -13 22 Q 0 38 13 22 Q 0 10 -13 22 Z" fill="#fef08a" stroke="#16301f" stroke-width="2"/>
+      <!-- Rich brown caramel drizzle on spoon dollop -->
+      <path d="M -10 18 Q -2 30 2 24 Q 6 18 10 20 Q 5 12 0 14 Q -5 12 -10 18 Z" fill="#b45309" stroke="#16301f" stroke-width="1.5"/>
+      <!-- Glossy highlight on spoon caramel -->
+      <path d="M -4 19 Q 0 26 3 21" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.85"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M 130 152 Q 130 160 138 160 Q 130 160 130 168 Q 130 160 122 160 Q 130 160 130 152 Z" fill="#d97706"/>
+  <path d="M 470 151 Q 470 160 479 160 Q 470 160 470 169 Q 470 160 461 160 Q 470 160 470 151 Z" fill="#d97706"/>
+  <path d="M 490 353 Q 490 360 497 360 Q 490 360 490 367 Q 490 360 483 360 Q 490 360 490 353 Z" fill="#d97706"/>
+  <path d="M 110 373 Q 110 380 117 380 Q 110 380 110 387 Q 110 380 103 380 Q 110 380 110 373 Z" fill="#d97706"/>
+  </g>
+</svg>

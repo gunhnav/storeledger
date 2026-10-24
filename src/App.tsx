@@ -27,6 +27,7 @@ import { ShopPage } from './pages/ShopPage'
 import { SalePage } from './pages/SalePage'
 import { StaffPage } from './pages/StaffPage'
 import { StockPage } from './pages/StockPage'
+import { StorefrontPage } from './pages/StorefrontPage'
 import { TransferPage } from './pages/TransferPage'
 
 // Menu chia hai phần cho mọi quán: Nhập liệu = những gì người dùng tự nhập hoặc tải file lên;
@@ -38,6 +39,7 @@ const HOGI_ENTRY_TABS: Tab[] = [
   { to: '/entry/transfers', label: 'Phân phối', icon: 'transfer' },
   { to: '/entry/expenses', label: 'Chi phí', icon: 'expense', adminOnly: true },
   { to: '/entry/products', label: 'Sản phẩm', icon: 'product', adminOnly: true },
+  { to: '/entry/storefront', label: 'Trang khách', icon: 'store', adminOnly: true },
 ]
 const HOGI_REPORT_TABS: Tab[] = [
   { to: '/reports/overview', label: 'Tổng quan', icon: 'report', adminOnly: true },
@@ -97,7 +99,7 @@ function EntryLayout() {
   const { current } = useStore()
   if (usesRevenueEntry(current?.code)) return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập hoặc tải file lên." tabs={ENTRY_TABS} />
   const tabs = usesDistribution(current?.code) ? HOGI_ENTRY_TABS : HOGI_ENTRY_TABS.filter((tab) => tab.to !== '/entry/transfers')
-  return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập: bán hàng, nhập hàng, phân phối, chi phí, sản phẩm." tabs={tabs} />
+  return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập: bán hàng, nhập hàng, phân phối, chi phí, sản phẩm, trang khách." tabs={tabs} />
 }
 
 // Trang đầu của Nhập liệu
@@ -169,6 +171,7 @@ function App() {
             <Route element={<RequireAdmin />}>
               <Route path="expenses" element={<ExpensePage />} />
               <Route path="products" element={<ItemBased fallback="/entry"><ProductsPage /></ItemBased>} />
+              <Route path="storefront" element={<ItemBased fallback="/entry"><StorefrontPage /></ItemBased>} />
               {/* Bún đậu: nhập doanh thu theo ngày */}
               <Route path="revenue" element={<RevenueOnly fallback="/entry"><RevenuePage /></RevenueOnly>} />
               <Route path="items" element={<RevenueOnly fallback="/entry"><ItemImportPage /></RevenueOnly>} />
