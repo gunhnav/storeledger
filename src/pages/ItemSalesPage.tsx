@@ -5,7 +5,7 @@ import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { errorMessage, formatDate, formatVND } from '../lib/format'
 import { fetchAll } from '../lib/fetchAll'
-import { applyFilter, categoriesOf, groupByDay, groupItems, isDayRow, mergeItems, reconcile, totalsOf, visibleItems, type ItemGroup, type Mismatch } from '../lib/itemSales'
+import { applyFilter, categoriesOf, groupByDay, groupItems, isDayRow, mergeByName, reconcile, totalsOf, visibleItems, type ItemGroup, type Mismatch } from '../lib/itemSales'
 import { filterItems } from '../lib/itemSales'
 import type { MonthlyItemSale } from '../types/database'
 
@@ -69,9 +69,11 @@ function ItemSales({ storeId }: { storeId: string }) {
 
   // Dòng đang xem (mặt hàng ẩn như nhóm Bún bò không hiện) và dòng dùng để đối chiếu doanh thu (đủ mọi nhóm)
   const scope = mode === 'month' ? monthRows.filter((r) => r.month === month) : applyFilter(dayRows, { from: filter.from, to: filter.to })
-  const shown = mode === 'month' ? filterItems(applyFilter(visibleItems(scope), { category: filter.category }), filter.query) : applyFilter(visibleItems(scope), { category: filter.category, query: filter.query })
+  // Gom các dòng trùng tên (nhiều mã POS cho cùng một món) rồi mới lọc nhóm / tìm kiếm
+  const unified = mergeByName(visibleItems(scope))
+  const shown = mode === 'month' ? filterItems(applyFilter(unified, { category: filter.category }), filter.query) : applyFilter(unified, { category: filter.category, query: filter.query })
   const mismatches = reconcile(scope, data.revenue)
-  const categories = categoriesOf(visibleItems(scope))
+  const categories = categoriesOf(unified)
   const totals = totalsOf(shown)
   const periodEnd = scope.map((r) => r.period_end).sort().pop()
   const pct = (v: number) => (totals.net > 0 ? `${((v / totals.net) * 100).toFixed(1)}%` : '—')
@@ -165,7 +167,7 @@ function ItemSales({ storeId }: { storeId: string }) {
           {shown.length === 0 && <p className="muted">{t('Không có mặt hàng nào khớp.')}</p>}
 
           {mode === 'month' || merged
-            ? groupItems(mode === 'month' ? shown : mergeItems(shown)).map((g) => <GroupTable key={g.category} group={g} pct={pct} />)
+            ? groupItems(mode === 'month' ? shown : mergeByName(shown, false)).map((g) => <GroupTable key={g.category} group={g} pct={pct} />)
             : days.map((d) => {
                 const bad = mismatchOn(d.date)
                 return (

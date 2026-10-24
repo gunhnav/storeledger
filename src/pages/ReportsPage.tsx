@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { usesPartnerChannel, usesRevenueEntry } from '../lib/storeFeatures'
+import { ChannelRevenueBlock } from './ChannelRevenueBlock'
 import { RevenueReport } from './RevenueReport'
 import { OverviewExtras } from './OverviewExtras'
 import {
@@ -43,6 +44,7 @@ function Reports({ storeId }: { storeId: string }) {
   if (usesRevenueEntry(current?.code)) return <RevenueReport storeId={storeId} />
   return (
     <>
+      <ChannelRevenueBlock storeId={storeId} />
       <OverviewExtras storeId={storeId} />
       <BreakEvenBlock storeId={storeId} />
       <PnlBlock storeId={storeId} />

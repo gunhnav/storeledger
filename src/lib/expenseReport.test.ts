@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { expenseByGroup, expenseRatio, fixedTotal, totalOf } from './expenseReport'
+import { expenseByGroup, expenseByType, expenseRatio, fixedTotal, totalOf } from './expenseReport'
 
 describe('báo cáo chi phí theo nhóm', () => {
   const cur = [
@@ -31,5 +31,18 @@ describe('báo cáo chi phí theo nhóm', () => {
 
   it('không có dữ liệu thì không có dòng nào', () => {
     expect(expenseByGroup([], [])).toEqual([])
+  })
+})
+
+describe('chi tiết trong một nhóm', () => {
+  it('gom cùng loại (không phân biệt hoa thường, khoảng trắng) và xếp loại chi nhiều nhất lên đầu', () => {
+    const t = expenseByType([
+      { note: 'Giò', amount: 300 },
+      { note: 'giò ', amount: 500 },
+      { note: 'Rau', amount: 700 },
+      { note: null, amount: 100 },
+    ])
+    expect(t.map((x) => [x.name, x.amount, x.count])).toEqual([['Giò', 800, 2], ['Rau', 700, 1], ['(Không ghi chú)', 100, 1]])
+    expect(t[0].share).toBe(0.5)
   })
 })

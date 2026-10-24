@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
 import { RequireAdmin, RequireAuth } from './components/RequireAuth'
 import { StoreProvider } from './components/StoreProvider'
@@ -15,7 +15,6 @@ import { DishRecipesPage } from './pages/DishRecipesPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { ExpenseReport } from './pages/ExpenseReport'
 import { GuidePage } from './pages/GuidePage'
-import { IngredientsPage } from './pages/IngredientsPage'
 import { ItemImportPage } from './pages/ItemImportPage'
 import { ItemSalesPage } from './pages/ItemSalesPage'
 import { LoginPage } from './pages/LoginPage'
@@ -30,20 +29,24 @@ import { StaffPage } from './pages/StaffPage'
 import { StockPage } from './pages/StockPage'
 import { TransferPage } from './pages/TransferPage'
 
-// Menu đã gộp: mỗi nhóm một trang có tab
-const STOCK_TABS: Tab[] = [
-  { to: '/inventory/purchases', label: 'Nhập hàng', icon: 'purchase' },
-  { to: '/inventory/transfers', label: 'Phân phối', icon: 'transfer' },
-  { to: '/inventory/stock', label: 'Tồn kho', icon: 'stock' },
+// Menu chia hai phần cho mọi quán: Nhập liệu = những gì người dùng tự nhập hoặc tải file lên;
+// Báo cáo = số liệu hệ thống tự tính từ dữ liệu đã nhập. Mỗi phần là một trang có hàng tab.
+// Hogi (bán theo món, có kho)
+const HOGI_ENTRY_TABS: Tab[] = [
+  { to: '/entry/sales', label: 'Bán hàng', icon: 'sale' },
+  { to: '/entry/purchases', label: 'Nhập hàng', icon: 'purchase' },
+  { to: '/entry/transfers', label: 'Phân phối', icon: 'transfer' },
+  { to: '/entry/expenses', label: 'Chi phí', icon: 'expense', adminOnly: true },
+  { to: '/entry/products', label: 'Sản phẩm', icon: 'product', adminOnly: true },
 ]
-const REPORT_TABS: Tab[] = [
-  { to: '/reports/overview', label: 'Tổng quan', icon: 'report' },
-  { to: '/reports/batches', label: 'Theo đợt nhập', icon: 'purchase' },
-  { to: '/reports/best-sellers', label: 'Bán chạy & gợi ý', icon: 'sale' },
-  { to: '/reports/daily-log', label: 'Nhật ký ngày', icon: 'log' },
+const HOGI_REPORT_TABS: Tab[] = [
+  { to: '/reports/overview', label: 'Tổng quan', icon: 'report', adminOnly: true },
+  { to: '/reports/stock', label: 'Tồn kho', icon: 'stock' },
+  { to: '/reports/batches', label: 'Theo đợt nhập', icon: 'purchase', adminOnly: true },
+  { to: '/reports/best-sellers', label: 'Bán chạy & gợi ý', icon: 'sale', adminOnly: true },
+  { to: '/reports/daily-log', label: 'Nhật ký ngày', icon: 'log', adminOnly: true },
 ]
-// Quán nhập doanh thu theo ngày (Bún đậu): menu chia hai phần. Nhập liệu = những gì người dùng tự nhập hoặc tải file lên;
-// Báo cáo = số liệu hệ thống tự tính từ dữ liệu đã nhập.
+// Bún đậu (nhập doanh thu theo ngày, chỉ admin)
 const ENTRY_TABS: Tab[] = [
   { to: '/entry/revenue', label: 'Doanh thu', icon: 'sale' },
   { to: '/entry/expenses', label: 'Chi phí', icon: 'expense' },
@@ -55,85 +58,85 @@ const REVENUE_REPORT_TABS: Tab[] = [
   { to: '/reports/expenses', label: 'Chi phí', icon: 'expense' },
   { to: '/reports/items', label: 'Mặt hàng bán', icon: 'product' },
 ]
-const MANAGE_TABS: Tab[] = [
-  { to: '/manage/products', label: 'Sản phẩm', icon: 'product' },
-  { to: '/manage/expenses', label: 'Chi phí', icon: 'expense' },
-]
-// Đường dẫn tiếng Việt cũ → đường dẫn mới, để link đã lưu vẫn dùng được
+// Đường dẫn cũ → đường dẫn mới, để link đã lưu vẫn dùng được
 const LEGACY_PATHS: [string, string][] = [
-  ['ban-hang', '/sales'],
-  ['kho', '/inventory'],
-  ['kho/nhap-hang', '/inventory/purchases'],
-  ['kho/chuyen-hang', '/inventory/transfers'],
-  ['kho/ton-kho', '/inventory/stock'],
-  ['nhap-hang', '/inventory/purchases'],
-  ['chuyen-hang', '/inventory/transfers'],
-  ['ton-kho', '/inventory/stock'],
+  ['sales', '/entry'],
+  ['inventory', '/entry/purchases'],
+  ['inventory/purchases', '/entry/purchases'],
+  ['inventory/transfers', '/entry/transfers'],
+  ['inventory/transfer-grid', '/entry/transfers?view=grid'],
+  ['inventory/stock', '/reports/stock'],
+  ['manage', '/entry/expenses'],
+  ['manage/products', '/entry/products'],
+  ['manage/expenses', '/entry/expenses'],
+  ['manage/recipes', '/entry/recipes'],
+  ['manage/ingredients', '/entry/expenses'],
+  ['ban-hang', '/entry'],
+  ['kho', '/entry/purchases'],
+  ['kho/nhap-hang', '/entry/purchases'],
+  ['kho/chuyen-hang', '/entry/transfers'],
+  ['kho/ton-kho', '/reports/stock'],
+  ['nhap-hang', '/entry/purchases'],
+  ['chuyen-hang', '/entry/transfers'],
+  ['ton-kho', '/reports/stock'],
   ['bao-cao', '/reports'],
   ['bao-cao/tong-quan', '/reports/overview'],
   ['bao-cao/nhat-ky', '/reports/daily-log'],
   ['nhat-ky', '/reports/daily-log'],
-  ['quan-ly', '/manage'],
-  ['quan-ly/san-pham', '/manage/products'],
-  ['quan-ly/chi-phi', '/manage/expenses'],
-  ['san-pham', '/manage/products'],
-  ['chi-phi', '/manage/expenses'],
+  ['quan-ly', '/entry/expenses'],
+  ['quan-ly/san-pham', '/entry/products'],
+  ['quan-ly/chi-phi', '/entry/expenses'],
+  ['san-pham', '/entry/products'],
+  ['chi-phi', '/entry/expenses'],
   ['nhan-vien', '/staff'],
   ['huong-dan', '/guide'],
 ]
 
-// Kho hàng: quán không có bước Phân phối (Bún đậu) thì ẩn tab đó
-function InventoryLayout() {
+// Nhập liệu: tab theo loại quán; quán không có bước Phân phối (Bún đậu) thì ẩn tab đó
+function EntryLayout() {
   const { current } = useStore()
-  if (usesRevenueEntry(current?.code)) return <Navigate to="/sales" replace />
-  const tabs = usesDistribution(current?.code) ? STOCK_TABS : STOCK_TABS.filter((tab) => tab.to !== '/inventory/transfers')
-  return <TabsLayout title="Kho hàng" tabs={tabs} />
+  if (usesRevenueEntry(current?.code)) return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập hoặc tải file lên." tabs={ENTRY_TABS} />
+  const tabs = usesDistribution(current?.code) ? HOGI_ENTRY_TABS : HOGI_ENTRY_TABS.filter((tab) => tab.to !== '/entry/transfers')
+  return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập: bán hàng, nhập hàng, phân phối, chi phí, sản phẩm." tabs={tabs} />
 }
 
-// Quản lý: quán nhập doanh thu theo ngày (Bún đậu) đã chuyển sang menu Nhập liệu
-function ManageLayout() {
+// Trang đầu của Nhập liệu
+function EntryIndex() {
   const { current } = useStore()
-  const { pathname } = useLocation()
-  if (usesRevenueEntry(current?.code)) return <Navigate to={pathname.endsWith('/recipes') ? '/entry/recipes' : '/entry/expenses'} replace />
-  return <TabsLayout title="Quản lý" tabs={MANAGE_TABS} />
+  return <Navigate to={usesRevenueEntry(current?.code) ? '/entry/revenue' : '/entry/sales'} replace />
 }
 
-// Trang theo món (sản phẩm, nguyên liệu, báo cáo theo món...) không có ở quán nhập doanh thu: về trang chính của nhóm
+// Báo cáo: số liệu hệ thống tự tính, không cần nhập gì
+function ReportsLayout() {
+  const { current } = useStore()
+  const tabs = usesRevenueEntry(current?.code) ? REVENUE_REPORT_TABS : HOGI_REPORT_TABS
+  return <TabsLayout title="Báo cáo" hint="Hệ thống tự tính từ dữ liệu đã nhập, không cần nhập gì ở đây." tabs={tabs} />
+}
+
+// Trang đầu của Báo cáo: quản trị vào Tổng quan, nhân viên (chỉ có Tồn kho) vào Tồn kho
+function ReportsIndex() {
+  const { isAdmin } = useAuth()
+  return <Navigate to={isAdmin ? '/reports/overview' : '/reports/stock'} replace />
+}
+
+// Trang riêng của quán nhập doanh thu (Bún đậu); quán khác vào thì về trang đầu Nhập liệu / Báo cáo
 function RevenueOnly({ children, fallback }: { children: ReactNode; fallback: string }) {
   const { current } = useStore()
   if (current && !usesRevenueEntry(current.code)) return <Navigate to={fallback} replace />
   return children
 }
 
+// Trang theo món (bán hàng, kho, sản phẩm, báo cáo theo món...) không có ở quán nhập doanh thu
 function ItemBased({ children, fallback }: { children: ReactNode; fallback: string }) {
   const { current } = useStore()
   if (usesRevenueEntry(current?.code)) return <Navigate to={fallback} replace />
   return children
 }
 
-// /sales: quán nhập doanh thu thì hiện form doanh thu, còn lại là màn hình bán theo món
-function SalesRoute() {
-  const { current } = useStore()
-  const { isAdmin } = useAuth()
-  if (!usesRevenueEntry(current?.code)) return <SalePage />
-  return isAdmin ? <Navigate to="/entry/revenue" replace /> : <RevenuePage />
-}
-
-// Báo cáo: quán nhập doanh thu chỉ còn tab Tổng quan và Mặt hàng
-function ReportsLayout() {
-  const { current } = useStore()
-  const tabs = usesRevenueEntry(current?.code) ? REVENUE_REPORT_TABS : REPORT_TABS
-  return usesRevenueEntry(current?.code) ? (
-    <TabsLayout title="Báo cáo" hint="Hệ thống tự tính từ dữ liệu đã nhập, không cần nhập gì ở đây." tabs={tabs} />
-  ) : (
-    <TabsLayout title="Báo cáo" tabs={tabs} />
-  )
-}
-
 // Mở thẳng link Phân phối ở quán không dùng bước này thì về Nhập hàng
 function DistributionOnly({ children }: { children: ReactNode }) {
   const { current } = useStore()
-  if (current && !usesDistribution(current.code)) return <Navigate to="/inventory/purchases" replace />
+  if (current && !usesDistribution(current.code)) return <Navigate to="/entry/purchases" replace />
   return children
 }
 
@@ -156,40 +159,37 @@ function App() {
       <Route path="/shop/:code" element={<ShopPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
-          <Route index element={<Navigate to="/sales" replace />} />
-          <Route path="sales" element={<SalesRoute />} />
-          <Route path="inventory" element={<InventoryLayout />}>
-            <Route index element={<Navigate to="purchases" replace />} />
-            <Route path="purchases" element={<PurchasePage />} />
-            <Route path="transfers" element={<DistributionOnly><TransferPage /></DistributionOnly>} />
-            <Route path="transfer-grid" element={<Navigate to="/inventory/transfers?view=grid" replace />} />
-            <Route path="stock" element={<StockPage />} />
+          <Route index element={<Navigate to="/entry" replace />} />
+          <Route path="entry" element={<EntryLayout />}>
+            <Route index element={<EntryIndex />} />
+            {/* Hogi: bán theo món, có kho (nhân viên dùng được) */}
+            <Route path="sales" element={<ItemBased fallback="/entry"><SalePage /></ItemBased>} />
+            <Route path="purchases" element={<ItemBased fallback="/entry"><PurchasePage /></ItemBased>} />
+            <Route path="transfers" element={<ItemBased fallback="/entry"><DistributionOnly><TransferPage /></DistributionOnly></ItemBased>} />
+            <Route element={<RequireAdmin />}>
+              <Route path="expenses" element={<ExpensePage />} />
+              <Route path="products" element={<ItemBased fallback="/entry"><ProductsPage /></ItemBased>} />
+              {/* Bún đậu: nhập doanh thu theo ngày */}
+              <Route path="revenue" element={<RevenueOnly fallback="/entry"><RevenuePage /></RevenueOnly>} />
+              <Route path="items" element={<RevenueOnly fallback="/entry"><ItemImportPage /></RevenueOnly>} />
+              <Route path="recipes" element={<RevenueOnly fallback="/entry"><DishRecipesPage /></RevenueOnly>} />
+            </Route>
           </Route>
-          <Route path="account" element={<AccountPage />} />
-            <Route path="guide" element={<GuidePage />} />
-          <Route element={<RequireAdmin />}>
-            <Route path="reports" element={<ReportsLayout />}>
-              <Route index element={<Navigate to="overview" replace />} />
+          <Route path="reports" element={<ReportsLayout />}>
+            <Route index element={<ReportsIndex />} />
+            <Route path="stock" element={<ItemBased fallback="/reports"><StockPage /></ItemBased>} />
+            <Route element={<RequireAdmin />}>
               <Route path="overview" element={<ReportsPage />} />
               <Route path="batches" element={<ItemBased fallback="/reports/overview"><BatchStatsPage /></ItemBased>} />
               <Route path="best-sellers" element={<ItemBased fallback="/reports/overview"><BestSellersPage /></ItemBased>} />
+              <Route path="daily-log" element={<ItemBased fallback="/reports/overview"><DailyLogPage /></ItemBased>} />
               <Route path="expenses" element={<RevenueOnly fallback="/reports/overview"><ExpenseReport /></RevenueOnly>} />
               <Route path="items" element={<RevenueOnly fallback="/reports/overview"><ItemSalesPage /></RevenueOnly>} />
-              <Route path="daily-log" element={<ItemBased fallback="/reports/overview"><DailyLogPage /></ItemBased>} />
             </Route>
-            <Route path="manage" element={<ManageLayout />}>
-              <Route index element={<ItemBased fallback="/manage/expenses"><Navigate to="products" replace /></ItemBased>} />
-              <Route path="products" element={<ItemBased fallback="/manage/expenses"><ProductsPage /></ItemBased>} />
-              <Route path="expenses" element={<ExpensePage />} />
-              <Route path="ingredients" element={<ItemBased fallback="/manage/expenses"><IngredientsPage /></ItemBased>} />
-            </Route>
-            <Route path="entry" element={<RevenueOnly fallback="/sales"><TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập hoặc tải file lên." tabs={ENTRY_TABS} /></RevenueOnly>}>
-              <Route index element={<Navigate to="revenue" replace />} />
-              <Route path="revenue" element={<RevenuePage />} />
-              <Route path="expenses" element={<ExpensePage />} />
-              <Route path="items" element={<ItemImportPage />} />
-              <Route path="recipes" element={<DishRecipesPage />} />
-            </Route>
+          </Route>
+          <Route path="account" element={<AccountPage />} />
+          <Route path="guide" element={<GuidePage />} />
+          <Route element={<RequireAdmin />}>
             <Route path="staff" element={<StaffPage />} />
           </Route>
           {LEGACY_PATHS.map(([from, to]) => (

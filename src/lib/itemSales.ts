@@ -74,19 +74,33 @@ export function groupByDay(rows: MonthlyItemSale[]): DayBlock[] {
     .sort((a, b) => b.date.localeCompare(a.date))
 }
 
-// Cộng các ngày lại theo mã mặt hàng (một dòng mỗi mặt hàng)
-export function mergeItems(rows: MonthlyItemSale[]): MonthlyItemSale[] {
-  const merged = new Map<string, MonthlyItemSale>()
+// Tên để so sánh khi gom: không phân biệt hoa thường, bỏ khoảng trắng thừa (giữ dấu vì "đầu" và "đậu" là hai món khác nhau)
+export const nameKey = (name: string) => name.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim()
+
+// Gom các dòng trùng tên thành một dòng (POS có thể có nhiều mã cho cùng một món, ví dụ hai cấu hình giá): cộng số phần và tiền,
+// ghép các mã lại, lấy tên và nhóm của dòng có doanh thu cao nhất.
+// perPeriod = true: chỉ gom trong cùng khoảng ngày (xem từng ngày / từng tháng); false: gom luôn cả các ngày lại thành một dòng mỗi món.
+export function mergeByName(rows: MonthlyItemSale[], perPeriod = true): MonthlyItemSale[] {
+  const groups = new Map<string, MonthlyItemSale[]>()
   for (const r of rows) {
-    const m = merged.get(r.item_code)
-    merged.set(
-      r.item_code,
-      m
-        ? { ...m, qty: Number(m.qty) + Number(r.qty), gross: Number(m.gross) + Number(r.gross), discount: Number(m.discount) + Number(r.discount), net: Number(m.net) + Number(r.net) }
-        : { ...r },
-    )
+    const key = `${perPeriod ? `${r.period_start}|${r.period_end}|` : ''}${nameKey(r.item_name)}`
+    groups.set(key, [...(groups.get(key) ?? []), r])
   }
-  return [...merged.values()]
+  return [...groups.values()].map((list) => {
+    if (list.length === 1) return list[0]
+    const top = list.reduce((a, b) => (Number(b.net) > Number(a.net) ? b : a))
+    const sum = (f: 'qty' | 'gross' | 'discount' | 'net') => list.reduce((t, r) => t + Number(r[f]), 0)
+    return {
+      ...top,
+      item_code: [...new Set(list.map((r) => r.item_code))].sort().join(', '),
+      qty: sum('qty'),
+      gross: sum('gross'),
+      discount: sum('discount'),
+      net: sum('net'),
+      period_start: perPeriod ? top.period_start : list.map((r) => r.period_start).sort()[0],
+      period_end: perPeriod ? top.period_end : list.map((r) => r.period_end).sort().pop()!,
+    }
+  })
 }
 
 // Các nhóm có trong dữ liệu (để làm bộ lọc nhóm), nhóm doanh thu cao đứng trước
@@ -122,4 +136,39 @@ export function reconcile(
     if (Math.abs(diff) > TOLERANCE) out.push({ start: p.start, end: p.end, revenue, items: p.items, diff })
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// Tách doanh thu theo dòng món: Bún bò riêng, phần còn lại là Bún đậu (theo báo cáo mặt hàng của POS)
+// ---------------------------------------------------------------------------
+
+export const BUN_BO = 'Bún bò'
+
+export type LineSplit = {
+  bunBo: number
+  bunDau: number
+  // Các khoảng ngày của báo cáo mặt hàng đã dùng (nằm trọn trong khoảng đang xem)
+  used: { start: string; end: string }[]
+  // Số khoảng ngày có giao với khoảng đang xem nhưng không nằm trọn nên chưa tính
+  skipped: number
+}
+
+// Chỉ dùng báo cáo mặt hàng nằm trọn trong [from, to]: báo cáo một tháng không chia nhỏ ra ngày được
+export function splitByLine(rows: Pick<MonthlyItemSale, 'category' | 'net' | 'period_start' | 'period_end'>[], from: string, to: string): LineSplit {
+  let bunBo = 0
+  let bunDau = 0
+  const used = new Map<string, { start: string; end: string }>()
+  const skipped = new Set<string>()
+  for (const r of rows) {
+    const key = `${r.period_start}|${r.period_end}`
+    if (r.period_end < from || r.period_start > to) continue
+    if (r.period_start < from || r.period_end > to) {
+      skipped.add(key)
+      continue
+    }
+    used.set(key, { start: r.period_start, end: r.period_end })
+    if (r.category?.trim() === BUN_BO) bunBo += Number(r.net)
+    else bunDau += Number(r.net)
+  }
+  return { bunBo, bunDau, used: [...used.values()].sort((a, b) => a.start.localeCompare(b.start)), skipped: skipped.size }
 }

@@ -14,9 +14,9 @@ type Section = {
 }
 
 const STEPS: { icon: IconName; title: string; text: string; to: string }[] = [
-  { icon: 'purchase', title: 'Nhập hàng', text: 'Ghi số hũ mỗi loại vừa mua về. Hàng vào kho ở nhà.', to: '/inventory/purchases' },
-  { icon: 'transfer', title: 'Phân phối', text: 'Ghi số hũ mang từ nhà ra quán hoặc cho công ty. Hàng chuyển sang tồn tại quán / công ty.', to: '/inventory/transfers' },
-  { icon: 'sale', title: 'Bán hàng', text: 'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quán.', to: '/sales' },
+  { icon: 'purchase', title: 'Nhập hàng', text: 'Ghi số hũ mỗi loại vừa mua về. Hàng vào kho ở nhà.', to: '/entry/purchases' },
+  { icon: 'transfer', title: 'Phân phối', text: 'Ghi số hũ mang từ nhà ra quán hoặc cho công ty. Hàng chuyển sang tồn tại quán / công ty.', to: '/entry/transfers' },
+  { icon: 'sale', title: 'Bán hàng', text: 'Bấm món, chọn kênh bán rồi lưu đơn. Hàng trừ ở quán.', to: '/entry/sales' },
 ]
 
 const SECTIONS: Section[] = [
@@ -29,7 +29,7 @@ const SECTIONS: Section[] = [
       'Món nào chưa có ở quán thì phân phối trước rồi mới bán, để tồn tại quán không bị âm.',
       'Ghi đơn ngay khi bán. Nếu quên, đổi ngày bán sang đúng ngày rồi lưu.',
     ],
-    link: { to: '/sales', label: 'Mở Bán hàng' },
+    link: { to: '/entry/sales', label: 'Mở Bán hàng' },
   },
   {
     icon: 'stock',
@@ -40,7 +40,7 @@ const SECTIONS: Section[] = [
       'Đỏ “KIỂM TRA số liệu”: tồn bị âm, thường do bán khi chưa ghi chuyển hàng hoặc nhập sai số. Báo admin để sửa.',
       '“Chưa mang ra”: món đã nhập nhưng chưa phân phối hũ nào ra quán.',
     ],
-    link: { to: '/inventory/stock', label: 'Mở Tồn kho' },
+    link: { to: '/reports/stock', label: 'Mở Tồn kho' },
   },
   {
     icon: 'product',
@@ -51,7 +51,7 @@ const SECTIONS: Section[] = [
       'Mỗi đơn bán chụp lại giá bán và giá vốn lúc bán, nên đổi giá sau này không làm sai báo cáo cũ.',
       'Đổi giá vốn hàng loạt giữ nguyên giá bán, chỉ thay giá vốn từ ngày áp dụng.',
     ],
-    link: { to: '/manage/products', label: 'Mở Sản phẩm' },
+    link: { to: '/entry/products', label: 'Mở Sản phẩm' },
     adminOnly: true,
   },
   {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reconcile, visibleItems, applyFilter, filterItems, groupByDay, groupItems, isDayRow, mergeItems, totalsOf } from './itemSales'
+import { reconcile, splitByLine, visibleItems, applyFilter, filterItems, groupByDay, groupItems, isDayRow, mergeByName, totalsOf } from './itemSales'
 import type { MonthlyItemSale } from '../types/database'
 
 const row = (item_name: string, category: string | null, qty: number, net: number, item_code = item_name): MonthlyItemSale => ({
@@ -51,9 +51,13 @@ describe('xem mặt hàng theo ngày', () => {
   })
 
   it('cộng các ngày theo mặt hàng', () => {
-    const m = mergeItems(rows)
-    expect(m.find((r) => r.item_code === 'Trà đá')).toMatchObject({ qty: 50, net: 150_000 })
+    const m = mergeByName(rows, false)
+    expect(m.find((r) => r.item_code === 'Trà đá')).toMatchObject({ qty: 50, net: 150_000, period_start: '2026-10-10', period_end: '2026-10-11' })
     expect(m).toHaveLength(2)
+  })
+
+  it('chỉ gom trong cùng khoảng ngày khi perPeriod', () => {
+    expect(mergeByName(rows)).toHaveLength(3)
   })
 })
 
@@ -73,5 +77,36 @@ describe('đối chiếu doanh thu với mặt hàng', () => {
 
   it('nhóm Bún bò bị ẩn khỏi danh sách', () => {
     expect(visibleItems([row('A', 'Bún bò', 1, 1), row('B', 'Đồ uống', 1, 1)]).map((r) => r.item_name)).toEqual(['B'])
+  })
+})
+
+describe('gom mặt hàng trùng tên', () => {
+  const r = (code: string, name: string, cat: string | null, qty: number, net: number): MonthlyItemSale => ({ ...row(name, cat, qty, net, code) })
+
+  it('gom hai mã cùng tên, không phân biệt hoa thường và khoảng trắng, ghép mã, lấy nhóm của dòng lớn nhất', () => {
+    const m = mergeByName([r('BD07', 'Mẹt bún đậu đầy đủ', 'Best Seller', 299, 18_000_000), r('MB', 'Mẹt bún đậu  đầy đủ ', 'Best Seller', 131, 7_529_990), r('KL', 'Khăn Lạnh', null, 1, 3000), r('DU08', 'Khăn lạnh', 'Đồ uống', 43, 129000)])
+    expect(m).toHaveLength(2)
+    expect(m.find((x) => x.item_code === 'BD07, MB')).toMatchObject({ qty: 430, net: 25_529_990, category: 'Best Seller' })
+    expect(m.find((x) => x.item_code === 'DU08, KL')).toMatchObject({ item_name: 'Khăn lạnh', qty: 44, net: 132_000, category: 'Đồ uống' })
+  })
+
+  it('giữ dấu: "đầu" và "đậu" là hai món khác nhau', () => {
+    expect(mergeByName([r('A', 'Mẹt bún đầu', null, 1, 1), r('B', 'Mẹt bún đậu', null, 1, 1)])).toHaveLength(2)
+  })
+})
+
+describe('tách doanh thu Bún bò và Bún đậu', () => {
+  const p = (start: string, end: string, category: string | null, net: number) => ({ period_start: start, period_end: end, category, net })
+  const rows = [p('2026-10-01', '2026-10-24', 'Bún bò', 300), p('2026-10-01', '2026-10-24', 'Đồ uống', 500), p('2026-10-01', '2026-10-24', null, 200), p('2026-09-01', '2026-09-30', 'Bún bò', 999)]
+
+  it('Bún bò riêng, mọi nhóm còn lại là Bún đậu, chỉ lấy báo cáo nằm trọn trong khoảng', () => {
+    const s = splitByLine(rows, '2026-10-01', '2026-10-31')
+    expect([s.bunBo, s.bunDau, s.skipped]).toEqual([300, 700, 0])
+    expect(s.used).toEqual([{ start: '2026-10-01', end: '2026-10-24' }])
+  })
+
+  it('báo cáo chỉ giao một phần thì bỏ qua và đếm lại', () => {
+    const s = splitByLine(rows, '2026-10-18', '2026-10-24')
+    expect([s.bunBo, s.bunDau, s.used.length, s.skipped]).toEqual([0, 0, 0, 1])
   })
 })

@@ -34,3 +34,28 @@ export const fixedTotal = (rows: ExpenseLike[]) => totalOf(rows.filter((r) => FI
 
 // Chi phí trên doanh thu (0,6 = 60%); null khi chưa có doanh thu
 export const expenseRatio = (expenses: number, revenue: number): number | null => (revenue > 0 ? expenses / revenue : null)
+
+// ---------------------------------------------------------------------------
+// Trong một nhóm: gom các khoản cùng tên (loại chi) và xếp loại chi nhiều nhất lên đầu
+// ---------------------------------------------------------------------------
+
+export type TypeRow = { name: string; amount: number; count: number; share: number }
+export const NO_NOTE = '(Không ghi chú)'
+
+// Tên loại để so sánh: không phân biệt hoa thường và khoảng trắng thừa
+const typeKey = (note: string | null) => (note ?? '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim()
+
+export function expenseByType(rows: { note: string | null; amount: number }[]): TypeRow[] {
+  const map = new Map<string, { name: string; amount: number; count: number }>()
+  for (const r of rows) {
+    const key = typeKey(r.note)
+    const g = map.get(key) ?? { name: (r.note ?? '').replace(/\s+/g, ' ').trim() || NO_NOTE, amount: 0, count: 0 }
+    g.amount += Number(r.amount)
+    g.count += 1
+    map.set(key, g)
+  }
+  const total = [...map.values()].reduce((s, g) => s + g.amount, 0)
+  return [...map.values()]
+    .map((g) => ({ ...g, share: total > 0 ? g.amount / total : 0 }))
+    .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name))
+}

@@ -7,10 +7,14 @@ import { LANGUAGES, useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { errorMessage, formatCompact, formatDate, formatVND, todayVN } from '../lib/format'
 import { pctChange, previousRange, type Range } from '../lib/bundauReport'
+import { fetchAll } from '../lib/fetchAll'
+import { splitByLine } from '../lib/itemSales'
+import type { MonthlyItemSale } from '../types/database'
 import { REVENUE_CHANNELS, channelLabel, dayProfit, dayRevenue, filterDays, summarize, sumDays, type DayFilter, type DaySort, type RevenueChannel, type RevenueDay, type RevenueSummary } from '../lib/revenue'
 import { DatePicker } from '../components/DatePicker'
 
-type Loaded = { key: string; current: RevenueSummary; previous: RevenueSummary; expensesByCategory: { category: string; amount: number }[] }
+type ItemLite = Pick<MonthlyItemSale, 'category' | 'net' | 'period_start' | 'period_end'>
+type Loaded = { key: string; current: RevenueSummary; previous: RevenueSummary; expensesByCategory: { category: string; amount: number }[]; items: ItemLite[] }
 
 // Màu mỗi kênh trên biểu đồ (chi phí dùng --chart-2, lãi dùng màu chữ)
 const CHANNEL_COLOR: Record<RevenueChannel, string> = { in_store: 'var(--chart-1)', shopeefood: 'var(--chart-3)', nem_cuon: 'var(--chart-4)' }
@@ -38,7 +42,11 @@ export function RevenueReport({ storeId }: { storeId: string }) {
       supabase.from('daily_revenue').select('revenue_date, channel, amount').eq('store_id', storeId).gte('revenue_date', r.from).lte('revenue_date', r.to).limit(5000)
     const expenses = (r: Range) =>
       supabase.from('expenses').select('expense_date, category, amount').eq('store_id', storeId).gte('expense_date', r.from).lte('expense_date', r.to).limit(5000)
-    Promise.all([revenue(range), expenses(range), revenue(prev), expenses(prev)]).then(([rev, exp, prevRev, prevExp]) => {
+    // Báo cáo mặt hàng có giao với khoảng đang xem (dùng để tách Bún bò khỏi Bún đậu)
+    const items = fetchAll<ItemLite>((a, b) =>
+      supabase.from('monthly_item_sales').select('category, net, period_start, period_end, item_code').eq('store_id', storeId).lte('period_start', range.to).gte('period_end', range.from).order('period_start').order('item_code').range(a, b),
+    )
+    Promise.all([revenue(range), expenses(range), revenue(prev), expenses(prev), items]).then(([rev, exp, prevRev, prevExp, itemRows]) => {
       if (cancelled) return
       const err = rev.error ?? exp.error ?? prevRev.error ?? prevExp.error
       if (err) return setError(errorMessage(err))
@@ -50,8 +58,9 @@ export function RevenueReport({ storeId }: { storeId: string }) {
         current: summarize(rev.data ?? [], exp.data ?? [], rate),
         previous: summarize(prevRev.data ?? [], prevExp.data ?? [], rate),
         expensesByCategory: [...byCat].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount),
+        items: itemRows,
       })
-    })
+    }).catch((e) => !cancelled && setError(errorMessage(e)))
     return () => {
       cancelled = true
     }
@@ -77,7 +86,10 @@ export function RevenueReport({ storeId }: { storeId: string }) {
     )
   }
 
-  const { current: cur, previous: prev, expensesByCategory } = loaded
+  const { current: cur, previous: prev, expensesByCategory, items } = loaded
+  const split = splitByLine(items, range.from, range.to)
+  const pos = cur.byChannel.in_store + cur.byChannel.shopeefood
+  const gap = pos - split.bunDau - split.bunBo
   const delta = (c: number, p: number) => {
     const change = pctChange(c, p)
     if (change === null) return undefined
@@ -132,6 +144,44 @@ export function RevenueReport({ storeId }: { storeId: string }) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="report-block">
+        <h2>{t('Doanh thu theo dòng món')}</h2>
+        {split.used.length === 0 ? (
+          <p className="muted">{t('Chưa có báo cáo mặt hàng nằm trọn trong khoảng này nên chưa tách được Bún bò. Nhập báo cáo mặt hàng ở mục Nhập liệu → Nhập mặt hàng (nên nhập theo từng ngày để tách chính xác).')}</p>
+        ) : (
+          <>
+            <div className="stats">
+              <div className="stat">
+                <div className="stat-label">{t('Bún đậu')}</div>
+                <div className="stat-value">{formatVND(split.bunDau)}</div>
+                <div className="stat-sub">{t('Mọi mặt hàng trừ Bún bò')}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-label">{t('Bún bò')}</div>
+                <div className="stat-value">{formatVND(split.bunBo)}</div>
+                <div className="stat-sub">{split.bunBo + split.bunDau > 0 ? t('{pct}% doanh thu mặt hàng', { pct: Math.round((split.bunBo / (split.bunBo + split.bunDau)) * 100) }) : '—'}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-label">{t('Bán nem cuốn')}</div>
+                <div className="stat-value">{formatVND(cur.byChannel.nem_cuon)}</div>
+                <div className="stat-sub">{t('Không qua máy POS')}</div>
+              </div>
+              {Math.abs(gap) > 1 && (
+                <div className="stat">
+                  <div className="stat-label">{t('Chênh với doanh thu POS')}</div>
+                  <div className={`stat-value${gap < 0 ? ' negative' : ''}`}>{`${gap > 0 ? '+' : '−'}${formatVND(Math.abs(gap))}`}</div>
+                  <div className="stat-sub">{t('Doanh thu POS đã nhập {pos}, tổng mặt hàng {items}', { pos: formatVND(pos), items: formatVND(split.bunDau + split.bunBo) })}</div>
+                </div>
+              )}
+            </div>
+            <p className="muted">
+              {t('Tính từ báo cáo mặt hàng: {ranges}.', { ranges: split.used.map((u) => (u.start === u.end ? formatDate(u.start) : `${formatDate(u.start)} – ${formatDate(u.end)}`)).join(', ') })}
+              {split.skipped > 0 && ` ${t('{count} báo cáo chỉ giao một phần khoảng này nên chưa tính.', { count: split.skipped })}`}
+            </p>
+          </>
+        )}
       </section>
 
       {empty ? (

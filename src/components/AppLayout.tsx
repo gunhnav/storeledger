@@ -17,12 +17,10 @@ type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean 
 // Menu gọn theo nhóm công việc; trang con là tab bên trong (xem App.tsx).
 // Nhân viên nằm trong menu ở tên người dùng (chỉ quản trị).
 const NAV_ITEMS: NavItem[] = [
-  { to: '/sales', label: 'Bán hàng', icon: 'sale' },
-  { to: '/inventory', label: 'Kho hàng', icon: 'stock' },
-  { to: '/reports', label: 'Báo cáo', icon: 'report', adminOnly: true },
-  { to: '/manage', label: 'Quản lý', icon: 'manage', adminOnly: true },
+  { to: '/entry', label: 'Nhập liệu', icon: 'sale' },
+  { to: '/reports', label: 'Báo cáo', icon: 'report' },
 ]
-
+// Bún đậu: cả hai mục chỉ dành cho quản trị
 const REVENUE_NAV_ITEMS: NavItem[] = [
   { to: '/entry', label: 'Nhập liệu', icon: 'sale', adminOnly: true },
   { to: '/reports', label: 'Báo cáo', icon: 'report', adminOnly: true },

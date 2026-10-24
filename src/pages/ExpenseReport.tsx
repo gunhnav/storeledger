@@ -5,11 +5,11 @@ import { initialPeriod, type PeriodState } from '../lib/period'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
-import { errorMessage, formatCompact, formatDate, formatVND, todayVN } from '../lib/format'
+import { errorMessage, formatCompact, formatVND, todayVN } from '../lib/format'
 import { fetchAll } from '../lib/fetchAll'
 import { pctChange, previousRange } from '../lib/bundauReport'
 import { FIXED_GROUPS } from '../lib/expenses'
-import { expenseByGroup, expenseRatio, fixedTotal, totalOf } from '../lib/expenseReport'
+import { NO_NOTE, expenseByGroup, expenseByType, expenseRatio, fixedTotal, totalOf } from '../lib/expenseReport'
 
 type Row = { id: string; expense_date: string; category: string; amount: number; note: string | null }
 type Loaded = { key: string; current: Row[]; previous: Row[]; revenue: number }
@@ -126,7 +126,7 @@ function Report({ storeId }: { storeId: string }) {
         <>
           <section className="report-block">
             <h2>{t('Chi phí theo nhóm')}</h2>
-            <p className="muted">{t('Bấm vào một nhóm để xem từng khoản chi trong nhóm đó.')}</p>
+            <p className="muted">{t('Bấm vào một nhóm để xem chi tiết. Trong mỗi nhóm, loại chi nhiều nhất xếp trên cùng.')}</p>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height={Math.max(160, chartData.length * 38 + 30)}>
                 <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 16, bottom: 0, left: 8 }}>
@@ -180,17 +180,21 @@ function Report({ storeId }: { storeId: string }) {
                               <table>
                                 <thead>
                                   <tr>
-                                    <th>{t('Ngày')}</th>
-                                    <th>{t('Khoản chi')}</th>
+                                    <th>{t('Loại chi')}</th>
+                                    <th className="num">{t('Số khoản')}</th>
                                     <th className="num">{t('Số tiền')}</th>
+                                    <th className="num">{t('Tỷ trọng trong nhóm')}</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {items.map((r) => (
-                                    <tr key={r.id}>
-                                      <td>{formatDate(r.expense_date)}</td>
-                                      <td>{r.note ?? ''}</td>
-                                      <td className="num">{formatVND(Number(r.amount))}</td>
+                                  {expenseByType(items).map((x, i) => (
+                                    <tr key={x.name}>
+                                      <td>
+                                        <span className="muted">{i + 1}.</span> {x.name === NO_NOTE ? t(NO_NOTE) : x.name}
+                                      </td>
+                                      <td className="num">{x.count}</td>
+                                      <td className="num">{formatVND(x.amount)}</td>
+                                      <td className="num">{Math.round(x.share * 100)}%</td>
                                     </tr>
                                   ))}
                                 </tbody>
