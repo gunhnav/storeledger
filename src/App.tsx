@@ -13,6 +13,7 @@ import { BestSellersPage } from './pages/BestSellersPage'
 import { DailyLogPage } from './pages/DailyLogPage'
 import { DishRecipesPage } from './pages/DishRecipesPage'
 import { ExpensePage } from './pages/ExpensePage'
+import { ExpenseReport } from './pages/ExpenseReport'
 import { GuidePage } from './pages/GuidePage'
 import { IngredientsPage } from './pages/IngredientsPage'
 import { ItemImportPage } from './pages/ItemImportPage'
@@ -51,6 +52,7 @@ const ENTRY_TABS: Tab[] = [
 ]
 const REVENUE_REPORT_TABS: Tab[] = [
   { to: '/reports/overview', label: 'Tổng quan', icon: 'report' },
+  { to: '/reports/expenses', label: 'Chi phí', icon: 'expense' },
   { to: '/reports/items', label: 'Mặt hàng bán', icon: 'product' },
 ]
 const MANAGE_TABS: Tab[] = [
@@ -171,6 +173,7 @@ function App() {
               <Route path="overview" element={<ReportsPage />} />
               <Route path="batches" element={<ItemBased fallback="/reports/overview"><BatchStatsPage /></ItemBased>} />
               <Route path="best-sellers" element={<ItemBased fallback="/reports/overview"><BestSellersPage /></ItemBased>} />
+              <Route path="expenses" element={<RevenueOnly fallback="/reports/overview"><ExpenseReport /></RevenueOnly>} />
               <Route path="items" element={<RevenueOnly fallback="/reports/overview"><ItemSalesPage /></RevenueOnly>} />
               <Route path="daily-log" element={<ItemBased fallback="/reports/overview"><DailyLogPage /></ItemBased>} />
             </Route>

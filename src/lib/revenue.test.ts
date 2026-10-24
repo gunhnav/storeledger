@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { commissionOf, summarize } from './revenue'
+import { commissionOf, dayProfit, dayRevenue, filterDays, summarize, sumDays } from './revenue'
 
 describe('doanh thu nhập tay', () => {
   it('hoa hồng chỉ tính cho kênh đối tác', () => {
@@ -39,5 +39,26 @@ describe('doanh thu nhập tay', () => {
   it('không có dữ liệu thì mọi số bằng 0', () => {
     const s = summarize([], [], 0.25)
     expect([s.gross, s.net, s.expenses, s.profit, s.days.length]).toEqual([0, 0, 0, 0, 0])
+  })
+})
+
+describe('lọc bảng chi tiết theo ngày', () => {
+  const day = (date: string, q: number, d: number, n: number, expenses = 0, commission = 0) => ({ date, gross: q + d + n, commission, expenses, byChannel: { in_store: q, shopeefood: d, nem_cuon: n } })
+  const days = [day('2026-10-01', 100, 0, 0, 40), day('2026-10-02', 50, 20, 30, 10, 5), day('2026-10-03', 0, 0, 80, 0)]
+
+  it('lọc theo khoảng ngày', () => {
+    expect(filterDays(days, { from: '2026-10-02', to: '', channel: '', sort: 'date_asc' }).map((d) => d.date)).toEqual(['2026-10-02', '2026-10-03'])
+  })
+
+  it('lọc theo kênh chỉ giữ ngày có doanh thu kênh đó và xếp theo doanh thu kênh', () => {
+    const r = filterDays(days, { from: '', to: '', channel: 'nem_cuon', sort: 'revenue_desc' })
+    expect(r.map((d) => d.date)).toEqual(['2026-10-03', '2026-10-02'])
+    expect(dayRevenue(r[0], 'nem_cuon')).toBe(80)
+  })
+
+  it('xếp theo lãi và tính tổng', () => {
+    expect(filterDays(days, { from: '', to: '', channel: '', sort: 'profit_desc' }).map((d) => [d.date, dayProfit(d)])).toEqual([['2026-10-02', 85], ['2026-10-03', 80], ['2026-10-01', 60]])
+    const t = sumDays(days)
+    expect([t.gross, t.commission, t.expenses, t.byChannel.nem_cuon]).toEqual([280, 5, 50, 110])
   })
 })

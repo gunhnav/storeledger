@@ -3939,3 +3939,27 @@ input.overridden {
   margin-right: 6px;
   border-radius: 50%;
 }
+.expense-detail {
+  margin: 6px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.expense-detail summary {
+  cursor: pointer;
+}
+.group-toggle {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+.group-row.is-open td {
+  background: var(--surface-2, rgba(127, 127, 127, 0.08));
+}
+.group-detail > td {
+  padding: 0 0 8px 24px;
+}
+.group-detail table {
+  width: 100%;
+}

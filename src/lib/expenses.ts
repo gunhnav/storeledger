@@ -4,8 +4,11 @@ import { evalExpression } from './calc'
 // 20261018162323_company_channel_expense_groups.sql). Quán không có danh sách riêng dùng nhóm mặc định.
 export const EXPENSE_GROUPS = ['Dụng cụ', 'Bao bì', 'In ấn - quảng cáo', 'Vận chuyển', 'Khác'] as const
 const STORE_EXPENSE_GROUPS: Record<string, readonly string[]> = {
-  bundau: ['Đồ uống', 'Nguyên liệu', 'Dụng cụ', 'Quảng cáo', 'Khác'],
+  bundau: ['Đồ uống', 'Nguyên liệu', 'Dụng cụ', 'Quảng cáo', 'Tiền nhà', 'Điện nước', 'Lương nhân viên', 'Khác'],
 }
+
+// Nhóm chi phí cố định hằng tháng (không đổi theo doanh thu)
+export const FIXED_GROUPS: readonly string[] = ['Tiền nhà', 'Điện nước', 'Lương nhân viên']
 
 export function expenseGroupsFor(storeCode: string | undefined): readonly string[] {
   return (storeCode && STORE_EXPENSE_GROUPS[storeCode]) || EXPENSE_GROUPS

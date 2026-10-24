@@ -21,7 +21,7 @@ describe('chi phí đồ dùng: thành tiền', () => {
 
 describe('nhóm chi phí theo cửa hàng', () => {
   it('Bún đậu có nhóm riêng, Hogi và quán khác dùng 5 nhóm mặc định', () => {
-    expect(expenseGroupsFor('bundau')).toEqual(['Đồ uống', 'Nguyên liệu', 'Dụng cụ', 'Quảng cáo', 'Khác'])
+    expect(expenseGroupsFor('bundau')).toEqual(['Đồ uống', 'Nguyên liệu', 'Dụng cụ', 'Quảng cáo', 'Tiền nhà', 'Điện nước', 'Lương nhân viên', 'Khác'])
     expect(expenseGroupsFor('hogi')).toEqual(['Dụng cụ', 'Bao bì', 'In ấn - quảng cáo', 'Vận chuyển', 'Khác'])
     expect(expenseGroupsFor(undefined)).toEqual(expenseGroupsFor('hogi'))
   })

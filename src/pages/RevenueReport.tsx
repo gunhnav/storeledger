@@ -1,24 +1,19 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { DatePicker } from '../components/DatePicker'
+import { PeriodFilters } from '../components/PeriodFilters'
+import { initialPeriod, type PeriodState } from '../lib/period'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { errorMessage, formatCompact, formatDate, formatVND, todayVN } from '../lib/format'
-import { pctChange, presetRange, previousRange, type Preset, type Range } from '../lib/bundauReport'
-import { REVENUE_CHANNELS, channelLabel, summarize, type RevenueChannel, type RevenueSummary } from '../lib/revenue'
+import { pctChange, previousRange, type Range } from '../lib/bundauReport'
+import { REVENUE_CHANNELS, channelLabel, dayProfit, dayRevenue, filterDays, summarize, sumDays, type DayFilter, type DaySort, type RevenueChannel, type RevenueDay, type RevenueSummary } from '../lib/revenue'
+import { DatePicker } from '../components/DatePicker'
 
 type Loaded = { key: string; current: RevenueSummary; previous: RevenueSummary; expensesByCategory: { category: string; amount: number }[] }
 
 // Màu mỗi kênh trên biểu đồ (chi phí dùng --chart-2, lãi dùng màu chữ)
 const CHANNEL_COLOR: Record<RevenueChannel, string> = { in_store: 'var(--chart-1)', shopeefood: 'var(--chart-3)', nem_cuon: 'var(--chart-4)' }
-
-const PRESETS: { value: Preset; label: string }[] = [
-  { value: 'today', label: 'Hôm nay' },
-  { value: '7d', label: '7 ngày' },
-  { value: 'month', label: 'Tháng này' },
-  { value: 'lastMonth', label: 'Tháng trước' },
-]
 
 // Báo cáo tổng quan quán Bún đậu (chỉ admin): doanh thu nhập tay, hoa hồng đối tác, chi phí và lãi theo kỳ so với kỳ trước.
 export function RevenueReport({ storeId }: { storeId: string }) {
@@ -27,11 +22,11 @@ export function RevenueReport({ storeId }: { storeId: string }) {
   const rate = store?.default_commission_rate ?? 0
   const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
   const today = todayVN()
-  const [preset, setPreset] = useState<Preset | 'custom'>('month')
-  const [range, setRange] = useState<Range>(() => presetRange('month', today))
+  const [period, setPeriod] = useState<PeriodState>(() => initialPeriod('month', today))
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const { range } = period
   const valid = range.from !== '' && range.to !== '' && range.from <= range.to
   const key = `${storeId}|${range.from}|${range.to}`
 
@@ -62,30 +57,7 @@ export function RevenueReport({ storeId }: { storeId: string }) {
     }
   }, [storeId, range, valid, key, rate])
 
-  const pick = (p: Preset) => {
-    setPreset(p)
-    setRange(presetRange(p, today))
-  }
-
-  const filters = (
-    <div className="filters">
-      <div className="preset-chips" role="group" aria-label={t('Khoảng thời gian')}>
-        {PRESETS.map((p) => (
-          <button key={p.value} type="button" className={preset === p.value ? 'active' : undefined} onClick={() => pick(p.value)}>
-            {t(p.label)}
-          </button>
-        ))}
-      </div>
-      <div className="field">
-        {t('Từ ngày')}
-        <DatePicker value={range.from} onChange={(v) => { setPreset('custom'); setRange((r) => ({ ...r, from: v })) }} label={t('Từ ngày')} />
-      </div>
-      <div className="field">
-        {t('Đến ngày')}
-        <DatePicker value={range.to} onChange={(v) => { setPreset('custom'); setRange((r) => ({ ...r, to: v })) }} label={t('Đến ngày')} />
-      </div>
-    </div>
-  )
+  const filters = <PeriodFilters value={period} today={today} onChange={setPeriod} />
 
   if (!valid) {
     return (
@@ -220,13 +192,88 @@ export function RevenueReport({ storeId }: { storeId: string }) {
               )}
             </section>
 
-          <section className="report-block">
-            <h2>{t('Chi tiết theo ngày')}</h2>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{t('Ngày')}</th>
+          <DailyDetail days={cur.days} />
+        </>
+      )}
+    </div>
+  )
+}
+
+const EMPTY_FILTER: DayFilter = { from: '', to: '', channel: '', sort: 'date_desc' }
+const SORTS: { value: DaySort; label: string }[] = [
+  { value: 'date_desc', label: 'Ngày mới nhất' },
+  { value: 'date_asc', label: 'Ngày cũ nhất' },
+  { value: 'revenue_desc', label: 'Doanh thu cao nhất' },
+  { value: 'profit_desc', label: 'Lãi cao nhất' },
+]
+
+// Bảng "Chi tiết theo ngày" có bộ lọc riêng (khoảng ngày trong kỳ đang xem, kênh, sắp xếp). Lọc theo kênh thì chỉ còn
+// doanh thu kênh đó (chi phí và lãi không chia theo kênh nên ẩn).
+function DailyDetail({ days }: { days: RevenueDay[] }) {
+  const { t } = useI18n()
+  const [f, setF] = useState<DayFilter>(EMPTY_FILTER)
+  const rows = filterDays(days, f)
+  const total = sumDays(rows)
+  const byChannel = f.channel !== ''
+  const changed = f.from !== '' || f.to !== '' || f.channel !== '' || f.sort !== 'date_desc'
+  const sorts = byChannel ? SORTS.filter((s) => s.value !== 'profit_desc') : SORTS
+  const money = (v: number) => (v > 0 ? formatVND(v) : '—')
+
+  return (
+    <section className="report-block">
+      <h2>{t('Chi tiết theo ngày')}</h2>
+      <div className="filters">
+        <div className="field">
+          {t('Từ ngày')}
+          <DatePicker value={f.from} onChange={(v) => setF({ ...f, from: v })} label={t('Từ ngày')} />
+        </div>
+        <div className="field">
+          {t('Đến ngày')}
+          <DatePicker value={f.to} onChange={(v) => setF({ ...f, to: v })} label={t('Đến ngày')} />
+        </div>
+        <label>
+          {t('Kênh')}
+          <select value={f.channel} onChange={(e) => { const channel = e.target.value as RevenueChannel | ''; setF({ ...f, channel, sort: channel !== '' && f.sort === 'profit_desc' ? 'revenue_desc' : f.sort }) }}>
+            <option value="">{t('Tất cả')}</option>
+            {REVENUE_CHANNELS.map((c) => (
+              <option key={c} value={c}>
+                {t(channelLabel(c))}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {t('Sắp xếp')}
+          <select value={f.sort} onChange={(e) => setF({ ...f, sort: e.target.value as DaySort })}>
+            {sorts.map((s) => (
+              <option key={s.value} value={s.value}>
+                {t(s.label)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {changed && (
+          <button type="button" onClick={() => setF(EMPTY_FILTER)}>
+            {t('Xoá lọc')}
+          </button>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <p className="muted">{t('Không có ngày nào khớp bộ lọc.')}</p>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{t('Ngày')}</th>
+                {byChannel ? (
+                  <>
+                    <th className="num">{t(channelLabel(f.channel as RevenueChannel))}</th>
+                    <th className="num">{t('Tỷ trọng')}</th>
+                    {f.channel === 'shopeefood' && <th className="num">{t('Hoa hồng')}</th>}
+                  </>
+                ) : (
+                  <>
                     {REVENUE_CHANNELS.map((c) => (
                       <th key={c} className="num">
                         {t(channelLabel(c))}
@@ -236,32 +283,66 @@ export function RevenueReport({ storeId }: { storeId: string }) {
                     <th className="num">{t('Hoa hồng')}</th>
                     <th className="num">{t('Chi phí')}</th>
                     <th className="num">{t('Lãi ròng')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...cur.days].reverse().map((d) => {
-                    const profit = d.gross - d.commission - d.expenses
-                    return (
-                      <tr key={d.date}>
-                        <td>{formatDate(d.date)}</td>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((d) => {
+                const profit = dayProfit(d)
+                return (
+                  <tr key={d.date}>
+                    <td>{formatDate(d.date)}</td>
+                    {byChannel ? (
+                      <>
+                        <td className="num">{formatVND(dayRevenue(d, f.channel))}</td>
+                        <td className="num">{d.gross > 0 ? `${Math.round((dayRevenue(d, f.channel) / d.gross) * 100)}%` : '—'}</td>
+                        {f.channel === 'shopeefood' && <td className="num">{money(d.commission)}</td>}
+                      </>
+                    ) : (
+                      <>
                         {REVENUE_CHANNELS.map((c) => (
                           <td key={c} className="num">
-                            {d.byChannel[c] > 0 ? formatVND(d.byChannel[c]) : '—'}
+                            {money(d.byChannel[c])}
                           </td>
                         ))}
                         <td className="num">{formatVND(d.gross)}</td>
-                        <td className="num">{d.commission > 0 ? formatVND(d.commission) : '—'}</td>
-                        <td className="num">{d.expenses > 0 ? formatVND(d.expenses) : '—'}</td>
+                        <td className="num">{money(d.commission)}</td>
+                        <td className="num">{money(d.expenses)}</td>
                         <td className={`num${profit < 0 ? ' negative' : ''}`}>{formatVND(profit)}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </>
+                      </>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>{t('Tổng {count} ngày', { count: rows.length })}</th>
+                {byChannel ? (
+                  <>
+                    <th className="num">{formatVND(total.byChannel[f.channel as RevenueChannel])}</th>
+                    <th className="num">{total.gross > 0 ? `${Math.round((total.byChannel[f.channel as RevenueChannel] / total.gross) * 100)}%` : '—'}</th>
+                    {f.channel === 'shopeefood' && <th className="num">{money(total.commission)}</th>}
+                  </>
+                ) : (
+                  <>
+                    {REVENUE_CHANNELS.map((c) => (
+                      <th key={c} className="num">
+                        {money(total.byChannel[c])}
+                      </th>
+                    ))}
+                    <th className="num">{formatVND(total.gross)}</th>
+                    <th className="num">{money(total.commission)}</th>
+                    <th className="num">{money(total.expenses)}</th>
+                    <th className={`num${total.gross - total.commission - total.expenses < 0 ? ' negative' : ''}`}>{formatVND(total.gross - total.commission - total.expenses)}</th>
+                  </>
+                )}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
-    </div>
+    </section>
   )
 }
