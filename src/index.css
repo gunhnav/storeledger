@@ -4456,6 +4456,11 @@ input.overridden {
 .shop-bank-amount {
   color: var(--s-green-dark);
 }
+.shop-field-row {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 8px;
+}
 .shop-order-code {
   margin: 0;
   color: var(--s-muted);
@@ -4530,6 +4535,42 @@ input.overridden {
   }
 }
 @media (max-width: 520px) {
+  .shop-sizes {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .shop-lines li {
+    grid-template-columns: auto 1fr;
+  }
+  .shop-lines li .shop-qty {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+  .shop-brand strong {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .shop-header-in {
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .shop-size {
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+  .shop-size strong {
+    font-size: 16px;
+  }
+  .shop-size span {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 12.5px;
+  }
+  .shop-footer-btn {
+    word-break: break-all;
+    text-align: center;
+  }
   .shop-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;

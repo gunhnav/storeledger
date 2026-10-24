@@ -1,10 +1,11 @@
 // Trang bán hàng công khai (/hogi, /shop/<mã quán>): ĐẶT TRƯỚC theo set (4 hoặc 6 hũ, tự chọn vị) như kênh Công ty.
-// Không lấy tồn kho: ai đặt gì nhận đó. Giỏ hàng là các dòng set; nội dung đơn gửi qua Zalo.
+// Không lấy tồn kho: ai đặt gì nhận đó. Giỏ hàng gồm dòng set và dòng món lẻ (vd: sữa chua Hy Lạp); nội dung đơn gửi qua Zalo.
 
 export const SET_SIZES = [4, 6] as const
 export type SetSize = (typeof SET_SIZES)[number]
 
-export type MenuItem = { id: string; name: string; category: string | null; price: number | null }
+// mode: 'set' = gộp vào set 4 / 6 hũ, 'single' = bán lẻ từng phần / chai
+export type MenuItem = { id: string; name: string; category: string | null; price: number | null; mode?: 'set' | 'single' }
 export type PublicBank = { code: string; account: string; holder: string }
 // QR thanh toán gốc của quán (chuỗi EMVCo, ví dụ QR Góp Quỹ MoMo): trang tự thêm số tiền, số hoá đơn, nội dung
 export type PublicPay = { payload: string; label: string | null; holder: string }
@@ -18,12 +19,21 @@ export type PublicStore = {
   // Thông tin chuyển khoản (chỉ có khi quán đã nhập đủ mã ngân hàng, số tài khoản, chủ tài khoản)
   bank: PublicBank | null
   pay: PublicPay | null
+  // Domain liên hệ của quán (tài khoản nội bộ công ty, ví dụ huong.vu3)
+  domain: string | null
 }
 export type PublicMenu = { store: PublicStore; items: MenuItem[] }
 
 // Số hũ từng vị trong một set: { <mã món>: số hũ }
 export type Mix = Record<string, number>
-export type SetLine = { key: string; size: SetSize; mix: Mix; qty: number; unitPrice: number }
+export type SetLine = { kind: 'set'; key: string; size: SetSize; mix: Mix; qty: number; unitPrice: number }
+// Món bán lẻ (không theo set)
+export type SingleLine = { kind: 'single'; key: string; productId: string; qty: number; unitPrice: number }
+export type CartLine = SetLine | SingleLine
+
+export const isSingle = (item: Pick<MenuItem, 'mode'>) => item.mode === 'single'
+// Đơn vị bán lẻ: chai (đồ uống theo ml) hoặc hũ
+export const unitOf = (name: string) => (/chai|\d\s*ml|whey/i.test(name) ? 'chai' : 'hũ')
 
 export const MAX_SETS = 99
 
@@ -111,7 +121,7 @@ const lineKey = (size: SetSize, mix: Mix) =>
     .join(',')}`
 
 // Thêm set vào đơn: chỉ nhận set đủ số hũ và có giá; set giống hệt đã có thì cộng dồn số set
-export function addSet(lines: SetLine[], size: SetSize, mix: Mix, qty: number, items: MenuItem[], store: Pricing): SetLine[] {
+export function addSet(lines: CartLine[], size: SetSize, mix: Mix, qty: number, items: MenuItem[], store: Pricing): CartLine[] {
   if (mixCount(mix) !== size || qty <= 0) return lines
   // Mọi vị trong một set phải cùng dòng món
   const used = items.filter((i) => (mix[i.id] ?? 0) > 0)
@@ -121,44 +131,98 @@ export function addSet(lines: SetLine[], size: SetSize, mix: Mix, qty: number, i
   const key = lineKey(size, mix)
   const existing = lines.find((l) => l.key === key)
   if (existing) return lines.map((l) => (l.key === key ? { ...l, qty: Math.min(MAX_SETS, l.qty + qty), unitPrice } : l))
-  return [...lines, { key, size, mix: { ...mix }, qty: Math.min(MAX_SETS, qty), unitPrice }]
+  return [...lines, { kind: 'set', key, size, mix: { ...mix }, qty: Math.min(MAX_SETS, qty), unitPrice }]
 }
 
+// Đặt số lượng món lẻ trong đơn (0 = bỏ món); món chưa có giá thì không thêm
+export function setSingleQty(lines: CartLine[], item: MenuItem, qty: number): CartLine[] {
+  const key = `p|${item.id}`
+  if (qty <= 0 || item.price === null) return lines.filter((l) => l.key !== key)
+  const next: SingleLine = { kind: 'single', key, productId: item.id, qty: Math.min(MAX_SETS, qty), unitPrice: item.price }
+  return lines.some((l) => l.key === key) ? lines.map((l) => (l.key === key ? next : l)) : [...lines, next]
+}
+
+// Số lượng một món lẻ đang có trong đơn
+export const singleQty = (lines: CartLine[], productId: string) => lines.find((l) => l.kind === 'single' && l.productId === productId)?.qty ?? 0
+
 // Đặt số set của một dòng; 0 hoặc nhỏ hơn thì bỏ dòng
-export function setLineQty(lines: SetLine[], key: string, qty: number): SetLine[] {
+export function setLineQty(lines: CartLine[], key: string, qty: number): CartLine[] {
   if (qty <= 0) return lines.filter((l) => l.key !== key)
   return lines.map((l) => (l.key === key ? { ...l, qty: Math.min(MAX_SETS, qty) } : l))
 }
 
 // Bỏ dòng có vị đã không còn trên thực đơn (sau khi thực đơn được tải lại) và cập nhật giá mới
-export function refreshCart(lines: SetLine[], items: MenuItem[], store: Pricing): SetLine[] {
-  const ids = new Set(items.map((i) => i.id))
-  return lines
-    .filter((l) => Object.keys(l.mix).every((id) => ids.has(id)))
-    .map((l) => ({ ...l, unitPrice: setPrice(l.size, l.mix, items, store) ?? l.unitPrice }))
+export function refreshCart(lines: CartLine[], items: MenuItem[], store: Pricing): CartLine[] {
+  const byId = new Map(items.map((i) => [i.id, i]))
+  const out: CartLine[] = []
+  for (const l of lines) {
+    if (l.kind === 'single') {
+      const price = byId.get(l.productId)?.price
+      if (price !== null && price !== undefined) out.push({ ...l, unitPrice: price })
+    } else if (Object.keys(l.mix).every((id) => byId.has(id))) {
+      out.push({ ...l, unitPrice: setPrice(l.size, l.mix, items, store) ?? l.unitPrice })
+    }
+  }
+  return out
 }
 
-export const cartTotal = (lines: SetLine[]) => lines.reduce((s, l) => s + l.unitPrice * l.qty, 0)
-export const cartSets = (lines: SetLine[]) => lines.reduce((s, l) => s + l.qty, 0)
-export const cartJars = (lines: SetLine[]) => lines.reduce((s, l) => s + l.qty * l.size, 0)
+export const cartTotal = (lines: CartLine[]) => lines.reduce((s, l) => s + l.unitPrice * l.qty, 0)
+// Số set trong đơn (không tính món lẻ)
+export const cartSets = (lines: CartLine[]) => lines.reduce((s, l) => s + (l.kind === 'set' ? l.qty : 0), 0)
+// Số hũ trong các set
+export const cartJars = (lines: CartLine[]) => lines.reduce((s, l) => s + (l.kind === 'set' ? l.qty * l.size : 0), 0)
+// Số món lẻ
+export const cartSingles = (lines: CartLine[]) => lines.reduce((s, l) => s + (l.kind === 'single' ? l.qty : 0), 0)
+// Tổng số thứ trong đơn (để hiện trên nút giỏ hàng)
+export const cartCount = (lines: CartLine[]) => cartSets(lines) + cartSingles(lines)
+
+// "2 set (8 hũ) + 3 món lẻ"
+export function cartSummary(lines: CartLine[]): string {
+  const parts: string[] = []
+  if (cartSets(lines)) parts.push(`${cartSets(lines)} set (${cartJars(lines)} hũ)`)
+  if (cartSingles(lines)) parts.push(`${cartSingles(lines)} món lẻ`)
+  return parts.join(' + ')
+}
+
+// Tên và mô tả một dòng trong đơn: set thì "Set 4 hũ" + các vị; món lẻ thì tên món + đơn vị
+export function lineTitle(l: CartLine, items: MenuItem[]): { title: string; detail: string; unit: string } {
+  if (l.kind === 'set') return { title: `Set ${l.size} hũ`, detail: mixLabel(l.mix, items), unit: 'set' }
+  const name = items.find((i) => i.id === l.productId)?.name ?? 'Món'
+  return { title: name, detail: 'Bán lẻ', unit: unitOf(name) }
+}
 
 const vnd = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}đ`
 
-export type Customer = { name: string; phone: string; address: string; note: string; payment: 'transfer' | 'cash' }
-export const EMPTY_CUSTOMER: Customer = { name: '', phone: '', address: '', note: '', payment: 'transfer' }
+// Khách đặt trong công ty: giao theo domain (tài khoản nội bộ) và tầng
+export type Customer = { name: string; domain: string; floor: string; payment: 'transfer' | 'cash' }
+export const EMPTY_CUSTOMER: Customer = { name: '', domain: '', floor: '', payment: 'transfer' }
 
-// Số điện thoại Việt Nam: 9 đến 11 chữ số (sau khi bỏ khoảng trắng, dấu chấm, +84)
-export const validPhone = (phone: string) => /^\d{9,11}$/.test(cleanPhone(phone).replace(/^\+84/, '0'))
+// Domain nội bộ: chữ không dấu, số, dấu chấm, gạch (ví dụ huong.vu3)
+export const cleanDomain = (domain: string) => domain.trim().toLowerCase().replace(/@.*$/, '')
+export const validDomain = (domain: string) => /^[a-z0-9._-]{2,40}$/.test(cleanDomain(domain))
+
+// "6", "F6", "tầng 6", "Lầu 6" -> "6"; tầng là số hoặc chữ ngắn (vd: B1, G)
+export const cleanFloor = (floor: string) =>
+  floor
+    .trim()
+    .replace(/^(f|tầng|tang|lầu|lau)\s*/i, '')
+    .trim()
+    .toUpperCase()
+export const validFloor = (floor: string) => /^[A-Z0-9]{1,4}$/.test(cleanFloor(floor))
 
 // Thông tin khách còn thiếu / sai (hiện cạnh ô nhập); rỗng nghĩa là gửi đơn được
-export function customerIssues(c: Customer): Partial<Record<'name' | 'phone' | 'address', string>> {
-  const out: Partial<Record<'name' | 'phone' | 'address', string>> = {}
+export function customerIssues(c: Customer): Partial<Record<'name' | 'domain' | 'floor', string>> {
+  const out: Partial<Record<'name' | 'domain' | 'floor', string>> = {}
   if (!c.name.trim()) out.name = 'Nhập tên của bạn'
-  if (!c.phone.trim()) out.phone = 'Nhập số điện thoại'
-  else if (!validPhone(c.phone)) out.phone = 'Số điện thoại chưa đúng'
-  if (!c.address.trim()) out.address = 'Nhập địa chỉ / số tầng'
+  if (!c.domain.trim()) out.domain = 'Nhập domain của bạn'
+  else if (!validDomain(c.domain)) out.domain = 'Domain chỉ gồm chữ không dấu, số và dấu chấm (vd: huong.vu3)'
+  if (!c.floor.trim()) out.floor = 'Nhập tầng'
+  else if (!validFloor(c.floor)) out.floor = 'Tầng chưa đúng (vd: 6)'
   return out
 }
+
+// Nội dung chuyển khoản theo dạng "domain - F tầng", ví dụ "huong.vu3 - F6"
+export const transferNote = (domain: string, floor: string) => `${cleanDomain(domain)} - F${cleanFloor(floor)}`
 
 // Ảnh QR chuyển khoản VietQR (dịch vụ img.vietqr.io) đã điền sẵn số tiền và nội dung
 export function vietQrUrl(bank: PublicBank, amount: number, memo: string): string {
@@ -166,17 +230,17 @@ export function vietQrUrl(bank: PublicBank, amount: number, memo: string): strin
   return `https://img.vietqr.io/image/${encodeURIComponent(bank.code)}-${encodeURIComponent(bank.account)}-compact2.png?${q}`
 }
 
-// Nội dung chuyển khoản: tên quán + số điện thoại khách để quán dễ đối chiếu
-export const transferMemo = (storeName: string, phone: string) => `${storeName} ${cleanPhone(phone)}`.trim().slice(0, 50)
-
 // Nội dung đơn đặt trước để dán vào Zalo
-export function orderMessage(storeName: string, lines: SetLine[], items: MenuItem[], customer: Partial<Customer> = {}, hasBank = false, code = ''): string {
-  const rows = lines.map((l) => `- ${l.qty} set ${l.size} hũ (${mixLabel(l.mix, items)}): ${vnd(l.unitPrice * l.qty)}`)
-  const out = [`Xin chào ${storeName}, mình muốn đặt trước${code ? ` (mã đơn ${code})` : ''}:`, ...rows, `Tổng: ${vnd(cartTotal(lines))} (${cartSets(lines)} set, ${cartJars(lines)} hũ)`]
+export function orderMessage(storeName: string, lines: CartLine[], items: MenuItem[], customer: Partial<Customer> = {}, hasBank = false, code = ''): string {
+  const rows = lines.map((l) => {
+    if (l.kind === 'set') return `- ${l.qty} set ${l.size} hũ (${mixLabel(l.mix, items)}): ${vnd(l.unitPrice * l.qty)}`
+    const { title, unit } = lineTitle(l, items)
+    return `- ${l.qty} ${unit} ${title}: ${vnd(l.unitPrice * l.qty)}`
+  })
+  const out = [`Xin chào ${storeName}, mình muốn đặt trước${code ? ` (mã đơn ${code})` : ''}:`, ...rows, `Tổng: ${vnd(cartTotal(lines))} (${cartSummary(lines)})`]
   if (customer.name?.trim()) out.push(`Tên: ${customer.name.trim()}`)
-  if (customer.phone?.trim()) out.push(`SĐT: ${customer.phone.trim()}`)
-  if (customer.address?.trim()) out.push(`Địa chỉ: ${customer.address.trim()}`)
-  if (customer.note?.trim()) out.push(`Ghi chú: ${customer.note.trim()}`)
+  if (customer.domain?.trim()) out.push(`Domain: ${cleanDomain(customer.domain)}`)
+  if (customer.floor?.trim()) out.push(`Tầng: ${cleanFloor(customer.floor)}`)
   if (hasBank && customer.payment) out.push(`Thanh toán: ${customer.payment === 'transfer' ? 'chuyển khoản' : 'tiền mặt khi nhận'}`)
   return out.join('\n')
 }
@@ -185,6 +249,12 @@ export function orderMessage(storeName: string, lines: SetLine[], items: MenuIte
 export const cleanPhone = (phone: string) => phone.replace(/[^\d+]/g, '')
 export const zaloLink = (phone: string) => `https://zalo.me/${cleanPhone(phone).replace(/^\+84/, '0')}`
 export const telLink = (phone: string) => `tel:${cleanPhone(phone)}`
+
+// Hangout (Google Chat) nội bộ công ty: email = domain + đuôi công ty. Google Chat không có link mở thẳng hội thoại theo email,
+// nên trang mở Google Chat và chép sẵn email để khách dán vào ô tìm người.
+export const COMPANY_MAIL_DOMAIN = 'mservice.com.vn'
+export const hangoutEmail = (domain: string) => `${cleanDomain(domain)}@${COMPANY_MAIL_DOMAIN}`
+export const GOOGLE_CHAT_URL = 'https://chat.google.com/'
 
 const norm = (v: string) => v.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/g, 'd')
 
@@ -197,8 +267,13 @@ export function flavorColors(name: string): [string, string] {
   if (n.includes('pho mai')) return ['#fbe9a8', '#f0c04a']
   if (n.includes('truyen thong')) return ['#f6efd9', '#e3d2a2']
   if (n.includes('flan')) return ['#fde7bf', '#d9954a']
+  if (n.includes('whey')) return ['#fbf6dc', '#e8d98a']
+  if (n.includes('lam quen') || n.includes('tri ky') || n.includes('hy lap')) return ['#e6f0fa', '#9fbfdc']
   return ['#d6ead9', '#7fb58a']
 }
+
+// Biểu tượng thay hình khi món chưa có hình minh hoạ
+export const flavorEmoji = (name: string) => (/whey|chai|ml/i.test(norm(name)) ? '🥛' : '🥣')
 
 // Hình minh hoạ theo vị (public/shop/flavor-*.svg); vị lạ thì null và trang dùng màu nền thay thế
 export function flavorImage(name: string): string | null {
@@ -221,5 +296,8 @@ export function flavorNote(name: string): string | null {
   if (n.includes('pho mai')) return 'Béo mịn vị phô mai'
   if (n.includes('truyen thong') || n.includes('nguyen ban')) return 'Vị nguyên bản, béo dịu'
   if (n.includes('flan')) return 'Mềm mịn, caramel thơm'
+  if (n.includes('whey')) return 'Nước whey từ sữa chua Hy Lạp'
+  if (n.includes('lam quen')) return 'Sữa chua Hy Lạp, hũ nhỏ dùng thử'
+  if (n.includes('tri ky')) return 'Sữa chua Hy Lạp, hũ lớn dùng cả tuần'
   return null
 }

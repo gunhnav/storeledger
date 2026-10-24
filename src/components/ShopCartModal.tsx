@@ -5,20 +5,24 @@ import { invoiceCode, invoiceMemo } from '../lib/invoice'
 import { downloadInvoice } from '../lib/invoiceImage'
 import {
   EMPTY_CUSTOMER,
-  cartJars,
+  cartSummary,
   cartTotal,
   customerIssues,
   flavorColors,
+  flavorEmoji,
   flavorImage,
-  mixLabel,
+  lineTitle,
   orderMessage,
+  transferNote,
+  validDomain,
+  validFloor,
   vietQrUrl,
   zaloLink,
   type Customer,
   type MenuItem,
   type Mix,
   type PublicStore,
-  type SetLine,
+  type CartLine,
 } from '../lib/storefront'
 
 const vnd = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}đ`
@@ -33,7 +37,7 @@ export function SetThumbs({ mix, items }: { mix: Mix; items: MenuItem[] }) {
         const [c1, c2] = flavorColors(f.name)
         return (
           <span key={f.id} style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
-            {image ? <img src={image} alt="" width={44} height={44} /> : '🥣'}
+            {image ? <img src={image} alt="" width={44} height={44} /> : flavorEmoji(f.name)}
           </span>
         )
       })}
@@ -44,7 +48,7 @@ export function SetThumbs({ mix, items }: { mix: Mix; items: MenuItem[] }) {
 interface ShopCartModalProps {
   open: boolean
   onClose: () => void
-  cart: SetLine[]
+  cart: CartLine[]
   items: MenuItem[]
   store: PublicStore
   onSetLineQty: (key: string, qty: number) => void
@@ -56,7 +60,8 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER)
   const [tried, setTried] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [accountCopied, setAccountCopied] = useState(false)
+  // Lỗi khi tạo ảnh hoá đơn / mã QR (hiện ngay trong hộp thoại thay vì alert)
+  const [fileError, setFileError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [qrImage, setQrImage] = useState<{ text: string; url: string } | null>(null)
 
@@ -82,7 +87,11 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
     return invoiceCode(openedAt, cartHash)
   }, [openedAt, salt, cart])
 
-  const memo = useMemo(() => invoiceMemo(orderCode, 'Hogi'), [orderCode])
+  // Nội dung chuyển khoản "domain - F tầng" (vd: huong.vu3 - F6); khi khách chưa điền đủ thì tạm dùng mã đơn
+  const memo = useMemo(
+    () => (validDomain(customer.domain) && validFloor(customer.floor) ? transferNote(customer.domain, customer.floor) : invoiceMemo(orderCode, 'Hogi')),
+    [customer.domain, customer.floor, orderCode],
+  )
 
   const qrText = useMemo(() => {
     if (!pay || !payByTransfer || total <= 0) return null
@@ -153,14 +162,14 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
     }
   }
 
-  const copyAccount = async (account: string) => {
-    try {
-      await navigator.clipboard.writeText(account)
-      setAccountCopied(true)
-      setTimeout(() => setAccountCopied(false), 2000)
-    } catch {
-      window.prompt('Sao chép số tài khoản:', account)
-    }
+  // Tải ảnh mã QR thanh toán về máy (để mở MoMo quét từ thư viện ảnh)
+  const saveQr = (url: string) => {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `QR-${orderCode}.png`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
   }
 
   const saveInvoice = async () => {
@@ -169,19 +178,19 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
       return
     }
     setDownloading(true)
+    setFileError(null)
     try {
       await downloadInvoice({
         storeName: store.name,
         storePhone: store.phone,
+        storeDomain: store.domain,
         code: orderCode,
         issuedAt: new Date(),
         customer,
-        lines: cart.map((l) => ({
-          title: `Set ${l.size} hũ`,
-          detail: mixLabel(l.mix, items),
-          qty: l.qty,
-          unitPrice: l.unitPrice,
-        })),
+        lines: cart.map((l) => {
+          const { title, detail } = lineTitle(l, items)
+          return { title, detail, qty: l.qty, unitPrice: l.unitPrice }
+        }),
         total,
         paymentText: !canTransfer ? 'Liên hệ quán' : customer.payment === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt khi nhận',
         qr:
@@ -192,7 +201,7 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
               : null,
       })
     } catch {
-      window.alert('Không tạo được hoá đơn, bạn thử lại nhé.')
+      setFileError('Không tạo được hoá đơn, bạn thử lại nhé.')
     } finally {
       setDownloading(false)
     }
@@ -200,7 +209,7 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
 
   if (!open) return null
 
-  const err = (k: 'name' | 'phone' | 'address') => (tried && issues[k] ? <small className="shop-error">{issues[k]}</small> : null)
+  const err = (k: 'name' | 'domain' | 'floor') => (tried && issues[k] ? <small className="shop-error">{issues[k]}</small> : null)
 
   return (
     <div className="shop-modal-backdrop" onClick={onClose}>
@@ -217,35 +226,40 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
         ) : (
           <>
             <ul className="shop-lines">
-              {cart.map((l) => (
-                <li key={l.key}>
-                  <SetThumbs mix={l.mix} items={items} />
-                  <div className="shop-line-info">
-                    <strong>Set {l.size} hũ</strong>
-                    <small>{mixLabel(l.mix, items)}</small>
-                    <small>{vnd(l.unitPrice)} / set</small>
-                  </div>
-                  <div className="shop-qty">
-                    <button type="button" aria-label={l.qty <= 1 ? 'Xoá set' : 'Giảm'} onClick={() => onSetLineQty(l.key, l.qty - 1)}>
-                      {l.qty <= 1 ? (
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5" />
-                        </svg>
-                      ) : (
-                        '−'
-                      )}
-                    </button>
-                    <span>{l.qty}</span>
-                    <button type="button" aria-label="Tăng" onClick={() => onSetLineQty(l.key, l.qty + 1)}>
-                      +
-                    </button>
-                  </div>
-                </li>
-              ))}
+              {cart.map((l) => {
+                const info = lineTitle(l, items)
+                return (
+                  <li key={l.key}>
+                    <SetThumbs mix={l.kind === 'set' ? l.mix : { [l.productId]: l.qty }} items={items} />
+                    <div className="shop-line-info">
+                      <strong>{info.title}</strong>
+                      <small>{info.detail}</small>
+                      <small>
+                        {vnd(l.unitPrice)} / {info.unit}
+                      </small>
+                    </div>
+                    <div className="shop-qty">
+                      <button type="button" aria-label={l.qty <= 1 ? 'Xoá set' : 'Giảm'} onClick={() => onSetLineQty(l.key, l.qty - 1)}>
+                        {l.qty <= 1 ? (
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5" />
+                          </svg>
+                        ) : (
+                          '−'
+                        )}
+                      </button>
+                      <span>{l.qty}</span>
+                      <button type="button" aria-label="Tăng" onClick={() => onSetLineQty(l.key, l.qty + 1)}>
+                        +
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
 
             <div className="shop-total">
-              <span>Tổng thanh toán · {cartJars(cart)} hũ</span>
+              <span>Tổng thanh toán · {cartSummary(cart)}</span>
               <strong>{vnd(total)}</strong>
             </div>
 
@@ -254,17 +268,16 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
               <input type="text" value={customer.name} onChange={(e) => setField({ name: e.target.value })} placeholder="Tên của bạn *" autoComplete="name" />
               {err('name')}
             </label>
-            <label className="shop-field">
-              <input type="tel" inputMode="tel" value={customer.phone} onChange={(e) => setField({ phone: e.target.value })} placeholder="Số điện thoại *" autoComplete="tel" />
-              {err('phone')}
-            </label>
-            <label className="shop-field">
-              <input type="text" value={customer.address} onChange={(e) => setField({ address: e.target.value })} placeholder="Địa chỉ / Số tầng *" autoComplete="street-address" />
-              {err('address')}
-            </label>
-            <label className="shop-field">
-              <textarea value={customer.note} onChange={(e) => setField({ note: e.target.value })} placeholder="Ghi chú đơn hàng (ngày giờ nhận, yêu cầu thêm…)" rows={2} />
-            </label>
+            <div className="shop-field-row">
+              <label className="shop-field">
+                <input type="text" value={customer.domain} onChange={(e) => setField({ domain: e.target.value })} placeholder="Domain * (vd: huong.vu3)" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+                {err('domain')}
+              </label>
+              <label className="shop-field shop-field-floor">
+                <input type="text" inputMode="numeric" value={customer.floor} onChange={(e) => setField({ floor: e.target.value })} placeholder="Tầng *" />
+                {err('floor')}
+              </label>
+            </div>
 
             <p className="shop-order-code">
               Mã đơn: <strong>{orderCode}</strong>
@@ -300,12 +313,7 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
                   {payAccount && (
                     <>
                       <dt>Tài khoản</dt>
-                      <dd>
-                        {payAccount}{' '}
-                        <button type="button" className="shop-mini" onClick={() => copyAccount(payAccount)}>
-                          {accountCopied ? 'Đã chép ✓' : 'Sao chép'}
-                        </button>
-                      </dd>
+                      <dd>{payAccount}</dd>
                     </>
                   )}
                   <dt>Số tiền</dt>
@@ -313,7 +321,12 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
                   <dt>Nội dung</dt>
                   <dd>{memo}</dd>
                 </dl>
-                <small className="shop-hint">Mã QR đã có sẵn số tiền và mã đơn. Mở MoMo hoặc ứng dụng ngân hàng để quét.</small>
+                {qrUrl && (
+                  <button type="button" className="shop-copy shop-download" onClick={() => saveQr(qrUrl)}>
+                    ⬇ Tải mã QR
+                  </button>
+                )}
+                <small className="shop-hint">Mã QR đã có sẵn số tiền và nội dung. Mở MoMo hoặc ứng dụng ngân hàng để quét, hoặc tải mã về rồi quét từ thư viện ảnh.</small>
               </div>
             )}
 
@@ -325,12 +338,7 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
                   <dt>Ngân hàng</dt>
                   <dd>{bankName(bank.code)}</dd>
                   <dt>Số tài khoản</dt>
-                  <dd>
-                    {bank.account}{' '}
-                    <button type="button" className="shop-mini" onClick={() => copyAccount(bank.account)}>
-                      {accountCopied ? 'Đã chép ✓' : 'Sao chép'}
-                    </button>
-                  </dd>
+                  <dd>{bank.account}</dd>
                   <dt>Chủ tài khoản</dt>
                   <dd>{bank.holder}</dd>
                   <dt>Số tiền</dt>
@@ -352,7 +360,8 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
             <button type="button" className="shop-copy shop-download" onClick={saveInvoice} disabled={downloading}>
               {downloading ? 'Đang tạo hoá đơn…' : '⬇ Tải hoá đơn về máy'}
             </button>
-            {tried && !ready && <small className="shop-error">Bạn điền đủ tên, số điện thoại và địa chỉ giúp quán nhé.</small>}
+            {tried && !ready && <small className="shop-error">Bạn điền đủ tên, domain và tầng giúp quán nhé.</small>}
+            {fileError && <small className="shop-error">{fileError}</small>}
             <small className="shop-hint">
               {store.phone
                 ? 'Bấm "Gửi đơn qua Zalo": nội dung đơn được sao chép sẵn, bạn chỉ cần dán vào khung chat.'

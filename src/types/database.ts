@@ -50,6 +50,8 @@ export type Product = {
   tracks_stock: boolean
   low_stock_threshold: number
   is_active: boolean
+  // Trang đặt trước: set = bán theo set 4/6 hũ, single = bán lẻ (20261025230000_storefront_sale_mode.sql)
+  public_sale_mode: 'set' | 'single'
   created_at: string
 }
 
@@ -275,6 +277,7 @@ export type ProductInsert = {
   tracks_stock?: boolean
   low_stock_threshold?: number
   is_active?: boolean
+  public_sale_mode?: 'set' | 'single'
   created_at?: string
 }
 export type ProductUpdate = Partial<ProductInsert>
@@ -386,8 +389,9 @@ export type PublicMenuResult = {
     set_prices: { size: 4 | 6; product_id: string | null; price: number }[]
     bank: { code: string; account: string; holder: string } | null
     pay: { payload: string; label: string | null; holder: string } | null
+    domain: string | null
   }
-  items: { id: string; name: string; category: string | null; price: number | null }[]
+  items: { id: string; name: string; category: string | null; price: number | null; mode: 'set' | 'single' }[]
 } | null
 
 export type CompanySetHistoryRow = {

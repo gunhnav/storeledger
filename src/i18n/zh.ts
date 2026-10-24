@@ -984,4 +984,7 @@ export const zh: Record<string, string> = {
   'Mã kiểm tra CRC của chuỗi QR không khớp, có thể chép thiếu hoặc sai ký tự': '二维码 CRC 不匹配，可能复制不完整或有错字',
   'QR này không dùng đồng Việt Nam': '此二维码不使用越南盾',
   'Chuỗi QR thiếu thông tin tài khoản nhận (tag 38)': '二维码字符串缺少收款账户信息（tag 38）',
+  'Cách bán trên trang khách': '顾客页面的销售方式',
+  'Bán theo set 4 / 6 hũ': '按 4 / 6 罐套餐销售',
+  'Bán lẻ từng phần': '单份零售',
 }

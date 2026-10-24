@@ -9,7 +9,7 @@ import { describePayload, payloadError } from '../lib/emvQr'
 // Một dòng giá set: cỡ set, áp dụng cho ('' = set mix vị, còn lại là mã vị), giá (chuỗi để cho phép ô trống khi gõ)
 type RuleDraft = { uid: number; size: 4 | 6; productId: string; price: string }
 type Settings = { is_public: boolean; public_phone: string; public_tagline: string; bankCode: string; bankAccount: string; bankHolder: string; qrPayload: string; qrLabel: string }
-type ProductOption = { id: string; name: string; category: string | null }
+type ProductOption = { id: string; name: string; category: string | null; public_sale_mode: 'set' | 'single' }
 
 let nextUid = 1
 const digits = (text: string) => text.replace(/[^\d]/g, '')
@@ -21,6 +21,8 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
   const [form, setForm] = useState<Settings | null>(null)
   const [rules, setRules] = useState<RuleDraft[]>([])
   const [products, setProducts] = useState<ProductOption[]>([])
+  // Cách bán từng dòng món trên trang khách: theo set hoặc lẻ (lưu cho mọi món cùng nhóm)
+  const [modes, setModes] = useState<Record<string, 'set' | 'single'>>({})
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const link = `${window.location.origin}/shop/${code}`
@@ -30,7 +32,7 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
     Promise.all([
       supabase.from('stores').select('is_public, public_phone, public_tagline, public_bank_code, public_bank_account, public_bank_holder, public_qr_payload, public_qr_label').eq('id', storeId).single(),
       supabase.from('storefront_set_prices').select('*').eq('store_id', storeId).order('set_size').order('created_at'),
-      supabase.from('products').select('id, name, category').eq('store_id', storeId).eq('is_active', true).order('name'),
+      supabase.from('products').select('id, name, category, public_sale_mode').eq('store_id', storeId).eq('is_active', true).order('name'),
     ]).then(([store, prices, prods]) => {
       if (cancelled) return
       const e = store.error ?? prices.error ?? prods.error
@@ -47,6 +49,7 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
         qrLabel: data.public_qr_label ?? '',
       })
       setProducts(prods.data ?? [])
+      setModes(Object.fromEntries((prods.data ?? []).map((p) => [p.category ?? '', p.public_sale_mode])))
       setRules(prices.data.map((r) => ({ uid: nextUid++, size: r.set_size, productId: r.product_id ?? '', price: String(Number(r.price)) })))
     })
     return () => {
@@ -97,7 +100,12 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
         public_qr_label: form.qrLabel.trim() || null,
       })
       .eq('id', storeId)
-    const saved = err ? { error: err } : await supabase.rpc('save_storefront_set_prices', { p_store_id: storeId, p_rules: parsed })
+    let saved: { error: unknown } = err ? { error: err } : await supabase.rpc('save_storefront_set_prices', { p_store_id: storeId, p_rules: parsed })
+    for (const [category, mode] of Object.entries(modes)) {
+      if (saved.error) break
+      const ids = products.filter((p) => (p.category ?? '') === category && p.public_sale_mode !== mode).map((p) => p.id)
+      if (ids.length) saved = await supabase.from('products').update({ public_sale_mode: mode }).in('id', ids)
+    }
     setSaving(false)
     if (saved.error) return setError(errorMessage(saved.error))
     toast.success(t('Đã lưu cài đặt trang bán hàng'))
@@ -139,6 +147,17 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
           placeholder={t('Để trống để dùng câu mặc định')}
         />
       </label>
+
+      <h3 className="card-title">{t('Cách bán trên trang khách')}</h3>
+      {Object.keys(modes).map((category) => (
+        <label key={category}>
+          {category || t('Chưa phân loại')}
+          <select value={modes[category]} onChange={(e) => setModes((m) => ({ ...m, [category]: e.target.value as 'set' | 'single' }))}>
+            <option value="set">{t('Bán theo set 4 / 6 hũ')}</option>
+            <option value="single">{t('Bán lẻ từng phần')}</option>
+          </select>
+        </label>
+      ))}
 
       <h3 className="card-title">{t('Giá set')}</h3>
       <small className="muted">

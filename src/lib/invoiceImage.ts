@@ -4,9 +4,10 @@ export type InvoiceLine = { title: string; detail: string; qty: number; unitPric
 export type InvoiceData = {
   storeName: string
   storePhone: string | null
+  storeDomain?: string | null
   code: string
   issuedAt: Date
-  customer: { name: string; phone: string; address: string; note: string }
+  customer: { name: string; domain: string; floor: string }
   lines: InvoiceLine[]
   total: number
   paymentText: string
@@ -74,10 +75,9 @@ export async function renderInvoice(data: InvoiceData): Promise<HTMLCanvasElemen
     ['Mã hoá đơn', data.code],
     ['Ngày lập', formatIssued(data.issuedAt)],
     ['Khách hàng', data.customer.name],
-    ['Điện thoại', data.customer.phone],
-    ['Địa chỉ / số tầng', data.customer.address],
+    ['Domain', data.customer.domain.trim().toLowerCase()],
+    ['Tầng', data.customer.floor.trim()],
   ]
-  if (data.customer.note.trim()) info.push(['Ghi chú', data.customer.note.trim()])
   const infoRows = info.map(([k, v]) => ({ k, lines: wrapText(measure(18, 600), v, WIDTH - PAD * 2 - 190) }))
   const lineRows = data.lines.map((l) => ({ l, title: wrapText(measure(18, 700), l.title, titleWidth), detail: wrapText(measure(15, 400), l.detail, titleWidth) }))
 
@@ -108,6 +108,7 @@ export async function renderInvoice(data: InvoiceData): Promise<HTMLCanvasElemen
   text(data.storeName, PAD + 86, 58, 30, 700, '#f7f3ea')
   text('HOÁ ĐƠN BÁN HÀNG · ĐẶT TRƯỚC', PAD + 86, 90, 15, 600, '#bfe3c6')
   if (data.storePhone) text(data.storePhone, WIDTH - PAD, 58, 18, 600, '#f7f3ea', 'right')
+  if (data.storeDomain) text(`Domain: ${data.storeDomain}`, WIDTH - PAD, 88, 15, 600, '#bfe3c6', 'right')
 
   // Thông tin chung
   for (const r of infoRows) {

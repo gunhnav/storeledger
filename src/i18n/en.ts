@@ -984,4 +984,7 @@ export const en: Record<string, string> = {
   'Mã kiểm tra CRC của chuỗi QR không khớp, có thể chép thiếu hoặc sai ký tự': 'The QR CRC does not match; it may be incomplete or mistyped',
   'QR này không dùng đồng Việt Nam': 'This QR does not use Vietnamese dong',
   'Chuỗi QR thiếu thông tin tài khoản nhận (tag 38)': 'The QR string is missing the recipient account (tag 38)',
+  'Cách bán trên trang khách': 'How items are sold on the customer page',
+  'Bán theo set 4 / 6 hũ': 'Sold in sets of 4 / 6',
+  'Bán lẻ từng phần': 'Sold individually',
 }

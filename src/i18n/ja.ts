@@ -984,4 +984,7 @@ export const ja: Record<string, string> = {
   'Mã kiểm tra CRC của chuỗi QR không khớp, có thể chép thiếu hoặc sai ký tự': 'QR の CRC が一致しません。一部が欠けているか入力ミスの可能性があります',
   'QR này không dùng đồng Việt Nam': 'この QR はベトナムドンを使用していません',
   'Chuỗi QR thiếu thông tin tài khoản nhận (tag 38)': 'QR 文字列に受取口座情報（tag 38）がありません',
+  'Cách bán trên trang khách': 'お客様ページでの販売方法',
+  'Bán theo set 4 / 6 hũ': '4 / 6 個セットで販売',
+  'Bán lẻ từng phần': '単品で販売',
 }

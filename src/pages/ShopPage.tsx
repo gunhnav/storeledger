@@ -6,12 +6,14 @@ import { randomSalt } from '../lib/invoice'
 import {
   SET_SIZES,
   addSet,
-  cartJars,
-  cartSets,
+  cartCount,
+  cartSummary,
   cartTotal,
   changeMix,
   flavorColors,
+  flavorEmoji,
   flavorImage,
+  isSingle,
   flavorNote,
   lineOf,
   menuLines,
@@ -22,11 +24,15 @@ import {
   setLineQty,
   setPrice,
   setPriceHints,
+  setSingleQty,
+  singleQty,
+  unitOf,
+  GOOGLE_CHAT_URL,
+  hangoutEmail,
   telLink,
-  zaloLink,
   type Mix,
   type PublicMenu,
-  type SetLine,
+  type CartLine,
   type SetSize,
 } from '../lib/storefront'
 
@@ -41,7 +47,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const code = (fixedCode ?? params.code ?? '').toLowerCase()
   const [menu, setMenu] = useState<PublicMenu | null | undefined>(undefined)
   const [error, setError] = useState(false)
-  const [cart, setCart] = useState<SetLine[]>([])
+  const [cart, setCart] = useState<CartLine[]>([])
   // Set đang soạn: cỡ, số hũ từng vị, và số set giống hệt muốn đặt
   const [line, setLine] = useState('')
   const [size, setSize] = useState<SetSize>(4)
@@ -81,7 +87,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     if (menu) document.title = `${menu.store.name} – Đặt trước online`
   }, [menu])
 
-  const items = menu?.items ?? []
+  const items = useMemo(() => menu?.items ?? [], [menu])
   const store = menu?.store
 
   const lines = useMemo(() => menuLines(items), [items])
@@ -105,8 +111,10 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const perJar = currentHints.length === 1 && currentHints[0].label === null
 
   const total = useMemo(() => cartTotal(cart), [cart])
-  const sets = useMemo(() => cartSets(cart), [cart])
-  const jars = useMemo(() => cartJars(cart), [cart])
+  const count = useMemo(() => cartCount(cart), [cart])
+  const summary = useMemo(() => cartSummary(cart), [cart])
+  // Dòng món bán lẻ (vd: sữa chua Hy Lạp): không chọn set, mỗi món thêm thẳng vào đơn
+  const singleLine = lineItems.length > 0 && lineItems.every(isSingle)
 
   if (menu === undefined && !error) return <div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>
   if (error) {
@@ -162,14 +170,14 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             <a href="#lien-he">Liên hệ</a>
           </nav>
           <div className="shop-header-actions">
-            {store.phone && (
-              <a className="shop-contact" href={zaloLink(store.phone)} target="_blank" rel="noopener noreferrer">
-                Nhắn Zalo
+            {store.domain && (
+              <a className="shop-contact" href={GOOGLE_CHAT_URL} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)} title={hangoutEmail(store.domain)}>
+                Nhắn Hangout
               </a>
             )}
-            <button type="button" className="shop-cart-btn" aria-label={`Đơn hàng, ${sets} set`} onClick={() => setOpen(true)}>
+            <button type="button" className="shop-cart-btn" aria-label={`Đơn hàng, ${count} món`} onClick={() => setOpen(true)}>
               {cartIcon}
-              {sets > 0 && <span className="shop-cart-count">{sets}</span>}
+              {count > 0 && <span className="shop-cart-count">{count}</span>}
             </button>
           </div>
         </div>
@@ -242,6 +250,9 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               </div>
             )}
 
+            {singleLine && <p className="shop-sub">Bán lẻ theo từng phần, không cần chọn set. Bấm + để thêm vào đơn.</p>}
+
+            {!singleLine && (
             <div className="shop-sizes" role="radiogroup" aria-label="Cỡ set">
               {SET_SIZES.map((s) => {
                 const h = sizeHints[s] ?? []
@@ -262,18 +273,20 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                 )
               })}
             </div>
+            )}
 
             <div className="shop-grid">
               {lineItems.map((item) => {
                 const [c1, c2] = flavorColors(item.name)
                 const image = flavorImage(item.name)
                 const note = flavorNote(item.name)
-                const n = mix[item.id] ?? 0
-                const ok = selectable(item, size, store)
+                const single = isSingle(item)
+                const n = single ? singleQty(cart, item.id) : (mix[item.id] ?? 0)
+                const ok = single ? item.price !== null : selectable(item, size, store)
                 return (
                   <article key={item.id} className={`shop-card${n > 0 ? ' is-picked' : ''}${ok ? '' : ' is-out'}`}>
                     <div className="shop-art" style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }} aria-hidden="true">
-                      {image ? <img src={image} alt="" loading="lazy" width={520} height={430} /> : <span>🥣</span>}
+                      {image ? <img src={image} alt="" loading="lazy" width={520} height={430} /> : <span>{flavorEmoji(item.name)}</span>}
                       {n > 0 && <span className="shop-picked">{n}</span>}
                     </div>
                     <div className="shop-body">
@@ -281,13 +294,23 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                         <h4>{item.name}</h4>
                         {note && <p className="shop-note">{note}</p>}
                       </div>
-                      {perJar && item.price !== null && (
+                      {(single || perJar) && item.price !== null && (
                         <p className="shop-price">
                           {vnd(item.price)}
-                          <small> / hũ</small>
+                          <small> / {unitOf(item.name)}</small>
                         </p>
                       )}
-                      {ok ? (
+                      {ok && single ? (
+                        <div className="shop-qty" role="group" aria-label={`Số lượng ${item.name}`}>
+                          <button type="button" aria-label={`Bớt ${item.name}`} disabled={n === 0} onClick={() => setCart((c) => setSingleQty(c, item, n - 1))}>
+                            −
+                          </button>
+                          <span>{n}</span>
+                          <button type="button" aria-label={`Thêm ${item.name}`} onClick={() => setCart((c) => setSingleQty(c, item, n + 1))}>
+                            +
+                          </button>
+                        </div>
+                      ) : ok ? (
                         <div className="shop-qty" role="group" aria-label={`Số hũ ${item.name}`}>
                           <button type="button" aria-label={`Bớt ${item.name}`} disabled={n === 0} onClick={() => setMix((m) => changeMix(m, item.id, -1, size))}>
                             −
@@ -306,6 +329,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               })}
             </div>
 
+            {!singleLine && (
             <div className="shop-builder" aria-live="polite">
               <div className="shop-builder-info">
                 <div className="shop-dots" aria-hidden="true">
@@ -335,6 +359,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                 </button>
               </div>
             </div>
+            )}
           </>
         )}
       </main>
@@ -372,23 +397,33 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               <p>Cảm ơn bạn đã ủng hộ 🌿</p>
             </div>
           </div>
-          {store.phone && (
+          {(store.phone || store.domain) && (
             <div className="shop-footer-links">
-              <a className="shop-footer-btn" href={telLink(store.phone)}>
-                Gọi {store.phone}
-              </a>
-              <a className="shop-footer-btn" href={zaloLink(store.phone)} target="_blank" rel="noopener noreferrer">
-                Nhắn Zalo
-              </a>
+              {store.phone && (
+                <a className="shop-footer-btn" href={telLink(store.phone)}>
+                  Gọi {store.phone}
+                </a>
+              )}
+              {store.domain && (
+                <a
+                  className="shop-footer-btn"
+                  href={GOOGLE_CHAT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)}
+                >
+                  Nhắn Hangout {hangoutEmail(store.domain)}
+                </a>
+              )}
             </div>
           )}
         </div>
       </footer>
 
-      {sets > 0 && !open && (
+      {count > 0 && !open && (
         <button type="button" className="shop-cartbar" onClick={() => setOpen(true)}>
           <span>
-            Đơn đặt trước · {sets} set ({jars} hũ)
+            Đơn đặt trước · {summary}
           </span>
           <strong>{vnd(total)} · Xem đơn</strong>
         </button>

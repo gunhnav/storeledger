@@ -77,14 +77,14 @@ export function describePayload(payload: string): PayloadInfo {
   }
 }
 
-// Giá trị trong tag 62 (ans, tối đa 25 ký tự theo Napas): bỏ dấu tiếng Việt, chỉ giữ chữ, số và khoảng trắng
+// Giá trị trong tag 62 (ans, tối đa 25 ký tự theo Napas): bỏ dấu tiếng Việt, chỉ giữ chữ, số, khoảng trắng và . - _
 export function sanitizeMemo(text: string): string {
   return text
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .replace(/đ/g, 'd')
     .replace(/Đ/g, 'D')
-    .replace(/[^A-Za-z0-9 ]/g, '')
+    .replace(/[^A-Za-z0-9 ._-]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 25)

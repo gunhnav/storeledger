@@ -63,6 +63,7 @@ describe('QR chuẩn EMVCo / VietQR', () => {
 
   it('nội dung chuyển khoản không dấu, tối đa 25 ký tự', () => {
     expect(sanitizeMemo('Hogi đơn hàng #12!')).toBe('Hogi don hang 12')
+    expect(sanitizeMemo('huong.vu3 - F6')).toBe('huong.vu3 - F6')
     expect(sanitizeMemo('x'.repeat(40))).toHaveLength(25)
   })
 })

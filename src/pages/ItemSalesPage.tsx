@@ -68,22 +68,16 @@ function ItemSales({ storeId }: { storeId: string }) {
   const set = (patch: Partial<typeof filter>) => setFilter((f) => ({ ...f, ...patch }))
 
   // Dòng đang xem (mặt hàng ẩn như nhóm Bún bò không hiện) và dòng dùng để đối chiếu doanh thu (đủ mọi nhóm)
-  const scope = useMemo(
-    () => (mode === 'month' ? monthRows.filter((r) => r.month === month) : applyFilter(dayRows, { from: filter.from, to: filter.to })),
-    [mode, monthRows, month, dayRows, filter.from, filter.to],
-  )
+  const scope = mode === 'month' ? monthRows.filter((r) => r.month === month) : applyFilter(dayRows, { from: filter.from, to: filter.to })
   // Gom các dòng trùng tên (nhiều mã POS cho cùng một món) rồi mới lọc nhóm / tìm kiếm
-  const unified = useMemo(() => mergeByName(visibleItems(scope)), [scope])
-  const categories = useMemo(() => categoriesOf(unified), [unified])
-  const mismatches = useMemo(() => reconcile(scope, data.revenue), [scope, data.revenue])
-  const shown = useMemo(
-    () => (mode === 'month' ? filterItems(applyFilter(unified, { category: filter.category }), filter.query) : applyFilter(unified, { category: filter.category, query: filter.query })),
-    [mode, unified, filter.category, filter.query],
-  )
-  const totals = useMemo(() => totalsOf(shown), [shown])
-  const periodEnd = useMemo(() => scope.map((r) => r.period_end).sort().pop(), [scope])
+  const unified = mergeByName(visibleItems(scope))
+  const shown = mode === 'month' ? filterItems(applyFilter(unified, { category: filter.category }), filter.query) : applyFilter(unified, { category: filter.category, query: filter.query })
+  const mismatches = reconcile(scope, data.revenue)
+  const categories = categoriesOf(unified)
+  const totals = totalsOf(shown)
+  const periodEnd = scope.map((r) => r.period_end).sort().pop()
   const pct = (v: number) => (totals.net > 0 ? `${((v / totals.net) * 100).toFixed(1)}%` : '—')
-  const days = useMemo(() => (mode === 'day' ? groupByDay(shown) : []), [mode, shown])
+  const days = mode === 'day' ? groupByDay(shown) : []
   const mismatchOn = (date: string) => mismatches.find((m) => m.start === date)
 
   return (
