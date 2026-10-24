@@ -11,9 +11,11 @@ import { AccountPage } from './pages/AccountPage'
 import { BatchStatsPage } from './pages/BatchStatsPage'
 import { BestSellersPage } from './pages/BestSellersPage'
 import { DailyLogPage } from './pages/DailyLogPage'
+import { DishRecipesPage } from './pages/DishRecipesPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { GuidePage } from './pages/GuidePage'
 import { IngredientsPage } from './pages/IngredientsPage'
+import { ItemSalesPage } from './pages/ItemSalesPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProductsPage } from './pages/ProductsPage'
@@ -37,6 +39,11 @@ const REPORT_TABS: Tab[] = [
   { to: '/reports/batches', label: 'Theo đợt nhập', icon: 'purchase' },
   { to: '/reports/best-sellers', label: 'Bán chạy & gợi ý', icon: 'sale' },
   { to: '/reports/daily-log', label: 'Nhật ký ngày', icon: 'log' },
+]
+// Quán nhập doanh thu theo ngày (Bún đậu) thay các tab theo món bằng tab Mặt hàng
+const REVENUE_REPORT_TABS: Tab[] = [
+  { to: '/reports/overview', label: 'Tổng quan', icon: 'report' },
+  { to: '/reports/items', label: 'Mặt hàng', icon: 'product' },
 ]
 const MANAGE_TABS: Tab[] = [
   { to: '/manage/products', label: 'Sản phẩm', icon: 'product' },
@@ -73,14 +80,22 @@ function InventoryLayout() {
   return <TabsLayout title="Kho hàng" tabs={tabs} />
 }
 
-// Quản lý: quán nhập doanh thu theo ngày (Bún đậu) chỉ còn Chi phí
+// Quản lý: quán nhập doanh thu theo ngày (Bún đậu) chỉ còn Chi phí và Định lượng
 function ManageLayout() {
   const { current } = useStore()
-  const tabs = usesRevenueEntry(current?.code) ? MANAGE_TABS.filter((tab) => tab.to === '/manage/expenses') : MANAGE_TABS
+  const tabs = usesRevenueEntry(current?.code)
+    ? [...MANAGE_TABS.filter((tab) => tab.to === '/manage/expenses'), { to: '/manage/recipes', label: 'Định lượng', icon: 'stock' as const }]
+    : MANAGE_TABS
   return <TabsLayout title="Quản lý" tabs={tabs} />
 }
 
 // Trang theo món (sản phẩm, nguyên liệu, báo cáo theo món...) không có ở quán nhập doanh thu: về trang chính của nhóm
+function RevenueOnly({ children, fallback }: { children: ReactNode; fallback: string }) {
+  const { current } = useStore()
+  if (current && !usesRevenueEntry(current.code)) return <Navigate to={fallback} replace />
+  return children
+}
+
 function ItemBased({ children, fallback }: { children: ReactNode; fallback: string }) {
   const { current } = useStore()
   if (usesRevenueEntry(current?.code)) return <Navigate to={fallback} replace />
@@ -93,10 +108,10 @@ function SalesRoute() {
   return usesRevenueEntry(current?.code) ? <RevenuePage /> : <SalePage />
 }
 
-// Báo cáo: quán nhập doanh thu chỉ còn tab Tổng quan
+// Báo cáo: quán nhập doanh thu chỉ còn tab Tổng quan và Mặt hàng
 function ReportsLayout() {
   const { current } = useStore()
-  const tabs = usesRevenueEntry(current?.code) ? REPORT_TABS.filter((tab) => tab.to === '/reports/overview') : REPORT_TABS
+  const tabs = usesRevenueEntry(current?.code) ? REVENUE_REPORT_TABS : REPORT_TABS
   return <TabsLayout title="Báo cáo" tabs={tabs} />
 }
 
@@ -143,12 +158,14 @@ function App() {
               <Route path="overview" element={<ReportsPage />} />
               <Route path="batches" element={<ItemBased fallback="/reports/overview"><BatchStatsPage /></ItemBased>} />
               <Route path="best-sellers" element={<ItemBased fallback="/reports/overview"><BestSellersPage /></ItemBased>} />
+              <Route path="items" element={<RevenueOnly fallback="/reports/overview"><ItemSalesPage /></RevenueOnly>} />
               <Route path="daily-log" element={<ItemBased fallback="/reports/overview"><DailyLogPage /></ItemBased>} />
             </Route>
             <Route path="manage" element={<ManageLayout />}>
               <Route index element={<ItemBased fallback="/manage/expenses"><Navigate to="products" replace /></ItemBased>} />
               <Route path="products" element={<ItemBased fallback="/manage/expenses"><ProductsPage /></ItemBased>} />
               <Route path="expenses" element={<ExpensePage />} />
+              <Route path="recipes" element={<RevenueOnly fallback="/manage/products"><DishRecipesPage /></RevenueOnly>} />
               <Route path="ingredients" element={<ItemBased fallback="/manage/expenses"><IngredientsPage /></ItemBased>} />
             </Route>
             <Route path="staff" element={<StaffPage />} />

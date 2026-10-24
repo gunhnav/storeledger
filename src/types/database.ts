@@ -143,6 +143,52 @@ export type DailyRevenueInsert = {
   note?: string | null
 }
 
+// Tổng kết mặt hàng bán theo tháng (supabase/migrations/20261024150000_monthly_item_sales.sql, chỉ admin)
+export type MonthlyItemSale = {
+  id: string
+  store_id: string
+  month: string
+  period_end: string
+  category: string | null
+  item_code: string
+  item_name: string
+  qty: number
+  gross: number
+  discount: number
+  net: number
+  created_by: string | null
+  created_at: string
+}
+export type MonthlyItemSaleInsert = Omit<MonthlyItemSale, 'id' | 'created_by' | 'created_at' | 'category' | 'discount'> & {
+  category?: string | null
+  discount?: number
+}
+
+// Định lượng nguyên vật liệu từng món (supabase/migrations/20261024170000_dish_recipes.sql, chỉ admin)
+export type DishRecipe = {
+  id: string
+  store_id: string
+  name: string
+  sale_price: number
+  unit_cost: number | null
+  item_codes: string[]
+  note: string | null
+  sort_order: number
+  created_at: string
+}
+export type DishRecipeLine = {
+  id: string
+  recipe_id: string
+  ingredient: string
+  // null = không định lượng (rau ăn kèm)
+  qty: number | null
+  unit: string | null
+  // Phần cộng thêm sau dấu "+" của combo
+  is_extra: boolean
+  note: string | null
+  sort_order: number
+}
+
 export type Expense = {
   id: string
   store_id: string
@@ -502,6 +548,30 @@ export type Database = {
         { foreignKeyName: 'sale_item_cost_lines_sale_item_id_fkey'; columns: ['sale_item_id']; isOneToOne: false; referencedRelation: 'sale_items'; referencedColumns: ['id'] },
         { foreignKeyName: 'sale_item_cost_lines_batch_id_fkey'; columns: ['batch_id']; isOneToOne: false; referencedRelation: 'stock_batches'; referencedColumns: ['id'] },
       ]>
+      monthly_item_sales: {
+        Row: MonthlyItemSale
+        Insert: MonthlyItemSaleInsert
+        Update: Partial<MonthlyItemSaleInsert>
+        Relationships: [
+          { foreignKeyName: 'monthly_item_sales_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        ]
+      }
+      dish_recipes: {
+        Row: DishRecipe
+        Insert: Omit<DishRecipe, 'id' | 'created_at' | 'item_codes' | 'note' | 'sort_order' | 'unit_cost'> & Partial<Pick<DishRecipe, 'item_codes' | 'note' | 'sort_order' | 'unit_cost'>>
+        Update: Partial<Omit<DishRecipe, 'id' | 'created_at'>>
+        Relationships: [
+          { foreignKeyName: 'dish_recipes_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        ]
+      }
+      dish_recipe_lines: {
+        Row: DishRecipeLine
+        Insert: Omit<DishRecipeLine, 'id' | 'qty' | 'unit' | 'is_extra' | 'note' | 'sort_order'> & Partial<Pick<DishRecipeLine, 'qty' | 'unit' | 'is_extra' | 'note' | 'sort_order'>>
+        Update: Partial<Omit<DishRecipeLine, 'id'>>
+        Relationships: [
+          { foreignKeyName: 'dish_recipe_lines_recipe_id_fkey'; columns: ['recipe_id']; isOneToOne: false; referencedRelation: 'dish_recipes'; referencedColumns: ['id'] },
+        ]
+      }
       daily_revenue: {
         Row: DailyRevenue
         Insert: DailyRevenueInsert
