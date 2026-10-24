@@ -3,7 +3,7 @@ import { AppLayout } from './components/AppLayout'
 import { RequireAdmin, RequireAuth } from './components/RequireAuth'
 import { StoreProvider } from './components/StoreProvider'
 import { TabsLayout, type Tab } from './components/TabsLayout'
-import type { ReactNode } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { useAuth } from './lib/auth'
 import { useStore } from './lib/store'
 import { usesDistribution, usesRevenueEntry } from './lib/storeFeatures'
@@ -23,7 +23,7 @@ import { ProductsPage } from './pages/ProductsPage'
 import { PurchasePage } from './pages/PurchasePage'
 import { ReportsPage } from './pages/ReportsPage'
 import { RevenuePage } from './pages/RevenuePage'
-import { ShopPage } from './pages/ShopPage'
+const ShopPage = lazy(() => import('./pages/ShopPage').then((m) => ({ default: m.ShopPage })))
 import { SalePage } from './pages/SalePage'
 import { StaffPage } from './pages/StaffPage'
 import { StockPage } from './pages/StockPage'
@@ -157,8 +157,8 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       {/* Trang bán hàng công khai, không cần đăng nhập */}
-      <Route path="/hogi" element={<ShopPage code="hogi" />} />
-      <Route path="/shop/:code" element={<ShopPage />} />
+      <Route path="/hogi" element={<Suspense fallback={<div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>}><ShopPage code="hogi" /></Suspense>} />
+      <Route path="/shop/:code" element={<Suspense fallback={<div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>}><ShopPage /></Suspense>} />
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
           <Route index element={<Navigate to="/entry" replace />} />

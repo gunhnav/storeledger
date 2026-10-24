@@ -1,19 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { bankName } from '../lib/banks'
-import { buildPaymentQr, describePayload } from '../lib/emvQr'
-import { invoiceCode, invoiceMemo, randomSalt } from '../lib/invoice'
-import { downloadInvoice } from '../lib/invoiceImage'
+import { ShopCartModal } from '../components/ShopCartModal'
+import { randomSalt } from '../lib/invoice'
 import {
-  EMPTY_CUSTOMER,
   SET_SIZES,
   addSet,
   cartJars,
   cartSets,
   cartTotal,
   changeMix,
-  customerIssues,
   flavorColors,
   flavorImage,
   flavorNote,
@@ -21,17 +17,13 @@ import {
   menuLines,
   mixCount,
   mixLabel,
-  orderMessage,
   refreshCart,
   selectable,
   setLineQty,
   setPrice,
   setPriceHints,
   telLink,
-  vietQrUrl,
   zaloLink,
-  type Customer,
-  type MenuItem,
   type Mix,
   type PublicMenu,
   type SetLine,
@@ -40,26 +32,6 @@ import {
 
 const vnd = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}đ`
 const REFRESH_MS = 60_000
-// Thời điểm lập hoá đơn (gọi trong lúc bấm nút, không phải lúc vẽ)
-const now = () => new Date()
-
-// Hình các vị trong một set (tối đa 3 hình chồng nhau) để nhận ra set trong đơn
-function SetThumbs({ mix, items }: { mix: Mix; items: MenuItem[] }) {
-  const flavors = items.filter((i) => (mix[i.id] ?? 0) > 0).slice(0, 3)
-  return (
-    <div className="shop-thumbs" aria-hidden="true">
-      {flavors.map((f) => {
-        const image = flavorImage(f.name)
-        const [c1, c2] = flavorColors(f.name)
-        return (
-          <span key={f.id} style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
-            {image ? <img src={image} alt="" width={44} height={44} /> : '🥣'}
-          </span>
-        )
-      })}
-    </div>
-  )
-}
 
 // Trang đặt trước của một quán (/hogi, /shop/<mã quán>): khách không cần đăng nhập.
 // Bán theo SET 4 hoặc 6 hũ, khách tự chọn vị cho từng set (giống kênh Công ty). Không lấy tồn kho: ai đặt gì nhận đó.
@@ -76,17 +48,10 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const [mix, setMix] = useState<Mix>({})
   const [copies, setCopies] = useState(1)
   const [open, setOpen] = useState(false)
-  const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER)
-  // Đã bấm gửi đơn khi còn thiếu thông tin: lúc đó mới hiện lỗi từng ô
-  const [tried, setTried] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [accountCopied, setAccountCopied] = useState(false)
   // Mã ngẫu nhiên của lượt truy cập: mã hoá đơn = ngày + băm(mã này + giỏ hàng), giữ nguyên khi khách đang điền thông tin
   const [salt] = useState(() => randomSalt())
   // Ngày lập mã đơn: lấy lúc mở trang (không đổi giữa các lần vẽ lại)
   const [openedAt] = useState(() => new Date())
-  const [qrImage, setQrImage] = useState<{ text: string; url: string } | null>(null)
-  const [downloading, setDownloading] = useState(false)
 
   const load = useCallback(async () => {
     const { data, error: e } = await supabase.rpc('get_public_menu', { p_store_code: code })
@@ -104,7 +69,11 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
-    const timer = setInterval(load, REFRESH_MS)
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        load()
+      }
+    }, REFRESH_MS)
     return () => clearInterval(timer)
   }, [load])
 
@@ -112,37 +81,32 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     if (menu) document.title = `${menu.store.name} – Đặt trước online`
   }, [menu])
 
-  // Đóng hộp thoại bằng phím Esc
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  const items = menu?.items ?? []
+  const store = menu?.store
 
-  // Chuỗi QR có số tiền + số hoá đơn của đơn hiện tại (nếu quán có QR gốc và khách chọn chuyển khoản)
-  const orderCode = invoiceCode(openedAt, `${salt}|${cart.map((l) => `${l.key}x${l.qty}`).join(',')}`)
-  const orderTotal = cartTotal(cart)
-  let qrText: string | null = null
-  if (menu?.store.pay && customer.payment === 'transfer' && orderTotal > 0) {
-    try {
-      qrText = buildPaymentQr(menu.store.pay.payload, orderTotal, invoiceMemo(orderCode, 'Hogi'), orderCode)
-    } catch {
-      qrText = null
-    }
-  }
+  const lines = useMemo(() => menuLines(items), [items])
+  const activeLine = lines.includes(line) ? line : (lines[0] ?? '')
+  const lineItems = useMemo(() => items.filter((i) => lineOf(i) === activeLine), [items, activeLine])
 
-  useEffect(() => {
-    if (!qrText || qrImage?.text === qrText) return
-    let cancelled = false
-    import('qrcode')
-      .then((QR) => QR.toDataURL(qrText, { errorCorrectionLevel: 'M', margin: 1, width: 520 }))
-      .then((url) => !cancelled && setQrImage({ text: qrText, url }))
-      .catch(() => undefined)
-    return () => {
-      cancelled = true
+  const picked = mixCount(mix)
+  const unitPrice = useMemo(() => (picked === size && store ? setPrice(size, mix, items, store) : null), [picked, size, store, mix, items])
+
+  // Giá tính sẵn cho các cỡ set: tránh gọi hàm lặp lại nhiều lần trong JSX
+  const sizeHints = useMemo(() => {
+    if (!store) return {} as Record<SetSize, { label: string | null; price: number }[]>
+    const map = {} as Record<SetSize, { label: string | null; price: number }[]>
+    for (const s of SET_SIZES) {
+      map[s] = setPriceHints(s, lineItems, store)
     }
-  }, [qrText, qrImage?.text])
+    return map
+  }, [lineItems, store])
+
+  const currentHints = sizeHints[size] ?? []
+  const perJar = currentHints.length === 1 && currentHints[0].label === null
+
+  const total = useMemo(() => cartTotal(cart), [cart])
+  const sets = useMemo(() => cartSets(cart), [cart])
+  const jars = useMemo(() => cartJars(cart), [cart])
 
   if (menu === undefined && !error) return <div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>
   if (error) {
@@ -152,36 +116,13 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
       </div>
     )
   }
-  if (!menu) {
+  if (!menu || !store) {
     return (
       <div className="shop">
         <p className="shop-state">Không tìm thấy cửa hàng này.</p>
       </div>
     )
   }
-
-  const { store, items } = menu
-  const picked = mixCount(mix)
-  const lines = menuLines(items)
-  const activeLine = lines.includes(line) ? line : (lines[0] ?? '')
-  const lineItems = items.filter((i) => lineOf(i) === activeLine)
-  const unitPrice = picked === size ? setPrice(size, mix, items, store) : null
-  // Giá trên nút chọn cỡ set; dòng món tính theo từng hũ (vd: bánh flan) thì thẻ món hiện giá một hũ
-  const hints = (s: SetSize) => setPriceHints(s, lineItems, store)
-  const perJar = hints(size).length === 1 && hints(size)[0].label === null
-  const total = cartTotal(cart)
-  const sets = cartSets(cart)
-  const issues = customerIssues(customer)
-  const ready = cart.length > 0 && Object.keys(issues).length === 0
-  const bank = store.bank
-  const pay = store.pay
-  const canTransfer = !!(pay || bank)
-  const payByTransfer = canTransfer && customer.payment === 'transfer'
-  const memo = invoiceMemo(orderCode, 'Hogi')
-  const payAccount = pay ? (() => { try { return describePayload(pay.payload).account } catch { return null } })() : null
-  const qrUrl = qrText && qrImage?.text === qrText ? qrImage.url : null
-  const message = orderMessage(store.name, cart, items, customer, canTransfer, orderCode)
-  const setField = (patch: Partial<Customer>) => setCustomer((c) => ({ ...c, ...patch }))
 
   const chooseSize = (s: SetSize) => {
     setSize(s)
@@ -198,60 +139,6 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     setMix({})
     setCopies(1)
   }
-  const copy = async (): Promise<boolean> => {
-    if (!ready) {
-      setTried(true)
-      return false
-    }
-    try {
-      await navigator.clipboard.writeText(message)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
-    } catch {
-      window.prompt('Sao chép nội dung đơn hàng:', message)
-    }
-    return true
-  }
-  const sendZalo = async () => {
-    if (await copy()) if (store.phone) window.open(zaloLink(store.phone), '_blank', 'noopener')
-  }
-  const copyAccount = async (account: string) => {
-    try {
-      await navigator.clipboard.writeText(account)
-      setAccountCopied(true)
-      setTimeout(() => setAccountCopied(false), 2000)
-    } catch {
-      window.prompt('Sao chép số tài khoản:', account)
-    }
-  }
-  // Tải ảnh hoá đơn (PNG) về máy; cần đủ thông tin khách như khi gửi đơn
-  const saveInvoice = async () => {
-    if (!ready) return setTried(true)
-    setDownloading(true)
-    try {
-      await downloadInvoice({
-        storeName: store.name,
-        storePhone: store.phone,
-        code: orderCode,
-        issuedAt: now(),
-        customer,
-        lines: cart.map((l) => ({ title: `Set ${l.size} hũ`, detail: mixLabel(l.mix, items), qty: l.qty, unitPrice: l.unitPrice })),
-        total,
-        paymentText: !canTransfer ? 'Liên hệ quán' : customer.payment === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt khi nhận',
-        qr:
-          payByTransfer && pay && qrUrl
-            ? { dataUrl: qrUrl, holder: pay.holder, label: pay.label ?? '', account: payAccount ?? '', memo }
-            : payByTransfer && bank
-              ? { dataUrl: vietQrUrl(bank, total, memo), holder: bank.holder, label: bankName(bank.code), account: bank.account, memo }
-              : null,
-      })
-    } catch {
-      window.alert('Không tạo được hoá đơn, bạn thử lại nhé.')
-    } finally {
-      setDownloading(false)
-    }
-  }
-  const err = (k: 'name' | 'phone' | 'address') => (tried && issues[k] ? <small className="shop-error">{issues[k]}</small> : null)
 
   const cartIcon = (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -356,21 +243,24 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             )}
 
             <div className="shop-sizes" role="radiogroup" aria-label="Cỡ set">
-              {SET_SIZES.map((s) => (
-                <button key={s} type="button" role="radio" aria-checked={size === s} className={`shop-size${size === s ? ' active' : ''}`} onClick={() => chooseSize(s)}>
-                  <strong>Set {s} hũ</strong>
-                  {hints(s).length === 0 ? (
-                    <span>Giá cộng theo từng hũ</span>
-                  ) : (
-                    hints(s).map((h) => (
-                      <span key={h.label ?? 'all'}>
-                        {h.label ? `${h.label}: ` : ''}
-                        <b>{vnd(h.price)}</b>
-                      </span>
-                    ))
-                  )}
-                </button>
-              ))}
+              {SET_SIZES.map((s) => {
+                const h = sizeHints[s] ?? []
+                return (
+                  <button key={s} type="button" role="radio" aria-checked={size === s} className={`shop-size${size === s ? ' active' : ''}`} onClick={() => chooseSize(s)}>
+                    <strong>Set {s} hũ</strong>
+                    {h.length === 0 ? (
+                      <span>Giá cộng theo từng hũ</span>
+                    ) : (
+                      h.map((hint) => (
+                        <span key={hint.label ?? 'all'}>
+                          {hint.label ? `${hint.label}: ` : ''}
+                          <b>{vnd(hint.price)}</b>
+                        </span>
+                      ))
+                    )}
+                  </button>
+                )
+              })}
             </div>
 
             <div className="shop-grid">
@@ -498,173 +388,22 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
       {sets > 0 && !open && (
         <button type="button" className="shop-cartbar" onClick={() => setOpen(true)}>
           <span>
-            Đơn đặt trước · {sets} set ({cartJars(cart)} hũ)
+            Đơn đặt trước · {sets} set ({jars} hũ)
           </span>
           <strong>{vnd(total)} · Xem đơn</strong>
         </button>
       )}
 
-      {open && (
-        <div className="shop-modal-backdrop" onClick={() => setOpen(false)}>
-          <div className="shop-modal" role="dialog" aria-modal="true" aria-label="Đơn đặt trước của bạn" onClick={(e) => e.stopPropagation()}>
-            <div className="shop-modal-head">
-              <h3>Đơn đặt trước của bạn 🥣</h3>
-              <button type="button" aria-label="Đóng" onClick={() => setOpen(false)}>
-                ×
-              </button>
-            </div>
-
-            {cart.length === 0 ? (
-              <p className="shop-state">Chưa có set nào trong đơn. Chọn set rồi quay lại đây nhé!</p>
-            ) : (
-              <>
-                <ul className="shop-lines">
-                  {cart.map((l) => (
-                    <li key={l.key}>
-                      <SetThumbs mix={l.mix} items={items} />
-                      <div className="shop-line-info">
-                        <strong>Set {l.size} hũ</strong>
-                        <small>{mixLabel(l.mix, items)}</small>
-                        <small>{vnd(l.unitPrice)} / set</small>
-                      </div>
-                      <div className="shop-qty">
-                        <button type="button" aria-label={l.qty <= 1 ? 'Xoá set' : 'Giảm'} onClick={() => setCart((c) => setLineQty(c, l.key, l.qty - 1))}>
-                          {l.qty <= 1 ? (
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5" />
-                            </svg>
-                          ) : (
-                            '−'
-                          )}
-                        </button>
-                        <span>{l.qty}</span>
-                        <button type="button" aria-label="Tăng" onClick={() => setCart((c) => setLineQty(c, l.key, l.qty + 1))}>
-                          +
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="shop-total">
-                  <span>Tổng thanh toán · {cartJars(cart)} hũ</span>
-                  <strong>{vnd(total)}</strong>
-                </div>
-
-                <h4 className="shop-modal-title">📋 Thông tin nhận hàng</h4>
-                <label className="shop-field">
-                  <input type="text" value={customer.name} onChange={(e) => setField({ name: e.target.value })} placeholder="Tên của bạn *" autoComplete="name" />
-                  {err('name')}
-                </label>
-                <label className="shop-field">
-                  <input type="tel" inputMode="tel" value={customer.phone} onChange={(e) => setField({ phone: e.target.value })} placeholder="Số điện thoại *" autoComplete="tel" />
-                  {err('phone')}
-                </label>
-                <label className="shop-field">
-                  <input type="text" value={customer.address} onChange={(e) => setField({ address: e.target.value })} placeholder="Địa chỉ / Số tầng *" autoComplete="street-address" />
-                  {err('address')}
-                </label>
-                <label className="shop-field">
-                  <textarea value={customer.note} onChange={(e) => setField({ note: e.target.value })} placeholder="Ghi chú đơn hàng (ngày giờ nhận, yêu cầu thêm…)" rows={2} />
-                </label>
-
-                <p className="shop-order-code">
-                  Mã đơn: <strong>{orderCode}</strong>
-                </p>
-
-                {canTransfer && (
-                  <>
-                    <h4 className="shop-modal-title">💳 Thanh toán</h4>
-                    <div className="shop-pay" role="radiogroup" aria-label="Hình thức thanh toán">
-                      <button type="button" role="radio" aria-checked={customer.payment === 'transfer'} className={customer.payment === 'transfer' ? 'active' : undefined} onClick={() => setField({ payment: 'transfer' })}>
-                        Chuyển khoản
-                      </button>
-                      <button type="button" role="radio" aria-checked={customer.payment === 'cash'} className={customer.payment === 'cash' ? 'active' : undefined} onClick={() => setField({ payment: 'cash' })}>
-                        Tiền mặt khi nhận
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {payByTransfer && pay && (
-                  <div className="shop-bank">
-                    <h4>Quét mã để thanh toán</h4>
-                    {qrUrl ? <img src={qrUrl} alt={`Mã QR thanh toán ${vnd(total)}`} width={240} height={240} data-payload={qrText ?? undefined} /> : <div className="shop-qr-wait">Đang tạo mã QR…</div>}
-                    <dl>
-                      <dt>Người nhận</dt>
-                      <dd>{pay.holder}</dd>
-                      {pay.label && (
-                        <>
-                          <dt>Ví / ngân hàng</dt>
-                          <dd>{pay.label}</dd>
-                        </>
-                      )}
-                      {payAccount && (
-                        <>
-                          <dt>Tài khoản</dt>
-                          <dd>
-                            {payAccount}{' '}
-                            <button type="button" className="shop-mini" onClick={() => copyAccount(payAccount)}>
-                              {accountCopied ? 'Đã chép ✓' : 'Sao chép'}
-                            </button>
-                          </dd>
-                        </>
-                      )}
-                      <dt>Số tiền</dt>
-                      <dd className="shop-bank-amount">{vnd(total)}</dd>
-                      <dt>Nội dung</dt>
-                      <dd>{memo}</dd>
-                    </dl>
-                    <small className="shop-hint">Mã QR đã có sẵn số tiền và mã đơn. Mở MoMo hoặc ứng dụng ngân hàng để quét.</small>
-                  </div>
-                )}
-
-                {payByTransfer && !pay && bank && (
-                  <div className="shop-bank">
-                    <h4>Chuyển khoản ngân hàng</h4>
-                    <img src={vietQrUrl(bank, total, memo)} alt={`Mã QR chuyển khoản ${vnd(total)}`} width={220} height={220} loading="lazy" />
-                    <dl>
-                      <dt>Ngân hàng</dt>
-                      <dd>{bankName(bank.code)}</dd>
-                      <dt>Số tài khoản</dt>
-                      <dd>
-                        {bank.account}{' '}
-                        <button type="button" className="shop-mini" onClick={() => copyAccount(bank.account)}>
-                          {accountCopied ? 'Đã chép ✓' : 'Sao chép'}
-                        </button>
-                      </dd>
-                      <dt>Chủ tài khoản</dt>
-                      <dd>{bank.holder}</dd>
-                      <dt>Số tiền</dt>
-                      <dd className="shop-bank-amount">{vnd(total)}</dd>
-                      <dt>Nội dung</dt>
-                      <dd>{memo}</dd>
-                    </dl>
-                  </div>
-                )}
-
-                {store.phone ? (
-                  <button type="button" className="shop-send" onClick={sendZalo}>
-                    Gửi đơn qua Zalo
-                  </button>
-                ) : null}
-                <button type="button" className={store.phone ? 'shop-copy' : 'shop-send'} onClick={copy}>
-                  {copied ? 'Đã sao chép ✓' : 'Sao chép đơn hàng'}
-                </button>
-                <button type="button" className="shop-copy shop-download" onClick={saveInvoice} disabled={downloading}>
-                  {downloading ? 'Đang tạo hoá đơn…' : '⬇ Tải hoá đơn về máy'}
-                </button>
-                {tried && !ready && <small className="shop-error">Bạn điền đủ tên, số điện thoại và địa chỉ giúp quán nhé.</small>}
-                <small className="shop-hint">
-                  {store.phone
-                    ? 'Bấm "Gửi đơn qua Zalo": nội dung đơn được sao chép sẵn, bạn chỉ cần dán vào khung chat.'
-                    : 'Sao chép đơn rồi gửi cho cửa hàng để đặt trước.'}
-                </small>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <ShopCartModal
+        open={open}
+        onClose={() => setOpen(false)}
+        cart={cart}
+        items={items}
+        store={store}
+        onSetLineQty={(k, q) => setCart((c) => setLineQty(c, k, q))}
+        salt={salt}
+        openedAt={openedAt}
+      />
     </div>
   )
 }

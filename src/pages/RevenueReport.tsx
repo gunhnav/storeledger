@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { PeriodFilters } from '../components/PeriodFilters'
 import { initialPeriod, type PeriodState } from '../lib/period'
@@ -87,7 +87,7 @@ export function RevenueReport({ storeId }: { storeId: string }) {
   }
 
   const { current: cur, previous: prev, expensesByCategory, items } = loaded
-  const split = splitByLine(items, range.from, range.to)
+  const split = useMemo(() => splitByLine(items, range.from, range.to), [items, range.from, range.to])
   const pos = cur.byChannel.in_store + cur.byChannel.shopeefood
   const gap = pos - split.bunDau - split.bunBo
   const delta = (c: number, p: number) => {
@@ -103,14 +103,18 @@ export function RevenueReport({ storeId }: { storeId: string }) {
     </div>
   )
   const compact = (v: unknown) => (Number(v) === 0 ? '' : formatCompact(Number(v), locale))
-  const chartData = cur.days.map((d) => ({
-    label: `${d.date.slice(8, 10)}/${d.date.slice(5, 7)}`,
-    in_store: d.byChannel.in_store,
-    shopeefood: d.byChannel.shopeefood,
-    nem_cuon: d.byChannel.nem_cuon,
-    cost: d.expenses,
-    profit: d.gross - d.commission - d.expenses,
-  }))
+  const chartData = useMemo(
+    () =>
+      cur.days.map((d) => ({
+        label: `${d.date.slice(8, 10)}/${d.date.slice(5, 7)}`,
+        in_store: d.byChannel.in_store,
+        shopeefood: d.byChannel.shopeefood,
+        nem_cuon: d.byChannel.nem_cuon,
+        cost: d.expenses,
+        profit: d.gross - d.commission - d.expenses,
+      })),
+    [cur.days],
+  )
   const empty = cur.days.length === 0
 
   return (

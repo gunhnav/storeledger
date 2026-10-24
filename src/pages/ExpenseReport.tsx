@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { PeriodFilters } from '../components/PeriodFilters'
 import { initialPeriod, type PeriodState } from '../lib/period'
@@ -19,6 +19,34 @@ type Loaded = { key: string; current: Row[]; previous: Row[]; revenue: number }
 export function ExpenseReport() {
   const { current } = useStore()
   return current ? <Report key={current.id} storeId={current.id} /> : null
+}
+
+function GroupDetailTable({ items, t }: { items: Row[]; t: (s: string) => string }) {
+  const typeRows = useMemo(() => expenseByType(items), [items])
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>{t('Loại chi')}</th>
+          <th className="num">{t('Số khoản')}</th>
+          <th className="num">{t('Số tiền')}</th>
+          <th className="num">{t('Tỷ trọng trong nhóm')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {typeRows.map((x, i) => (
+          <tr key={x.name}>
+            <td>
+              <span className="muted">{i + 1}.</span> {x.name === NO_NOTE ? t(NO_NOTE) : x.name}
+            </td>
+            <td className="num">{x.count}</td>
+            <td className="num">{formatVND(x.amount)}</td>
+            <td className="num">{Math.round(x.share * 100)}%</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 function Report({ storeId }: { storeId: string }) {
@@ -85,11 +113,11 @@ function Report({ storeId }: { storeId: string }) {
   }
 
   const { current, previous, revenue } = loaded
-  const groups = expenseByGroup(current, previous)
-  const total = totalOf(current)
-  const prevTotal = totalOf(previous)
-  const fixed = fixedTotal(current)
-  const ratio = expenseRatio(total, revenue)
+  const groups = useMemo(() => expenseByGroup(current, previous), [current, previous])
+  const total = useMemo(() => totalOf(current), [current])
+  const prevTotal = useMemo(() => totalOf(previous), [previous])
+  const fixed = useMemo(() => fixedTotal(current), [current])
+  const ratio = useMemo(() => expenseRatio(total, revenue), [total, revenue])
   const compact = (v: unknown) => (Number(v) === 0 ? '' : formatCompact(Number(v), locale))
   const delta = (cur: number, prev: number) => {
     const c = pctChange(cur, prev)
@@ -103,7 +131,10 @@ function Report({ storeId }: { storeId: string }) {
       {sub && <div className="stat-sub">{sub}</div>}
     </div>
   )
-  const chartData = groups.filter((g) => g.amount > 0).map((g) => ({ name: t(g.category), category: g.category, amount: g.amount }))
+  const chartData = useMemo(
+    () => groups.filter((g) => g.amount > 0).map((g) => ({ name: t(g.category), category: g.category, amount: g.amount })),
+    [groups, t],
+  )
   const top = groups[0]
 
   return (
@@ -177,28 +208,7 @@ function Report({ storeId }: { storeId: string }) {
                         {isOpen && (
                           <tr className="group-detail">
                             <td colSpan={6}>
-                              <table>
-                                <thead>
-                                  <tr>
-                                    <th>{t('Loại chi')}</th>
-                                    <th className="num">{t('Số khoản')}</th>
-                                    <th className="num">{t('Số tiền')}</th>
-                                    <th className="num">{t('Tỷ trọng trong nhóm')}</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {expenseByType(items).map((x, i) => (
-                                    <tr key={x.name}>
-                                      <td>
-                                        <span className="muted">{i + 1}.</span> {x.name === NO_NOTE ? t(NO_NOTE) : x.name}
-                                      </td>
-                                      <td className="num">{x.count}</td>
-                                      <td className="num">{formatVND(x.amount)}</td>
-                                      <td className="num">{Math.round(x.share * 100)}%</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                              <GroupDetailTable items={items} t={t} />
                             </td>
                           </tr>
                         )}
