@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+
+  <!-- Greek yogurt body: rich velvety ivory cream -->
+  <linearGradient id="greek-cream" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="50%" stop-color="#fefcf8"/>
+    <stop offset="85%" stop-color="#f7f1e3"/>
+    <stop offset="100%" stop-color="#ede2cd"/>
+  </linearGradient>
+
+  <!-- Honey sauce gradient: rich golden amber -->
+  <linearGradient id="honey-gold" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#fef08a"/>
+    <stop offset="20%" stop-color="#fbbf24"/>
+    <stop offset="65%" stop-color="#f59e0b"/>
+    <stop offset="100%" stop-color="#d97706"/>
+  </linearGradient>
+
+  <!-- Clip path matching 400gr large jar interior -->
+  <clipPath id="jar-400-clip">
+    <path d="M -75 -65 
+             C -102 -65 -118 -30 -115 35 
+             C -110 95 -68 115 0 115 
+             C 68 115 110 95 115 35 
+             C 118 -30 102 -65 75 -65 Z"/>
+  </clipPath>
+</defs>
+
+  <g id="illustration" transform="translate(300, 300) scale(1.22) translate(-300, -320)">
+  <!-- Ambient organic watercolor blob: soft Aegean sky pastel -->
+  <circle cx="300" cy="320" r="220" fill="#e0f2fe" opacity="0.85"/>
+  <circle cx="300" cy="320" r="185" fill="#bae6fd" opacity="0.6"/>
+
+  <!-- Wooden Platter Base -->
+  <ellipse cx="300" cy="460" rx="200" ry="45" fill="#c69255" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="300" cy="456" rx="185" ry="38" fill="#ddb080" opacity="0.5"/>
+
+  <!-- The Large 400gr Greek Yogurt Jar & Scene -->
+  <g transform="translate(290, 330)">
+    <!-- Jar Shadow on wooden platter -->
+    <ellipse cx="0" cy="112" rx="98" ry="24" fill="#16301f" opacity="0.18"/>
+
+    <!-- Dense Greek Yogurt Interior (Large 400gr volume) -->
+    <g clip-path="url(#jar-400-clip)">
+      <rect x="-130" y="-80" width="260" height="210" fill="url(#greek-cream)"/>
+      <!-- Soft ambient curves in strained yogurt -->
+      <path d="M -115 35 C -110 95 -68 115 0 115 C 68 115 110 95 115 35 C 90 90 45 100 0 100 C -45 100 -90 90 -115 35 Z" fill="#e4d7bf" opacity="0.35"/>
+      <path d="M -105 -20 Q -50 25 0 12 Q 55 0 105 25 L 105 45 Q 50 30 0 42 Q -55 55 -105 15 Z" fill="#eddcc2" opacity="0.3"/>
+    </g>
+
+    <!-- Outer Large Jar Contour Stroke -->
+    <path d="M -75 -65 
+             C -102 -65 -118 -30 -115 35 
+             C -110 95 -68 115 0 115 
+             C 68 115 110 95 115 35 
+             C 118 -30 102 -65 75 -65 Z" 
+          fill="none" 
+          stroke="#16301f" 
+          stroke-width="5.5" 
+          stroke-linejoin="round"/>
+
+    <!-- Glass gloss reflections -->
+    <path d="M -90 -20 C -98 25 -95 75 -75 95 C -80 82 -85 30 -78 -20 Z" fill="#ffffff" opacity="0.8"/>
+    <circle cx="-70" cy="-35" r="4.5" fill="#ffffff" opacity="0.9"/>
+    <circle cx="-62" cy="-15" r="2.5" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Jar Rim & Opening (Wider for 400g) -->
+    <ellipse cx="0" cy="-65" rx="75" ry="20" fill="#ffffff" stroke="#16301f" stroke-width="5"/>
+    <ellipse cx="0" cy="-65" rx="68" ry="16" fill="#fdfcf8"/>
+
+    <!-- Generous Mountain of Greek Yogurt Swirls with Golden Honey -->
+    <g transform="translate(0, -65)">
+      <!-- Swirl base shadow -->
+      <ellipse cx="0" cy="5" rx="55" ry="14" fill="#16301f" opacity="0.1"/>
+      
+      <!-- Layer 1: Wide creamy foundation -->
+      <path d="M -52 4 C -56 -18 -30 -32 0 -32 C 30 -32 56 -18 52 4 C 32 14 -32 14 -52 4 Z" 
+            fill="#f7f0df" stroke="#16301f" stroke-width="3.2" stroke-linejoin="round"/>
+      
+      <!-- Layer 2: Main dense sculpted swirl -->
+      <path d="M -44 -4 C -46 -30 -18 -46 2 -46 C 28 -46 46 -26 42 -4 C 24 6 -20 6 -44 -4 Z" 
+            fill="#ffffff" stroke="#16301f" stroke-width="3.5" stroke-linejoin="round"/>
+
+      <!-- Layer 3: Top curling peak -->
+      <path d="M -18 -30 C -14 -52 8 -62 18 -58 C 18 -46 30 -36 18 -22 C 8 -14 -8 -16 -18 -30 Z" 
+            fill="#ffffff" stroke="#16301f" stroke-width="3" stroke-linejoin="round"/>
+
+      <!-- Cream folds & highlights -->
+      <path d="M -30 -14 Q -12 -28 10 -24" stroke="#ebd9bd" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M -8 -42 Q 10 -50 15 -38" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <path d="M 14 -20 Q 26 -10 30 0" stroke="#ebd9bd" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+      <!-- Honey Drizzle cascading down the front of the 400g jar -->
+      <path d="M 14 -54 
+               C 22 -44 22 -30 14 -18 
+               C 10 -10 22 -4 24 6 
+               C 26 16 22 28 20 38 
+               C 18 48 20 58 22 65" 
+            stroke="url(#honey-gold)" stroke-width="7" stroke-linecap="round" fill="none"/>
+      
+      <!-- Honey highlight sheen -->
+      <path d="M 13 -52 
+               C 20 -43 20 -31 13 -19 
+               C 9 -11 21 -5 23 5" 
+            stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8"/>
+
+      <!-- Honey droplet bead -->
+      <ellipse cx="23" cy="76" rx="4" ry="5" fill="#f59e0b" stroke="#16301f" stroke-width="2"/>
+      <ellipse cx="22" cy="74" rx="1.5" ry="2" fill="#ffffff" opacity="0.9"/>
+
+      <!-- Double roasted walnuts garnish on top -->
+      <g transform="translate(-24, -24) rotate(-18)">
+        <ellipse cx="0" cy="0" rx="11" ry="8" fill="#b45309" stroke="#16301f" stroke-width="2.2"/>
+        <path d="M -7 -1 Q 0 6 7 -1" stroke="#78350f" stroke-width="1.8" fill="none"/>
+        <path d="M -1 -6 L -1 6" stroke="#78350f" stroke-width="1.8"/>
+        <ellipse cx="-4" cy="-2" rx="2.5" ry="1.5" fill="#d97706"/>
+      </g>
+      <g transform="translate(-10, -42) rotate(15)">
+        <ellipse cx="0" cy="0" rx="8" ry="5.5" fill="#a16207" stroke="#16301f" stroke-width="1.8"/>
+        <path d="M -4 -1 Q 0 4 4 -1" stroke="#78350f" stroke-width="1.5" fill="none"/>
+      </g>
+    </g>
+
+    <!-- Large Wooden Scoop resting against jar on Left -->
+    <g transform="translate(-112, 10) rotate(-28)">
+      <!-- Long sturdy wooden handle -->
+      <path d="M -5 24 L -3 -105 Q 0 -110 5 -110 Q 9 -110 7 -105 L 5 24 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2.8"/>
+      <!-- Deep scoop bowl -->
+      <ellipse cx="0" cy="30" rx="22" ry="32" fill="#c69255" stroke="#8d5b2d" stroke-width="3.2"/>
+      <!-- Mountainous Greek yogurt portion on scoop -->
+      <path d="M -16 26 Q 0 45 16 26 Q 0 12 -16 26 Z" fill="#ffffff" stroke="#16301f" stroke-width="2.5"/>
+      <path d="M -8 24 Q 0 34 8 25" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    </g>
+
+    <!-- Golden Honey Jar & Honey Dipper (Right side of platter) -->
+    <g transform="translate(98, 52)">
+      <!-- Shadow on wooden platter -->
+      <ellipse cx="0" cy="42" rx="45" ry="14" fill="#16301f" opacity="0.18"/>
+
+      <!-- Honey pool on platter -->
+      <ellipse cx="0" cy="40" rx="38" ry="12" fill="url(#honey-gold)" stroke="#16301f" stroke-width="2.5"/>
+
+      <!-- Golden Honeycomb Chunk -->
+      <g transform="translate(-10, 22)">
+        <polygon points="0,-15 13,-8 13,8 0,15 -13,8 -13,-8" fill="#fbbf24" stroke="#16301f" stroke-width="2.5"/>
+        <polygon points="0,-10 9,-5 9,5 0,10 -9,5 -9,-5" fill="#f59e0b"/>
+        <g transform="translate(20, -8)">
+          <polygon points="0,-14 12,-7 12,7 0,14 -12,7 -12,-7" fill="#fde047" stroke="#16301f" stroke-width="2.5"/>
+          <polygon points="0,-9 8,-4 8,4 0,9 -8,4 -8,-4" fill="#fbbf24"/>
+          <ellipse cx="-3" cy="-4" rx="2.5" ry="1.2" fill="#ffffff" opacity="0.85"/>
+        </g>
+      </g>
+
+      <!-- Honey Dipper -->
+      <g transform="translate(16, 20) rotate(32)">
+        <rect x="-3" y="-50" width="6" height="50" rx="2" fill="#c69255" stroke="#8d5b2d" stroke-width="2"/>
+        <ellipse cx="0" cy="4" rx="11" ry="5.5" fill="#d97706" stroke="#8d5b2d" stroke-width="2"/>
+        <ellipse cx="0" cy="12" rx="13" ry="6.5" fill="#f59e0b" stroke="#8d5b2d" stroke-width="2"/>
+        <ellipse cx="0" cy="20" rx="11" ry="5.5" fill="#d97706" stroke="#8d5b2d" stroke-width="2"/>
+        <ellipse cx="-2" cy="11" rx="3" ry="1.5" fill="#ffffff" opacity="0.6"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M 140 152 Q 140 160 148 160 Q 140 160 140 168 Q 140 160 132 160 Q 140 160 140 152 Z" fill="#0284c7"/>
+  <path d="M 470 151 Q 470 160 479 160 Q 470 160 470 169 Q 470 160 461 160 Q 470 160 470 151 Z" fill="#f59e0b"/>
+  <path d="M 490 353 Q 490 360 497 360 Q 490 360 490 367 Q 490 360 483 360 Q 490 360 490 353 Z" fill="#0284c7"/>
+  <path d="M 120 373 Q 120 380 127 380 Q 120 380 120 387 Q 120 380 113 380 Q 120 380 120 373 Z" fill="#f59e0b"/>
+  </g>
+</svg>

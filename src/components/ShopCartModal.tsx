@@ -17,6 +17,8 @@ import {
   validDomain,
   validFloor,
   vietQrUrl,
+  GOOGLE_CHAT_URL,
+  hangoutEmail,
   zaloLink,
   type Customer,
   type MenuItem,
@@ -148,8 +150,10 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
     return true
   }
 
+  // Kênh gửi đơn: Hangout (Google Chat) nếu quán có domain, không thì Zalo theo số điện thoại
+  const channel = store.domain ? 'Hangout' : store.phone ? 'Zalo' : null
   // Gọi trực tiếp window.open trong sự kiện click để trình duyệt điện thoại không chặn popup
-  const sendZalo = () => {
+  const sendOrder = () => {
     if (!ready) {
       setTried(true)
       return
@@ -157,9 +161,8 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
     navigator.clipboard?.writeText(message).catch(() => undefined)
     setCopied(true)
     setTimeout(() => setCopied(false), 2500)
-    if (store.phone) {
-      window.open(zaloLink(store.phone), '_blank', 'noopener')
-    }
+    if (store.domain) window.open(GOOGLE_CHAT_URL, '_blank', 'noopener')
+    else if (store.phone) window.open(zaloLink(store.phone), '_blank', 'noopener')
   }
 
   // Tải ảnh mã QR thanh toán về máy (để mở MoMo quét từ thư viện ảnh)
@@ -349,12 +352,12 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
               </div>
             )}
 
-            {store.phone ? (
-              <button type="button" className="shop-send" onClick={sendZalo}>
-                Gửi đơn qua Zalo
+            {channel ? (
+              <button type="button" className="shop-send" onClick={sendOrder}>
+                Gửi đơn qua {channel}
               </button>
             ) : null}
-            <button type="button" className={store.phone ? 'shop-copy' : 'shop-send'} onClick={copy}>
+            <button type="button" className={channel ? 'shop-copy' : 'shop-send'} onClick={copy}>
               {copied ? 'Đã sao chép ✓' : 'Sao chép đơn hàng'}
             </button>
             <button type="button" className="shop-copy shop-download" onClick={saveInvoice} disabled={downloading}>
@@ -363,9 +366,11 @@ export function ShopCartModal({ open, onClose, cart, items, store, onSetLineQty,
             {tried && !ready && <small className="shop-error">Bạn điền đủ tên, domain và tầng giúp quán nhé.</small>}
             {fileError && <small className="shop-error">{fileError}</small>}
             <small className="shop-hint">
-              {store.phone
-                ? 'Bấm "Gửi đơn qua Zalo": nội dung đơn được sao chép sẵn, bạn chỉ cần dán vào khung chat.'
-                : 'Sao chép đơn rồi gửi cho cửa hàng để đặt trước.'}
+              {store.domain
+                ? `Bấm "Gửi đơn qua Hangout": nội dung đơn được sao chép sẵn. Trong Google Chat, tìm ${hangoutEmail(store.domain)} rồi dán vào khung chat.`
+                : store.phone
+                  ? 'Bấm "Gửi đơn qua Zalo": nội dung đơn được sao chép sẵn, bạn chỉ cần dán vào khung chat.'
+                  : 'Sao chép đơn rồi gửi cho cửa hàng để đặt trước.'}
             </small>
           </>
         )}

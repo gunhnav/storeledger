@@ -1,4 +1,4 @@
-// Vẽ hoá đơn bán sữa chua thành ảnh PNG (canvas) để khách tải về máy hoặc gửi Zalo. Chỉ chạy trên trình duyệt.
+// Vẽ hoá đơn bán sữa chua thành ảnh PNG (canvas) để khách tải về máy hoặc gửi cho quán. Chỉ chạy trên trình duyệt.
 
 export type InvoiceLine = { title: string; detail: string; qty: number; unitPrice: number }
 export type InvoiceData = {

@@ -3956,6 +3956,9 @@ input.overridden {
   backdrop-filter: blur(8px);
   box-shadow: 0 10px 28px rgba(22, 48, 31, 0.16);
 }
+.shop-builder.has-cartbar {
+  bottom: 88px;
+}
 .shop-builder-info {
   display: flex;
   align-items: center;
@@ -4535,6 +4538,9 @@ input.overridden {
   }
 }
 @media (max-width: 520px) {
+  .shop-builder.has-cartbar {
+    bottom: 116px;
+  }
   .shop-sizes {
     grid-template-columns: 1fr;
     gap: 8px;

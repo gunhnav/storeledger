@@ -1,0 +1,191 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+
+  <!-- Sunny golden whey liquid gradient: luminous, translucent, golden-yellow -->
+  <linearGradient id="whey-liquid" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#fffbeb"/>
+    <stop offset="25%" stop-color="#fef08a"/>
+    <stop offset="70%" stop-color="#facc15"/>
+    <stop offset="100%" stop-color="#eab308"/>
+  </linearGradient>
+
+  <!-- Whey surface meniscus -->
+  <linearGradient id="whey-surface" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#fef9c3"/>
+    <stop offset="100%" stop-color="#facc15"/>
+  </linearGradient>
+
+  <!-- Lemon pulp gradient -->
+  <linearGradient id="lemon-pulp" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#fef08a"/>
+    <stop offset="60%" stop-color="#fde047"/>
+    <stop offset="100%" stop-color="#eab308"/>
+  </linearGradient>
+
+  <!-- Clip path matching bottle interior -->
+  <clipPath id="bottle-interior">
+    <path d="M -15 -92 
+             L 15 -92 
+             L 15 -52 
+             C 18 -38 48 -28 50 -10 
+             L 50 72 
+             C 50 82 42 88 30 88 
+             L -30 88 
+             C -42 88 -50 82 -50 72 
+             L -50 -10 
+             C -48 -28 -18 -38 -15 -52 Z"/>
+  </clipPath>
+</defs>
+
+  <g id="illustration" transform="translate(300, 300) scale(1.22) translate(-300, -320)">
+  <!-- Ambient organic watercolor blob: sunny whey & citrus glow -->
+  <circle cx="300" cy="320" r="220" fill="#fef9c3" opacity="0.85"/>
+  <circle cx="300" cy="320" r="185" fill="#fef08a" opacity="0.6"/>
+
+  <!-- Wooden Platter Base -->
+  <ellipse cx="300" cy="460" rx="200" ry="45" fill="#c69255" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="300" cy="456" rx="185" ry="38" fill="#ddb080" opacity="0.5"/>
+
+  <!-- The 220ml Whey Bottle & Refreshing Accents -->
+  <g transform="translate(290, 340)">
+    <!-- Bottle Shadow on wood platter -->
+    <ellipse cx="0" cy="88" rx="65" ry="17" fill="#16301f" opacity="0.18"/>
+
+    <!-- Bottle Contents (Clipped to inner glass contour) -->
+    <g clip-path="url(#bottle-interior)">
+      <!-- Translucent glass back tint -->
+      <rect x="-60" y="-100" width="120" height="200" fill="#fdfbf5"/>
+
+      <!-- Liquid Body: golden whey filled to shoulder -->
+      <path d="M -55 -28 
+               Q 0 -34 55 -28 
+               L 55 95 L -55 95 Z" 
+            fill="url(#whey-liquid)"/>
+
+      <!-- Bottom liquid depth shadow -->
+      <path d="M -50 72 C -50 82 -30 88 0 88 C 30 88 50 82 50 72 C 35 84 -35 84 -50 72 Z" fill="#ca8a04" opacity="0.4"/>
+
+      <!-- Whey liquid surface ellipse -->
+      <ellipse cx="0" cy="-28" rx="48" ry="10" fill="url(#whey-surface)" stroke="#ca8a04" stroke-width="1.5" opacity="0.8"/>
+      <ellipse cx="-12" cy="-29" rx="20" ry="4.5" fill="#ffffff" opacity="0.5"/>
+
+      <!-- Floating probiotic effervescence bubbles -->
+      <circle cx="-25" cy="20" r="3" fill="#ffffff" opacity="0.7"/>
+      <circle cx="-12" cy="45" r="2" fill="#ffffff" opacity="0.6"/>
+      <circle cx="18" cy="10" r="3.5" fill="#ffffff" opacity="0.75"/>
+      <circle cx="28" cy="35" r="2.2" fill="#ffffff" opacity="0.6"/>
+      <circle cx="5" cy="60" r="2.8" fill="#ffffff" opacity="0.7"/>
+      <circle cx="-20" cy="-5" r="2.2" fill="#ffffff" opacity="0.6"/>
+    </g>
+
+    <!-- Glass Bottle Outer Contour Stroke -->
+    <path d="M -15 -92 
+             L 15 -92 
+             L 15 -52 
+             C 18 -38 48 -28 50 -10 
+             L 50 72 
+             C 50 82 42 88 30 88 
+             L -30 88 
+             C -42 88 -50 82 -50 72 
+             L -50 -10 
+             C -48 -28 -18 -38 -15 -52 Z" 
+          fill="none" 
+          stroke="#16301f" 
+          stroke-width="5.5" 
+          stroke-linejoin="round"/>
+
+    <!-- Glass gloss reflections -->
+    <!-- Left vertical curved sheen -->
+    <path d="M -38 -8 C -42 20 -40 55 -32 75 C -35 60 -36 20 -32 -6 Z" fill="#ffffff" opacity="0.8"/>
+    <!-- Shoulder sheen -->
+    <path d="M -35 -16 C -30 -26 -16 -35 -12 -45" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.85"/>
+    <!-- Small bright reflection dots -->
+    <circle cx="-35" cy="-2" r="3" fill="#ffffff" opacity="0.9"/>
+    <circle cx="-30" cy="18" r="2" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Cold condensation beads on bottle -->
+    <ellipse cx="32" cy="15" rx="2.5" ry="3.5" fill="#ffffff" stroke="#16301f" stroke-width="1.2" opacity="0.85"/>
+    <ellipse cx="36" cy="42" rx="2" ry="3" fill="#ffffff" stroke="#16301f" stroke-width="1.2" opacity="0.85"/>
+    <ellipse cx="25" cy="55" rx="1.8" ry="2.5" fill="#ffffff" opacity="0.75"/>
+
+    <!-- Bottle Neck Ring & Rim -->
+    <ellipse cx="0" cy="-92" rx="17" ry="5.5" fill="#ffffff" stroke="#16301f" stroke-width="4.5"/>
+    <ellipse cx="0" cy="-92" rx="12" ry="3.8" fill="#fef08a"/>
+
+    <!-- Kraft Cap / Wooden Twist Lid -->
+    <g transform="translate(0, -96)">
+      <path d="M -18 0 C -18 -10 18 -10 18 0 L 18 5 L -18 5 Z" fill="url(#kraft-grad)" stroke="#16301f" stroke-width="3.5" stroke-linejoin="round"/>
+      <ellipse cx="0" cy="-4" rx="16" ry="5" fill="#f5dfc6"/>
+      <!-- Twine tied around cap neck -->
+      <path d="M -16 6 Q 0 10 16 6" stroke="#b45309" stroke-width="2.5" fill="none"/>
+      <!-- Hanging twine loop & tag -->
+      <path d="M 12 7 Q 20 18 16 28" stroke="#b45309" stroke-width="2" fill="none"/>
+      <ellipse cx="16" cy="30" rx="4.5" ry="6" fill="#fef3c7" stroke="#16301f" stroke-width="1.5" transform="rotate(15 16 30)"/>
+    </g>
+
+    <!-- Fresh Lemon Slice leaning against bottle on Right -->
+    <g transform="translate(75, 52)">
+      <!-- Lemon shadow -->
+      <ellipse cx="0" cy="34" rx="35" ry="11" fill="#16301f" opacity="0.18"/>
+
+      <!-- Lemon Wheel (Round slice standing upright) -->
+      <!-- Yellow rind -->
+      <circle cx="0" cy="8" r="28" fill="#eab308" stroke="#16301f" stroke-width="3.2"/>
+      <!-- White pith ring -->
+      <circle cx="0" cy="8" r="24" fill="#fefce8"/>
+      <!-- Lemon pulp base -->
+      <circle cx="0" cy="8" r="21" fill="url(#lemon-pulp)" stroke="#16301f" stroke-width="1.5"/>
+
+      <!-- Lemon pulp segments (triangular wedges) -->
+      <g stroke="#ffffff" stroke-width="1.5" fill="#ca8a04" opacity="0.75">
+        <line x1="0" y1="-13" x2="0" y2="29"/>
+        <line x1="-21" y1="8" x2="21" y2="8"/>
+        <line x1="-15" y1="-7" x2="15" y2="23"/>
+        <line x1="-15" y1="23" x2="15" y2="-7"/>
+      </g>
+      <!-- Juicy gloss highlights on lemon pulp -->
+      <circle cx="-6" cy="2" r="1.5" fill="#ffffff"/>
+      <circle cx="7" cy="14" r="1.5" fill="#ffffff"/>
+
+      <!-- Fresh Green Mint Sprig beside lemon -->
+      <g transform="translate(18, 14) rotate(25)">
+        <path d="M 0 0 C 14 -12 24 -2 15 8 C 8 16 0 8 0 0 Z" fill="#256b40" stroke="#16301f" stroke-width="2"/>
+        <path d="M 0 0 C 4 -18 16 -18 14 -4 C 12 4 0 4 0 0 Z" fill="#52b788" stroke="#16301f" stroke-width="2"/>
+      </g>
+    </g>
+
+    <!-- Small Glass Cup of Chilled Whey with Striped Straw (Left side) -->
+    <g transform="translate(-85, 48)">
+      <!-- Cup shadow -->
+      <ellipse cx="0" cy="38" rx="28" ry="10" fill="#16301f" opacity="0.18"/>
+
+      <!-- Striped Straw extending out of cup -->
+      <g transform="translate(4, 5) rotate(-22)">
+        <rect x="-3" y="-55" width="6" height="55" rx="2" fill="#ffffff" stroke="#16301f" stroke-width="2"/>
+        <!-- Amber stripes on straw -->
+        <line x1="-3" y1="-45" x2="3" y2="-41" stroke="#f59e0b" stroke-width="3"/>
+        <line x1="-3" y1="-32" x2="3" y2="-28" stroke="#f59e0b" stroke-width="3"/>
+        <line x1="-3" y1="-19" x2="3" y2="-15" stroke="#f59e0b" stroke-width="3"/>
+      </g>
+
+      <!-- Glass cup body -->
+      <path d="M -22 10 L -18 36 C -18 38 18 38 18 36 L 22 10 Z" fill="url(#whey-liquid)" stroke="#16301f" stroke-width="3" stroke-linejoin="round"/>
+      <ellipse cx="0" cy="10" rx="22" ry="7" fill="url(#whey-surface)" stroke="#16301f" stroke-width="2.5"/>
+      <ellipse cx="-4" cy="10" rx="14" ry="4" fill="#ffffff" opacity="0.5"/>
+      <!-- Cup gloss reflection -->
+      <path d="M -16 16 L -13 32" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M 140 152 Q 140 160 148 160 Q 140 160 140 168 Q 140 160 132 160 Q 140 160 140 152 Z" fill="#eab308"/>
+  <path d="M 470 151 Q 470 160 479 160 Q 470 160 470 169 Q 470 160 461 160 Q 470 160 470 151 Z" fill="#eab308"/>
+  <path d="M 490 353 Q 490 360 497 360 Q 490 360 490 367 Q 490 360 483 360 Q 490 360 490 353 Z" fill="#eab308"/>
+  <path d="M 120 373 Q 120 380 127 380 Q 120 380 120 387 Q 120 380 113 380 Q 120 380 120 373 Z" fill="#eab308"/>
+  </g>
+</svg>

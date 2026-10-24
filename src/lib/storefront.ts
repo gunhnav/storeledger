@@ -1,5 +1,5 @@
 // Trang bán hàng công khai (/hogi, /shop/<mã quán>): ĐẶT TRƯỚC theo set (4 hoặc 6 hũ, tự chọn vị) như kênh Công ty.
-// Không lấy tồn kho: ai đặt gì nhận đó. Giỏ hàng gồm dòng set và dòng món lẻ (vd: sữa chua Hy Lạp); nội dung đơn gửi qua Zalo.
+// Không lấy tồn kho: ai đặt gì nhận đó. Giỏ hàng gồm dòng set và dòng món lẻ (vd: sữa chua Hy Lạp); nội dung đơn gửi qua Hangout (hoặc Zalo).
 
 export const SET_SIZES = [4, 6] as const
 export type SetSize = (typeof SET_SIZES)[number]
@@ -230,7 +230,7 @@ export function vietQrUrl(bank: PublicBank, amount: number, memo: string): strin
   return `https://img.vietqr.io/image/${encodeURIComponent(bank.code)}-${encodeURIComponent(bank.account)}-compact2.png?${q}`
 }
 
-// Nội dung đơn đặt trước để dán vào Zalo
+// Nội dung đơn đặt trước để dán vào Hangout / Zalo
 export function orderMessage(storeName: string, lines: CartLine[], items: MenuItem[], customer: Partial<Customer> = {}, hasBank = false, code = ''): string {
   const rows = lines.map((l) => {
     if (l.kind === 'set') return `- ${l.qty} set ${l.size} hũ (${mixLabel(l.mix, items)}): ${vnd(l.unitPrice * l.qty)}`
@@ -284,6 +284,9 @@ export function flavorImage(name: string): string | null {
   if (n.includes('pho mai')) return '/shop/flavor-pho-mai.svg'
   if (n.includes('truyen thong') || n.includes('nguyen ban')) return '/shop/flavor-truyen-thong.svg'
   if (n.includes('flan')) return '/shop/flavor-banh-flan.svg'
+  if (n.includes('whey')) return '/shop/flavor-whey.svg'
+  if (n.includes('tri ky') || n.includes('400')) return '/shop/flavor-hy-lap-400.svg'
+  if (n.includes('hy lap') || n.includes('lam quen')) return '/shop/flavor-hy-lap.svg'
   return null
 }
 

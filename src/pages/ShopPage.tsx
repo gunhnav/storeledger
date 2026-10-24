@@ -191,7 +191,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               Sữa chua hũ,
               <em>đặt trước theo set.</em>
             </h1>
-            <p>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi gửi đơn qua Zalo.'}</p>
+            <p>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi gửi đơn qua Hangout.'}</p>
             <div className="shop-hero-cta">
               <a className="shop-cta" href="#chon-set">
                 Chọn set ngay
@@ -223,7 +223,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
         <li>
           <span aria-hidden="true">💬</span>
           <div>
-            <strong>Gửi đơn qua Zalo</strong>
+            <strong>Gửi đơn qua Hangout</strong>
             <small>Đơn soạn sẵn, chỉ cần gửi</small>
           </div>
         </li>
@@ -330,7 +330,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             </div>
 
             {!singleLine && (
-            <div className="shop-builder" aria-live="polite">
+            <div className={`shop-builder${count > 0 ? ' has-cartbar' : ''}`} aria-live="polite">
               <div className="shop-builder-info">
                 <div className="shop-dots" aria-hidden="true">
                   {Array.from({ length: size }, (_, i) => (
@@ -381,8 +381,8 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             </li>
             <li>
               <span className="shop-step-no">3</span>
-              <strong>{store.phone ? 'Gửi đơn qua Zalo' : 'Gửi đơn cho quán'}</strong>
-              <p>{store.phone ? 'Điền thông tin nhận hàng, nội dung đơn được soạn sẵn, bạn chỉ cần dán vào khung chat và gửi.' : 'Điền thông tin nhận hàng rồi sao chép nội dung đơn gửi cho quán để đặt trước.'}</p>
+              <strong>{store.domain ? 'Gửi đơn qua Hangout' : store.phone ? 'Gửi đơn qua Zalo' : 'Gửi đơn cho quán'}</strong>
+              <p>{store.domain || store.phone ? 'Điền thông tin nhận hàng, nội dung đơn được soạn sẵn, bạn chỉ cần dán vào khung chat và gửi.' : 'Điền thông tin nhận hàng rồi sao chép nội dung đơn gửi cho quán để đặt trước.'}</p>
             </li>
           </ol>
         </div>
