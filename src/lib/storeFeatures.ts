@@ -27,3 +27,7 @@ export const usesIngredients = (storeCode: string | undefined) => !!storeCode &&
 export function usesDistribution(storeCode: string | undefined): boolean {
   return !(storeCode && NO_DISTRIBUTION.has(storeCode))
 }
+
+// Quán nhập doanh thu theo ngày + kênh thay vì bán theo món: không có Kho hàng, Sản phẩm, Nguyên liệu và các báo cáo theo món.
+const REVENUE_ENTRY_STORES = new Set(['bundau'])
+export const usesRevenueEntry = (storeCode: string | undefined) => !!storeCode && REVENUE_ENTRY_STORES.has(storeCode)

@@ -1,0 +1,239 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" width="640" height="420">
+<defs>
+
+  <linearGradient id="pot-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="55%" stop-color="#fcfbf8"/>
+    <stop offset="100%" stop-color="#ebe2d3"/>
+  </linearGradient>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+  <linearGradient id="leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#256b40"/>
+    <stop offset="100%" stop-color="#52b788"/>
+  </linearGradient>
+  <linearGradient id="wood-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#dcb183"/>
+    <stop offset="100%" stop-color="#8d5b2d"/>
+  </linearGradient>
+
+  <linearGradient id="bg-hero" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#f6f2e9"/>
+    <stop offset="60%" stop-color="#f7f3eb"/>
+    <stop offset="100%" stop-color="#ede3d1"/>
+  </linearGradient>
+  <linearGradient id="plate-wood" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#dfbe98"/>
+    <stop offset="50%" stop-color="#c69255"/>
+    <stop offset="100%" stop-color="#aa7438"/>
+  </linearGradient>
+  <linearGradient id="purple-rice" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#6b21a8"/>
+    <stop offset="60%" stop-color="#4a154b"/>
+    <stop offset="100%" stop-color="#2e0c30"/>
+  </linearGradient>
+  <linearGradient id="matcha-liquid" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#86efac"/>
+    <stop offset="100%" stop-color="#22c55e"/>
+  </linearGradient>
+</defs>
+  <g id="hero-art" transform="translate(-546, -68)">
+<!-- RIGHT COLUMN: THE HERO ART SCENE -->
+  <!-- Big Wooden Presentation Platter -->
+  <ellipse cx="880" cy="410" rx="270" ry="55" fill="url(#plate-wood)" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="880" cy="406" rx="255" ry="48" fill="#e7c8a4" opacity="0.4"/>
+
+  <!-- 1. Matcha Element (Left bottom of platter) -->
+  <g transform="translate(630, 370)">
+    <!-- Matcha ceramic cup -->
+    <ellipse cx="0" cy="30" rx="38" ry="12" fill="#16301f" opacity="0.15"/>
+    <path d="M -35 10 C -30 40 30 40 35 10 Z" fill="#2d6a4f" stroke="#16301f" stroke-width="3"/>
+    <ellipse cx="0" cy="10" rx="35" ry="12" fill="url(#matcha-liquid)" stroke="#16301f" stroke-width="2"/>
+    <!-- 3 Green tea leaves -->
+    <path d="M -20 -10 C -40 -30 -10 -40 -5 -25 C 0 -15 -10 -5 -20 -10 Z" fill="#256b40" stroke="#16301f" stroke-width="2"/>
+    <path d="M 5 -15 C 20 -35 45 -20 30 -5 C 20 5 10 -5 5 -15 Z" fill="#52b788" stroke="#16301f" stroke-width="2"/>
+  </g>
+
+  <!-- 2. Cacao Element (Left mid of platter) -->
+  <g transform="translate(605, 230)">
+    <!-- Chocolate square 1 -->
+    <rect x="0" y="0" width="34" height="34" rx="4" fill="#5c2d16" stroke="#16301f" stroke-width="2.5" transform="rotate(-15 17 17)"/>
+    <rect x="5" y="5" width="24" height="24" rx="2" fill="#783e20" transform="rotate(-15 17 17)"/>
+    <!-- Chocolate square 2 -->
+    <rect x="18" y="16" width="32" height="32" rx="4" fill="#421f0e" stroke="#16301f" stroke-width="2.5" transform="rotate(18 34 32)"/>
+    <!-- Cacao bean -->
+    <ellipse cx="-12" cy="25" rx="14" ry="9" fill="#8d5b2d" stroke="#16301f" stroke-width="2" transform="rotate(35 -12 25)"/>
+  </g>
+
+  <!-- 3. Cheese Wedge Element (Right center) -->
+  <g transform="translate(930, 385)">
+    <ellipse cx="20" cy="35" rx="40" ry="10" fill="#16301f" opacity="0.15"/>
+    <!-- Cheese 3D wedge -->
+    <path d="M 0 10 L 55 -5 L 35 35 Z" fill="#f59e0b" stroke="#16301f" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 0 10 L 35 35 L 35 50 L 0 25 Z" fill="#d97706" stroke="#16301f" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M 35 35 L 55 -5 L 55 10 L 35 50 Z" fill="#b45309" stroke="#16301f" stroke-width="3" stroke-linejoin="round"/>
+    <!-- Cheese holes -->
+    <circle cx="25" cy="20" r="5" fill="#d97706"/>
+    <circle cx="42" cy="15" r="4" fill="#d97706"/>
+    <circle cx="15" cy="22" r="3" fill="#b45309"/>
+  </g>
+
+  <!-- 4. Nep Cam Element (Far right of platter) -->
+  <g transform="translate(1060, 360)">
+    <!-- Ceramic bowl -->
+    <ellipse cx="0" cy="35" rx="45" ry="12" fill="#16301f" opacity="0.15"/>
+    <path d="M -42 15 C -35 50 35 50 42 15 Z" fill="#ffffff" stroke="#16301f" stroke-width="3"/>
+    <!-- Fermented sticky rice filling -->
+    <ellipse cx="0" cy="15" rx="42" ry="14" fill="url(#purple-rice)" stroke="#16301f" stroke-width="2"/>
+    <!-- Glistening rice grains -->
+    <ellipse cx="-15" cy="14" rx="4" ry="2" fill="#d8b4e2"/>
+    <ellipse cx="5" cy="12" rx="4" ry="2" fill="#d8b4e2"/>
+    <ellipse cx="18" cy="16" rx="4" ry="2" fill="#d8b4e2"/>
+    <ellipse cx="-5" cy="18" rx="4" ry="2" fill="#d8b4e2"/>
+    <!-- Golden grain ears -->
+    <path d="M 25 15 Q 45 -10 35 -30" stroke="#ca8a04" stroke-width="2.5" fill="none"/>
+    <ellipse cx="33" cy="-18" rx="4" ry="2" fill="#eab308" transform="rotate(-30 33 -18)"/>
+    <ellipse cx="38" cy="-25" rx="4" ry="2" fill="#eab308" transform="rotate(-30 38 -25)"/>
+  </g>
+
+  <!-- 5. Fresh Milk Splashes (Top right ambient) -->
+  <g transform="translate(970, 190)">
+    <circle cx="0" cy="0" r="16" fill="#ffffff" stroke="#16301f" stroke-width="2.5"/>
+    <path d="M 0 -16 C -8 -30 8 -30 0 -16 Z" fill="#ffffff" stroke="#16301f" stroke-width="2.5"/>
+    <!-- Milk droplets -->
+    <circle cx="-35" cy="-15" r="6" fill="#ffffff" stroke="#16301f" stroke-width="2"/>
+    <circle cx="30" cy="-20" r="5" fill="#ffffff" stroke="#16301f" stroke-width="1.8"/>
+  </g>
+
+  <!-- Big Open Yogurt Jar in Center -->
+  <g transform="translate(860, 290)">
+    <!-- Jar shadow -->
+    <ellipse cx="0" cy="85" rx="65" ry="15" fill="#16301f" opacity="0.18"/>
+    <!-- Jar body -->
+    <path d="M -50 -35 C -65 -35 -78 -10 -75 25 C -72 65 -45 80 0 80 C 45 80 72 65 75 25 C 78 -10 65 -35 50 -35 Z" 
+          fill="url(#pot-grad)" stroke="#16301f" stroke-width="4.5"/>
+    <!-- Glass rim -->
+    <ellipse cx="0" cy="-35" rx="50" ry="14" fill="#ffffff" stroke="#16301f" stroke-width="4"/>
+    <!-- Luscious yogurt filling with swirl -->
+    <ellipse cx="0" cy="-35" rx="44" ry="11" fill="#f8f5ee"/>
+    <path d="M -25 -36 Q 0 -28 25 -36 Q 0 -42 -25 -36 Z" fill="#ffffff"/>
+    
+    <!-- Wooden Spoon lifting delicious dollop -->
+    <g transform="rotate(25 0 -40)">
+      <path d="M -4 -40 L -2 -140 Q 0 -145 4 -145 Q 8 -145 6 -140 L 4 -40 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+      <ellipse cx="0" cy="-35" rx="16" ry="22" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+      <!-- Cream dollop on spoon -->
+      <path d="M -12 -38 Q 0 -20 12 -38 Q 0 -48 -12 -38 Z" fill="#ffffff" stroke="#16301f" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- MAIN MASCOT: Bé Hũ Hogi standing triumphantly on the platter! -->
+  <g transform="translate(735.0,275.0) scale(1.050) translate(-200,-200)">
+  <!-- Shadow -->
+  <ellipse cx="200" cy="296" rx="66" ry="14" fill="#16301f" opacity="0.12"/>
+
+  <!-- Left wooden spoon -->
+  <g transform="rotate(-28 135 225)">
+    <path d="M 134 205 L 137 312 Q 139 318 143 318 Q 147 318 148 312 L 145 205 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2"/>
+    <ellipse cx="140" cy="195" rx="14" ry="20" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+    <ellipse cx="140" cy="195" rx="9" ry="14" fill="#deb887" opacity="0.7"/>
+  </g>
+
+  <!-- Mascot Pot Body -->
+  <path d="M 152 145 
+           C 130 145 112 165 106 205 
+           C 98 250 102 278 126 295 
+           C 145 308 175 310 200 310 
+           C 225 310 255 308 274 295 
+           C 298 278 302 250 294 205 
+           C 288 165 270 145 248 145 Z" 
+        fill="url(#pot-grad)" 
+        stroke="#16301f" 
+        stroke-width="5" 
+        stroke-linejoin="round"/>
+
+  <!-- Glass Gloss Highlight -->
+  <path d="M 124 190 C 118 220 120 255 132 275 C 130 270 124 240 128 200 C 130 185 136 175 142 165 C 135 172 127 180 124 190 Z" 
+        fill="#ffffff" opacity="0.85"/>
+  <circle cx="138" cy="162" r="3.5" fill="#ffffff" opacity="0.9"/>
+
+  <!-- Peach Blush Cheeks -->
+  <circle cx="150" cy="236" r="14" fill="#f5a25d" opacity="0.85"/>
+  <circle cx="250" cy="236" r="14" fill="#f5a25d" opacity="0.85"/>
+  <!-- Freckles -->
+  <circle cx="146" cy="234" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="151" cy="238" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="155" cy="233" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="245" cy="233" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="249" cy="238" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="254" cy="234" r="1.5" fill="#16301f" opacity="0.35"/>
+
+  <!-- Joyful curved eyes ^ ^ -->
+  <path d="M 158 220 C 165 209 176 209 183 220" fill="none" stroke="#16301f" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M 217 220 C 224 209 235 209 242 220" fill="none" stroke="#16301f" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Joyous smile -->
+  <path d="M 188 234 Q 200 253 212 234 Z" fill="#16301f"/>
+  <path d="M 193 244 Q 200 252 207 244 Q 200 240 193 244 Z" fill="#ff758f"/>
+
+  <!-- Arms -->
+  <ellipse cx="118" cy="245" rx="9" ry="13" fill="#ffffff" stroke="#16301f" stroke-width="3.5" transform="rotate(-15 118 245)"/>
+  <ellipse cx="282" cy="245" rx="9" ry="13" fill="#ffffff" stroke="#16301f" stroke-width="3.5" transform="rotate(15 282 245)"/>
+
+  <!-- Kraft Paper Lid Bonnet -->
+  <path d="M 140 148 
+           Q 148 165 158 152 
+           Q 168 167 180 152 
+           Q 192 168 200 153 
+           Q 208 168 220 152 
+           Q 232 167 242 152 
+           Q 252 165 260 148 
+           C 266 130 255 112 200 110 
+           C 145 112 134 130 140 148 Z" 
+        fill="url(#kraft-grad)" 
+        stroke="#16301f" 
+        stroke-width="4.5" 
+        stroke-linejoin="round"/>
+  
+  <!-- Paper creases -->
+  <path d="M 158 150 Q 165 135 175 125" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 180 150 Q 186 135 192 122" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 220 150 Q 214 135 208 122" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 242 150 Q 235 135 225 125" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Golden Twine Rope -->
+  <path d="M 143 144 Q 200 153 257 144" stroke="#eecd15" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M 143 144 Q 200 153 257 144" stroke="#16301f" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+
+  <!-- Bow Knot -->
+  <g transform="translate(232, 144)">
+    <path d="M 0 0 C -12 -11 -16 -2 0 0" fill="#eecd15" stroke="#16301f" stroke-width="2"/>
+    <path d="M 0 0 C 12 -11 16 -2 0 0" fill="#eecd15" stroke="#16301f" stroke-width="2"/>
+    <circle cx="0" cy="0" r="4.5" fill="#eecd15" stroke="#16301f" stroke-width="2"/>
+    <path d="M 0 2 Q 4 15 2 21" stroke="#eecd15" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M -2 2 Q -8 13 -6 19" stroke="#eecd15" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Green Sprout from lid -->
+  <g id="sprout">
+    <path d="M 200 112 Q 200 95 204 78" stroke="#256b40" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+    <path d="M 202 85 C 182 82 176 68 186 64 C 196 60 202 75 202 85 Z" 
+          fill="url(#leaf-grad)" stroke="#16301f" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M 204 78 C 221 70 231 77 226 87 C 219 95 208 85 204 78 Z" 
+          fill="url(#leaf-grad)" stroke="#16301f" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+</g>
+
+
+  <!-- Sparkles around the scene -->
+  <path d="M 720 91 Q 720 100 729 100 Q 720 100 720 109 Q 720 100 711 100 Q 720 100 720 91 Z" fill="#eecd15"/>
+  <path d="M 860 122 Q 860 130 868 130 Q 860 130 860 138 Q 860 130 852 130 Q 860 130 860 122 Z" fill="#eecd15"/>
+  <path d="M 1080 172 Q 1080 180 1088 180 Q 1080 180 1080 188 Q 1080 180 1072 180 Q 1080 180 1080 172 Z" fill="#eecd15"/>
+  <path d="M 640 274 Q 640 280 646 280 Q 640 280 640 286 Q 640 280 634 280 Q 640 280 640 274 Z" fill="#eecd15"/>
+  <path d="M 820 414 Q 820 420 826 420 Q 820 420 820 426 Q 820 420 814 420 Q 820 420 820 414 Z" fill="#eecd15"/>
+  <path d="M 1130 403 Q 1130 410 1137 410 Q 1130 410 1130 417 Q 1130 410 1123 410 Q 1130 410 1130 403 Z" fill="#eecd15"/>
+  </g>
+</svg>

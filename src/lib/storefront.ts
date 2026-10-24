@@ -60,4 +60,15 @@ export function flavorColors(name: string): [string, string] {
   return ['#d6ead9', '#7fb58a']
 }
 
+// Hình minh hoạ theo vị (public/shop/flavor-*.svg); vị lạ thì null và trang dùng màu nền thay thế
+export function flavorImage(name: string): string | null {
+  const n = norm(name)
+  if (n.includes('matcha')) return '/shop/flavor-matcha.svg'
+  if (n.includes('ca cao') || n.includes('cacao') || n.includes('socola')) return '/shop/flavor-ca-cao.svg'
+  if (n.includes('nep cam')) return '/shop/flavor-nep-cam.svg'
+  if (n.includes('pho mai')) return '/shop/flavor-pho-mai.svg'
+  if (n.includes('truyen thong') || n.includes('nguyen ban')) return '/shop/flavor-truyen-thong.svg'
+  return null
+}
+
 export const STATUS_TEXT: Record<MenuStatus, string> = { in_stock: 'Còn hàng', low: 'Sắp hết', out: 'Hết hàng' }

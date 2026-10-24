@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<defs>
+
+  <linearGradient id="pot-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="55%" stop-color="#fcfbf8"/>
+    <stop offset="100%" stop-color="#ebe2d3"/>
+  </linearGradient>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+  <linearGradient id="leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#256b40"/>
+    <stop offset="100%" stop-color="#52b788"/>
+  </linearGradient>
+  <linearGradient id="wood-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#dcb183"/>
+    <stop offset="100%" stop-color="#8d5b2d"/>
+  </linearGradient>
+
+</defs>
+  <!-- Outer circular frame -->
+  <circle cx="128" cy="128" r="122" fill="#f6f2e9" stroke="#256b40" stroke-width="7"/>
+  <!-- Inner dotted golden ring -->
+  <circle cx="128" cy="128" r="111" fill="none" stroke="#eecd15" stroke-width="2.5" stroke-dasharray="5 4"/>
+  
+  <!-- Mascot centered -->
+  <g transform="translate(128.0,142.0) scale(0.720) translate(-200,-200)">
+  <!-- Shadow -->
+  <ellipse cx="200" cy="296" rx="66" ry="14" fill="#16301f" opacity="0.12"/>
+
+  <!-- Left wooden spoon -->
+  <g transform="rotate(-28 135 225)">
+    <path d="M 134 205 L 137 312 Q 139 318 143 318 Q 147 318 148 312 L 145 205 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2"/>
+    <ellipse cx="140" cy="195" rx="14" ry="20" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+    <ellipse cx="140" cy="195" rx="9" ry="14" fill="#deb887" opacity="0.7"/>
+  </g>
+
+  <!-- Mascot Pot Body -->
+  <path d="M 152 145 
+           C 130 145 112 165 106 205 
+           C 98 250 102 278 126 295 
+           C 145 308 175 310 200 310 
+           C 225 310 255 308 274 295 
+           C 298 278 302 250 294 205 
+           C 288 165 270 145 248 145 Z" 
+        fill="url(#pot-grad)" 
+        stroke="#16301f" 
+        stroke-width="5" 
+        stroke-linejoin="round"/>
+
+  <!-- Glass Gloss Highlight -->
+  <path d="M 124 190 C 118 220 120 255 132 275 C 130 270 124 240 128 200 C 130 185 136 175 142 165 C 135 172 127 180 124 190 Z" 
+        fill="#ffffff" opacity="0.85"/>
+  <circle cx="138" cy="162" r="3.5" fill="#ffffff" opacity="0.9"/>
+
+  <!-- Peach Blush Cheeks -->
+  <circle cx="150" cy="236" r="14" fill="#f5a25d" opacity="0.85"/>
+  <circle cx="250" cy="236" r="14" fill="#f5a25d" opacity="0.85"/>
+  <!-- Freckles -->
+  <circle cx="146" cy="234" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="151" cy="238" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="155" cy="233" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="245" cy="233" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="249" cy="238" r="1.5" fill="#16301f" opacity="0.35"/>
+  <circle cx="254" cy="234" r="1.5" fill="#16301f" opacity="0.35"/>
+
+  <!-- Joyful curved eyes ^ ^ -->
+  <path d="M 158 220 C 165 209 176 209 183 220" fill="none" stroke="#16301f" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M 217 220 C 224 209 235 209 242 220" fill="none" stroke="#16301f" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Joyous smile -->
+  <path d="M 188 234 Q 200 253 212 234 Z" fill="#16301f"/>
+  <path d="M 193 244 Q 200 252 207 244 Q 200 240 193 244 Z" fill="#ff758f"/>
+
+  <!-- Arms -->
+  <ellipse cx="118" cy="245" rx="9" ry="13" fill="#ffffff" stroke="#16301f" stroke-width="3.5" transform="rotate(-15 118 245)"/>
+  <ellipse cx="282" cy="245" rx="9" ry="13" fill="#ffffff" stroke="#16301f" stroke-width="3.5" transform="rotate(15 282 245)"/>
+
+  <!-- Kraft Paper Lid Bonnet -->
+  <path d="M 140 148 
+           Q 148 165 158 152 
+           Q 168 167 180 152 
+           Q 192 168 200 153 
+           Q 208 168 220 152 
+           Q 232 167 242 152 
+           Q 252 165 260 148 
+           C 266 130 255 112 200 110 
+           C 145 112 134 130 140 148 Z" 
+        fill="url(#kraft-grad)" 
+        stroke="#16301f" 
+        stroke-width="4.5" 
+        stroke-linejoin="round"/>
+  
+  <!-- Paper creases -->
+  <path d="M 158 150 Q 165 135 175 125" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 180 150 Q 186 135 192 122" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 220 150 Q 214 135 208 122" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M 242 150 Q 235 135 225 125" stroke="#b38756" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Golden Twine Rope -->
+  <path d="M 143 144 Q 200 153 257 144" stroke="#eecd15" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M 143 144 Q 200 153 257 144" stroke="#16301f" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+
+  <!-- Bow Knot -->
+  <g transform="translate(232, 144)">
+    <path d="M 0 0 C -12 -11 -16 -2 0 0" fill="#eecd15" stroke="#16301f" stroke-width="2"/>
+    <path d="M 0 0 C 12 -11 16 -2 0 0" fill="#eecd15" stroke="#16301f" stroke-width="2"/>
+    <circle cx="0" cy="0" r="4.5" fill="#eecd15" stroke="#16301f" stroke-width="2"/>
+    <path d="M 0 2 Q 4 15 2 21" stroke="#eecd15" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M -2 2 Q -8 13 -6 19" stroke="#eecd15" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Green Sprout from lid -->
+  <g id="sprout">
+    <path d="M 200 112 Q 200 95 204 78" stroke="#256b40" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+    <path d="M 202 85 C 182 82 176 68 186 64 C 196 60 202 75 202 85 Z" 
+          fill="url(#leaf-grad)" stroke="#16301f" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M 204 78 C 221 70 231 77 226 87 C 219 95 208 85 204 78 Z" 
+          fill="url(#leaf-grad)" stroke="#16301f" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+</g>
+
+
+  <!-- Sparkles -->
+  <path d="M 48 55 Q 48 62 55 62 Q 48 62 48 69 Q 48 62 41 62 Q 48 62 48 55 Z" fill="#eecd15"/>
+  <path d="M 208 55 Q 208 62 215 62 Q 208 62 208 69 Q 208 62 201 62 Q 208 62 208 55 Z" fill="#eecd15"/>
+  <path d="M 38 155 Q 38 160 43 160 Q 38 160 38 165 Q 38 160 33 160 Q 38 160 38 155 Z" fill="#eecd15"/>
+  <path d="M 218 155 Q 218 160 223 160 Q 218 160 218 165 Q 218 160 213 160 Q 218 160 218 155 Z" fill="#eecd15"/>
+  
+  <!-- Tiny organic dots -->
+  <circle cx="128" cy="24" r="3.5" fill="#256b40"/>
+  <circle cx="128" cy="232" r="3.5" fill="#256b40"/>
+</svg>

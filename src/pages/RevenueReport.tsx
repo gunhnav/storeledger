@@ -1,0 +1,263 @@
+import { useEffect, useState, type ReactNode } from 'react'
+import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { DatePicker } from '../components/DatePicker'
+import { supabase } from '../lib/supabase'
+import { LANGUAGES, useI18n } from '../lib/i18n'
+import { useStore } from '../lib/store'
+import { errorMessage, formatCompact, formatDate, formatVND, todayVN } from '../lib/format'
+import { pctChange, presetRange, previousRange, type Preset, type Range } from '../lib/bundauReport'
+import { summarize, type RevenueSummary } from '../lib/revenue'
+
+type Loaded = { key: string; current: RevenueSummary; previous: RevenueSummary; expensesByCategory: { category: string; amount: number }[] }
+
+const PRESETS: { value: Preset; label: string }[] = [
+  { value: 'today', label: 'Hôm nay' },
+  { value: '7d', label: '7 ngày' },
+  { value: 'month', label: 'Tháng này' },
+  { value: 'lastMonth', label: 'Tháng trước' },
+]
+
+// Báo cáo tổng quan quán Bún đậu (chỉ admin): doanh thu nhập tay, hoa hồng đối tác, chi phí và lãi theo kỳ so với kỳ trước.
+export function RevenueReport({ storeId }: { storeId: string }) {
+  const { t, lang } = useI18n()
+  const { current: store } = useStore()
+  const rate = store?.default_commission_rate ?? 0
+  const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
+  const today = todayVN()
+  const [preset, setPreset] = useState<Preset | 'custom'>('month')
+  const [range, setRange] = useState<Range>(() => presetRange('month', today))
+  const [loaded, setLoaded] = useState<Loaded | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const valid = range.from !== '' && range.to !== '' && range.from <= range.to
+  const key = `${storeId}|${range.from}|${range.to}`
+
+  useEffect(() => {
+    if (!valid) return
+    let cancelled = false
+    const prev = previousRange(range)
+    const revenue = (r: Range) =>
+      supabase.from('daily_revenue').select('revenue_date, channel, amount').eq('store_id', storeId).gte('revenue_date', r.from).lte('revenue_date', r.to).limit(5000)
+    const expenses = (r: Range) =>
+      supabase.from('expenses').select('expense_date, category, amount').eq('store_id', storeId).gte('expense_date', r.from).lte('expense_date', r.to).limit(5000)
+    Promise.all([revenue(range), expenses(range), revenue(prev), expenses(prev)]).then(([rev, exp, prevRev, prevExp]) => {
+      if (cancelled) return
+      const err = rev.error ?? exp.error ?? prevRev.error ?? prevExp.error
+      if (err) return setError(errorMessage(err))
+      setError(null)
+      const byCat = new Map<string, number>()
+      for (const e of exp.data ?? []) byCat.set(e.category, (byCat.get(e.category) ?? 0) + Number(e.amount))
+      setLoaded({
+        key,
+        current: summarize(rev.data ?? [], exp.data ?? [], rate),
+        previous: summarize(prevRev.data ?? [], prevExp.data ?? [], rate),
+        expensesByCategory: [...byCat].map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount),
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [storeId, range, valid, key, rate])
+
+  const pick = (p: Preset) => {
+    setPreset(p)
+    setRange(presetRange(p, today))
+  }
+
+  const filters = (
+    <div className="filters">
+      <div className="preset-chips" role="group" aria-label={t('Khoảng thời gian')}>
+        {PRESETS.map((p) => (
+          <button key={p.value} type="button" className={preset === p.value ? 'active' : undefined} onClick={() => pick(p.value)}>
+            {t(p.label)}
+          </button>
+        ))}
+      </div>
+      <div className="field">
+        {t('Từ ngày')}
+        <DatePicker value={range.from} onChange={(v) => { setPreset('custom'); setRange((r) => ({ ...r, from: v })) }} label={t('Từ ngày')} />
+      </div>
+      <div className="field">
+        {t('Đến ngày')}
+        <DatePicker value={range.to} onChange={(v) => { setPreset('custom'); setRange((r) => ({ ...r, to: v })) }} label={t('Đến ngày')} />
+      </div>
+    </div>
+  )
+
+  if (!valid) {
+    return (
+      <div className="report-stack">
+        {filters}
+        <p className="error">{t('Khoảng ngày không hợp lệ: "Từ ngày" phải trước hoặc bằng "Đến ngày".')}</p>
+      </div>
+    )
+  }
+  if (error) return <p className="error">{t(error)}</p>
+  if (!loaded || loaded.key !== key) {
+    return (
+      <div className="report-stack">
+        {filters}
+        <p className="muted">{t('Đang tải…')}</p>
+      </div>
+    )
+  }
+
+  const { current: cur, previous: prev, expensesByCategory } = loaded
+  const delta = (c: number, p: number) => {
+    const change = pctChange(c, p)
+    if (change === null) return undefined
+    return `${change >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(change * 100))}% ${t('so với kỳ trước')}`
+  }
+  const stat = (label: string, value: ReactNode, sub?: string, negative = false) => (
+    <div className="stat">
+      <div className="stat-label">{t(label)}</div>
+      <div className={`stat-value${negative ? ' negative' : ''}`}>{value}</div>
+      {sub && <div className="stat-sub">{sub}</div>}
+    </div>
+  )
+  const compact = (v: unknown) => (Number(v) === 0 ? '' : formatCompact(Number(v), locale))
+  const chartData = cur.days.map((d) => ({
+    label: `${d.date.slice(8, 10)}/${d.date.slice(5, 7)}`,
+    revenue: d.gross - d.commission,
+    cost: d.expenses,
+    profit: d.gross - d.commission - d.expenses,
+  }))
+  const empty = cur.days.length === 0
+
+  return (
+    <div className="report-stack">
+      {filters}
+
+      <section className="report-block">
+        <h2>{t('Kết quả kinh doanh')}</h2>
+        <div className="stats">
+          {stat('Doanh thu', formatVND(cur.gross), delta(cur.gross, prev.gross))}
+          {stat('Thực thu (sau hoa hồng)', formatVND(cur.net), cur.commission > 0 ? t('Hoa hồng đối tác {fee}', { fee: formatVND(cur.commission) }) : undefined)}
+          {stat('Chi phí', formatVND(cur.expenses), delta(cur.expenses, prev.expenses))}
+          {stat('Lãi ròng', formatVND(cur.profit), cur.net > 0 ? t('Biên lãi {pct}%', { pct: Math.round((cur.profit / cur.net) * 100) }) : undefined, cur.profit < 0)}
+        </div>
+      </section>
+
+      {empty ? (
+        <p className="muted">{t('Chưa có doanh thu hay chi phí nào trong kỳ này.')}</p>
+      ) : (
+        <>
+          <section className="report-block">
+            <h2>{t('Doanh thu, chi phí và lãi theo ngày')}</h2>
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={260}>
+                <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="label" tick={{ fill: 'var(--muted)', fontSize: 12 }} stroke="var(--border)" tickLine={false} minTickGap={8} />
+                  <YAxis tickFormatter={compact} tick={{ fill: 'var(--muted)', fontSize: 12 }} stroke="var(--border)" tickLine={false} axisLine={false} width={52} />
+                  <Tooltip
+                    formatter={(v) => formatVND(Number(v))}
+                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}
+                    labelStyle={{ color: 'var(--text-h)', fontWeight: 600 }}
+                    itemStyle={{ color: 'var(--text)' }}
+                    cursor={{ fill: 'var(--border)', fillOpacity: 0.4 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 13 }} />
+                  <Bar dataKey="revenue" name={t('Thực thu')} fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={26} />
+                  <Bar dataKey="cost" name={t('Chi phí')} fill="var(--chart-2)" radius={[4, 4, 0, 0]} maxBarSize={26} />
+                  <Line dataKey="profit" name={t('Lãi ròng')} type="monotone" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 3 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          <div className="two-col">
+            <section className="report-block">
+              <h2>{t('Kênh bán')}</h2>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{t('Kênh')}</th>
+                      <th className="num">{t('Doanh thu')}</th>
+                      <th className="num">{t('Tỷ trọng')}</th>
+                      <th className="num">{t('Hoa hồng')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{t('Quán')}</td>
+                      <td className="num">{formatVND(cur.byChannel.in_store)}</td>
+                      <td className="num">{cur.gross > 0 ? `${Math.round((cur.byChannel.in_store / cur.gross) * 100)}%` : '—'}</td>
+                      <td className="num">—</td>
+                    </tr>
+                    <tr>
+                      <td>{t('Đối tác (app)')}</td>
+                      <td className="num">{formatVND(cur.byChannel.shopeefood)}</td>
+                      <td className="num">{cur.gross > 0 ? `${Math.round((cur.byChannel.shopeefood / cur.gross) * 100)}%` : '—'}</td>
+                      <td className="num">{cur.commission > 0 ? formatVND(cur.commission) : '—'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="report-block">
+              <h2>{t('Chi phí theo nhóm')}</h2>
+              {expensesByCategory.length === 0 ? (
+                <p className="muted">{t('Chưa có chi phí nào trong kỳ này.')}</p>
+              ) : (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t('Nhóm')}</th>
+                        <th className="num">{t('Số tiền')}</th>
+                        <th className="num">{t('Tỷ trọng')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {expensesByCategory.map((c) => (
+                        <tr key={c.category}>
+                          <td>{t(c.category)}</td>
+                          <td className="num">{formatVND(c.amount)}</td>
+                          <td className="num">{cur.expenses > 0 ? `${Math.round((c.amount / cur.expenses) * 100)}%` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </div>
+
+          <section className="report-block">
+            <h2>{t('Chi tiết theo ngày')}</h2>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>{t('Ngày')}</th>
+                    <th className="num">{t('Doanh thu')}</th>
+                    <th className="num">{t('Hoa hồng')}</th>
+                    <th className="num">{t('Chi phí')}</th>
+                    <th className="num">{t('Lãi ròng')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...cur.days].reverse().map((d) => {
+                    const profit = d.gross - d.commission - d.expenses
+                    return (
+                      <tr key={d.date}>
+                        <td>{formatDate(d.date)}</td>
+                        <td className="num">{formatVND(d.gross)}</td>
+                        <td className="num">{d.commission > 0 ? formatVND(d.commission) : '—'}</td>
+                        <td className="num">{d.expenses > 0 ? formatVND(d.expenses) : '—'}</td>
+                        <td className={`num${profit < 0 ? ' negative' : ''}`}>{formatVND(profit)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  )
+}

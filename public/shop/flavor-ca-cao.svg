@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+
+  <linearGradient id="pot-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="55%" stop-color="#fcfbf8"/>
+    <stop offset="100%" stop-color="#ebe2d3"/>
+  </linearGradient>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+  <linearGradient id="leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#256b40"/>
+    <stop offset="100%" stop-color="#52b788"/>
+  </linearGradient>
+  <linearGradient id="wood-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#dcb183"/>
+    <stop offset="100%" stop-color="#8d5b2d"/>
+  </linearGradient>
+
+  <linearGradient id="yogurt-cacao" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#bcaaa4"/>
+    <stop offset="50%" stop-color="#8d6e63"/>
+    <stop offset="100%" stop-color="#5d4037"/>
+  </linearGradient>
+</defs>
+  <g id="illustration" transform="translate(300, 300) scale(1.22) translate(-300, -320)">
+<!-- Ambient organic watercolor blob -->
+  <circle cx="300" cy="320" r="220" fill="#eddcd2" opacity="0.85"/>
+  <circle cx="300" cy="320" r="185" fill="#ddbea9" opacity="0.6"/>
+
+  <!-- Wooden Platter Base -->
+  <ellipse cx="300" cy="460" rx="200" ry="45" fill="#c69255" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="300" cy="456" rx="185" ry="38" fill="#ddb080" opacity="0.5"/>
+
+  <!-- The Yogurt Jar -->
+  <g transform="translate(300, 340)">
+    <!-- Jar Shadow -->
+    <ellipse cx="0" cy="98" rx="85" ry="20" fill="#16301f" opacity="0.18"/>
+
+    <!-- Glass Jar Body -->
+    <path d="M -65 -50 
+             C -90 -50 -105 -20 -102 30 
+             C -98 80 -60 100 0 100 
+             C 60 100 98 80 102 30 
+             C 105 -20 90 -50 65 -50 Z" 
+          fill="url(#yogurt-cacao)" 
+          stroke="#16301f" 
+          stroke-width="5.5" 
+          stroke-linejoin="round"/>
+
+    <!-- Glass gloss reflection -->
+    <path d="M -80 -10 C -85 25 -82 60 -65 80 C -68 70 -72 30 -66 -10 Z" fill="#ffffff" opacity="0.75"/>
+    <circle cx="-60" cy="-25" r="4" fill="#ffffff" opacity="0.85"/>
+
+    <!-- Jar Rim & Opening -->
+    <ellipse cx="0" cy="-50" rx="65" ry="18" fill="#ffffff" stroke="#16301f" stroke-width="5"/>
+    <ellipse cx="0" cy="-50" rx="58" ry="14" fill="#8d6e63"/>
+
+    <!-- Cocoa powder dust on top -->
+    <path d="M -35 -52 Q 0 -42 35 -52 Q 0 -60 -35 -52 Z" fill="#4e342e" opacity="0.8"/>
+    <circle cx="-15" cy="-52" r="3" fill="#3e2723"/>
+    <circle cx="10" cy="-50" r="3" fill="#3e2723"/>
+
+    <!-- Chocolate Squares in front -->
+    <g transform="translate(70, 40)">
+      <rect x="0" y="0" width="34" height="34" rx="4" fill="#4e342e" stroke="#16301f" stroke-width="3" transform="rotate(-15 17 17)"/>
+      <rect x="5" y="5" width="24" height="24" rx="2" fill="#6d4c41" transform="rotate(-15 17 17)"/>
+      <rect x="18" y="16" width="32" height="32" rx="4" fill="#3e2723" stroke="#16301f" stroke-width="3" transform="rotate(20 34 32)"/>
+    </g>
+
+    <!-- Cacao Bean on left -->
+    <g transform="translate(-115, 65)">
+      <ellipse cx="0" cy="0" rx="18" ry="11" fill="#795548" stroke="#16301f" stroke-width="2.5" transform="rotate(-25)"/>
+      <line x1="-12" y1="0" x2="12" y2="0" stroke="#3e2723" stroke-width="2" transform="rotate(-25)"/>
+    </g>
+
+    <!-- Wooden Spoon on Right -->
+    <g transform="translate(105, 10) rotate(22)">
+      <path d="M -4 20 L -2 -90 Q 0 -95 4 -95 Q 8 -95 6 -90 L 4 20 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+      <ellipse cx="0" cy="25" rx="18" ry="26" fill="#c69255" stroke="#8d5b2d" stroke-width="3"/>
+      <!-- Cocoa yogurt dollop on spoon -->
+      <path d="M -13 22 Q 0 38 13 22 Q 0 10 -13 22 Z" fill="#8d6e63" stroke="#16301f" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M 140 152 Q 140 160 148 160 Q 140 160 140 168 Q 140 160 132 160 Q 140 160 140 152 Z" fill="#8d6e63"/>
+  <path d="M 470 151 Q 470 160 479 160 Q 470 160 470 169 Q 470 160 461 160 Q 470 160 470 151 Z" fill="#8d6e63"/>
+  <path d="M 490 353 Q 490 360 497 360 Q 490 360 490 367 Q 490 360 483 360 Q 490 360 490 353 Z" fill="#8d6e63"/>
+  <path d="M 120 373 Q 120 380 127 380 Q 120 380 120 387 Q 120 380 113 380 Q 120 380 120 373 Z" fill="#8d6e63"/>
+  </g>
+</svg>

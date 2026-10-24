@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+
+  <linearGradient id="pot-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="55%" stop-color="#fcfbf8"/>
+    <stop offset="100%" stop-color="#ebe2d3"/>
+  </linearGradient>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+  <linearGradient id="leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#256b40"/>
+    <stop offset="100%" stop-color="#52b788"/>
+  </linearGradient>
+  <linearGradient id="wood-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#dcb183"/>
+    <stop offset="100%" stop-color="#8d5b2d"/>
+  </linearGradient>
+
+  <linearGradient id="yogurt-matcha" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#bbf7d0"/>
+    <stop offset="50%" stop-color="#4ade80"/>
+    <stop offset="100%" stop-color="#22c55e"/>
+  </linearGradient>
+</defs>
+  <g id="illustration" transform="translate(300, 300) scale(1.22) translate(-300, -320)">
+<!-- Ambient organic watercolor blob -->
+  <circle cx="300" cy="320" r="220" fill="#dcfce7" opacity="0.85"/>
+  <circle cx="300" cy="320" r="185" fill="#bbf7d0" opacity="0.6"/>
+
+  <!-- Wooden Platter Base -->
+  <ellipse cx="300" cy="460" rx="200" ry="45" fill="#c69255" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="300" cy="456" rx="185" ry="38" fill="#ddb080" opacity="0.5"/>
+
+  <!-- The Yogurt Jar -->
+  <g transform="translate(300, 340)">
+    <!-- Jar Shadow -->
+    <ellipse cx="0" cy="98" rx="85" ry="20" fill="#16301f" opacity="0.18"/>
+
+    <!-- Glass Jar Body -->
+    <path d="M -65 -50 
+             C -90 -50 -105 -20 -102 30 
+             C -98 80 -60 100 0 100 
+             C 60 100 98 80 102 30 
+             C 105 -20 90 -50 65 -50 Z" 
+          fill="url(#yogurt-matcha)" 
+          stroke="#16301f" 
+          stroke-width="5.5" 
+          stroke-linejoin="round"/>
+
+    <!-- Glass gloss reflection -->
+    <path d="M -80 -10 C -85 25 -82 60 -65 80 C -68 70 -72 30 -66 -10 Z" fill="#ffffff" opacity="0.75"/>
+    <circle cx="-60" cy="-25" r="4" fill="#ffffff" opacity="0.85"/>
+
+    <!-- Jar Rim & Opening -->
+    <ellipse cx="0" cy="-50" rx="65" ry="18" fill="#ffffff" stroke="#16301f" stroke-width="5"/>
+    <ellipse cx="0" cy="-50" rx="58" ry="14" fill="#4ade80"/>
+
+    <!-- Matcha powder dust spiral on top -->
+    <path d="M -30 -52 Q 0 -42 25 -52 Q 0 -60 -15 -52" fill="none" stroke="#166534" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- Green Tea Leaves falling -->
+    <g transform="translate(65, -55)">
+      <path d="M 0 0 C 18 -18 32 -6 20 10 C 10 20 0 10 0 0 Z" fill="#256b40" stroke="#16301f" stroke-width="2.5"/>
+      <path d="M 10 -15 C 25 -32 42 -22 32 -6 C 22 8 10 -15 10 -15 Z" fill="#52b788" stroke="#16301f" stroke-width="2.5"/>
+    </g>
+
+    <!-- Bamboo Chasen Whisk beside jar -->
+    <g transform="translate(105, 55)">
+      <path d="M -10 -30 L 10 -30 L 12 15 L -12 15 Z" fill="#fde68a" stroke="#16301f" stroke-width="2.5"/>
+      <path d="M -15 15 C -20 35 20 35 15 15 Z" fill="#fef3c7" stroke="#16301f" stroke-width="2.5"/>
+      <!-- Whisk bristles -->
+      <line x1="-8" y1="15" x2="-10" y2="30" stroke="#b45309" stroke-width="2"/>
+      <line x1="0" y1="15" x2="0" y2="32" stroke="#b45309" stroke-width="2"/>
+      <line x1="8" y1="15" x2="10" y2="30" stroke="#b45309" stroke-width="2"/>
+    </g>
+
+    <!-- Wooden Spoon on Left -->
+    <g transform="translate(-105, 10) rotate(-22)">
+      <path d="M -4 20 L -2 -90 Q 0 -95 4 -95 Q 8 -95 6 -90 L 4 20 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+      <ellipse cx="0" cy="25" rx="18" ry="26" fill="#c69255" stroke="#8d5b2d" stroke-width="3"/>
+      <!-- Matcha yogurt dollop on spoon -->
+      <path d="M -13 22 Q 0 38 13 22 Q 0 10 -13 22 Z" fill="#4ade80" stroke="#16301f" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M 140 152 Q 140 160 148 160 Q 140 160 140 168 Q 140 160 132 160 Q 140 160 140 152 Z" fill="#22c55e"/>
+  <path d="M 470 151 Q 470 160 479 160 Q 470 160 470 169 Q 470 160 461 160 Q 470 160 470 151 Z" fill="#22c55e"/>
+  <path d="M 490 353 Q 490 360 497 360 Q 490 360 490 367 Q 490 360 483 360 Q 490 360 490 353 Z" fill="#22c55e"/>
+  <path d="M 120 373 Q 120 380 127 380 Q 120 380 120 387 Q 120 380 113 380 Q 120 380 120 373 Z" fill="#22c55e"/>
+  </g>
+</svg>

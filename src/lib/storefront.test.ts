@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addToCart, canOrder, cartCount, cartTotal, flavorColors, orderMessage, pruneCart, setCartQty, zaloLink, type MenuItem } from './storefront'
+import { addToCart, canOrder, cartCount, cartTotal, flavorColors, flavorImage, orderMessage, pruneCart, setCartQty, zaloLink, type MenuItem } from './storefront'
 
 const item = (id: string, name: string, price: number | null, status: MenuItem['status'] = 'in_stock'): MenuItem => ({ id, name, category: null, price, status })
 
@@ -58,5 +58,18 @@ describe('màu theo vị', () => {
     expect(flavorColors('Matcha')[1]).toBe('#8fb86a')
     expect(flavorColors('Nếp cẩm')[1]).toBe('#8a5a94')
     expect(flavorColors('Vị lạ')).toHaveLength(2)
+  })
+})
+
+describe('hình minh hoạ theo vị', () => {
+  it('nhận vị không phân biệt dấu và hoa thường', () => {
+    expect(flavorImage('Nếp cẩm')).toBe('/shop/flavor-nep-cam.svg')
+    expect(flavorImage('PHÔ MAI')).toBe('/shop/flavor-pho-mai.svg')
+    expect(flavorImage('Ca cao')).toBe('/shop/flavor-ca-cao.svg')
+    expect(flavorImage('Matcha')).toBe('/shop/flavor-matcha.svg')
+    expect(flavorImage('Truyền thống')).toBe('/shop/flavor-truyen-thong.svg')
+  })
+  it('vị lạ không có hình', () => {
+    expect(flavorImage('Dâu tằm')).toBeNull()
   })
 })

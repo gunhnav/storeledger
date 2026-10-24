@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+
+  <linearGradient id="pot-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="55%" stop-color="#fcfbf8"/>
+    <stop offset="100%" stop-color="#ebe2d3"/>
+  </linearGradient>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+  <linearGradient id="leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#256b40"/>
+    <stop offset="100%" stop-color="#52b788"/>
+  </linearGradient>
+  <linearGradient id="wood-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#dcb183"/>
+    <stop offset="100%" stop-color="#8d5b2d"/>
+  </linearGradient>
+
+  <linearGradient id="yogurt-plain" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="60%" stop-color="#fbf9f5"/>
+    <stop offset="100%" stop-color="#eee4d2"/>
+  </linearGradient>
+</defs>
+  <g id="illustration" transform="translate(300, 300) scale(1.22) translate(-300, -320)">
+<!-- Ambient organic watercolor blob -->
+  <circle cx="300" cy="320" r="220" fill="#e8f5e9" opacity="0.85"/>
+  <circle cx="300" cy="320" r="185" fill="#f1f8e9" opacity="0.9"/>
+
+  <!-- Wooden Platter Base -->
+  <ellipse cx="300" cy="460" rx="200" ry="45" fill="#c69255" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="300" cy="456" rx="185" ry="38" fill="#ddb080" opacity="0.5"/>
+
+  <!-- Milk Splashes & Droplets -->
+  <g transform="translate(160, 240)">
+    <circle cx="0" cy="0" r="14" fill="#ffffff" stroke="#16301f" stroke-width="2.5"/>
+    <path d="M 0 -14 C -6 -24 6 -24 0 -14 Z" fill="#ffffff" stroke="#16301f" stroke-width="2.5"/>
+    <circle cx="-15" cy="-22" r="4.5" fill="#ffffff" stroke="#16301f" stroke-width="2"/>
+  </g>
+  <g transform="translate(440, 230)">
+    <circle cx="0" cy="0" r="12" fill="#ffffff" stroke="#16301f" stroke-width="2.5"/>
+    <path d="M 0 -12 C -5 -22 5 -22 0 -12 Z" fill="#ffffff" stroke="#16301f" stroke-width="2.5"/>
+  </g>
+
+  <!-- The Yogurt Jar -->
+  <g transform="translate(300, 340)">
+    <!-- Jar Shadow -->
+    <ellipse cx="0" cy="98" rx="85" ry="20" fill="#16301f" opacity="0.18"/>
+
+    <!-- Glass Jar Outer Contour -->
+    <path d="M -65 -50 
+             C -90 -50 -105 -20 -102 30 
+             C -98 80 -60 100 0 100 
+             C 60 100 98 80 102 30 
+             C 105 -20 90 -50 65 -50 Z" 
+          fill="url(#yogurt-plain)" 
+          stroke="#16301f" 
+          stroke-width="5.5" 
+          stroke-linejoin="round"/>
+
+    <!-- Glass gloss reflection -->
+    <path d="M -80 -10 C -85 25 -82 60 -65 80 C -68 70 -72 30 -66 -10 Z" fill="#ffffff" opacity="0.8"/>
+    <circle cx="-60" cy="-25" r="4" fill="#ffffff" opacity="0.9"/>
+
+    <!-- Jar Rim & Opening -->
+    <ellipse cx="0" cy="-50" rx="65" ry="18" fill="#ffffff" stroke="#16301f" stroke-width="5"/>
+    <!-- Yogurt surface with swirl -->
+    <ellipse cx="0" cy="-50" rx="58" ry="14" fill="#fdfbf7"/>
+    <path d="M -35 -52 Q 0 -40 35 -52 Q 0 -62 -35 -52 Z" fill="#ffffff" stroke="#e8ded0" stroke-width="1.5"/>
+
+    <!-- Mint Leaves on top -->
+    <g transform="translate(10, -60)">
+      <path d="M 0 0 C 18 -18 32 -6 20 10 C 10 20 0 10 0 0 Z" fill="#256b40" stroke="#16301f" stroke-width="2.5"/>
+      <path d="M 0 0 C -18 -18 -32 -6 -20 10 C -10 20 0 10 0 0 Z" fill="#52b788" stroke="#16301f" stroke-width="2.5"/>
+      <path d="M 0 0 L 0 -12" stroke="#16301f" stroke-width="2"/>
+    </g>
+
+    <!-- Kraft Lid placed gracefully beside the jar -->
+    <g transform="translate(-115, 60) rotate(-18)">
+      <ellipse cx="0" cy="0" rx="36" ry="14" fill="url(#kraft-grad)" stroke="#16301f" stroke-width="3"/>
+      <path d="M -30 0 Q 0 8 30 0" stroke="#eecd15" stroke-width="3" fill="none"/>
+    </g>
+
+    <!-- Wooden Spoon on right lifting yogurt -->
+    <g transform="translate(105, 10) rotate(22)">
+      <path d="M -4 20 L -2 -90 Q 0 -95 4 -95 Q 8 -95 6 -90 L 4 20 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+      <ellipse cx="0" cy="25" rx="18" ry="26" fill="#c69255" stroke="#8d5b2d" stroke-width="3"/>
+      <!-- Luscious white yogurt dollop on spoon -->
+      <path d="M -13 22 Q 0 38 13 22 Q 0 10 -13 22 Z" fill="#ffffff" stroke="#16301f" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M 140 152 Q 140 160 148 160 Q 140 160 140 168 Q 140 160 132 160 Q 140 160 140 152 Z" fill="#eecd15"/>
+  <path d="M 470 151 Q 470 160 479 160 Q 470 160 470 169 Q 470 160 461 160 Q 470 160 470 151 Z" fill="#eecd15"/>
+  <path d="M 490 353 Q 490 360 497 360 Q 490 360 490 367 Q 490 360 483 360 Q 490 360 490 353 Z" fill="#eecd15"/>
+  <path d="M 120 373 Q 120 380 127 380 Q 120 380 120 387 Q 120 380 113 380 Q 120 380 120 373 Z" fill="#eecd15"/>
+  </g>
+</svg>

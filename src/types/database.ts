@@ -23,6 +23,10 @@ export type Store = {
   code: string
   name: string
   default_commission_rate: number
+  // Trang bán hàng công khai /shop/<code> (supabase/migrations/20261024090000_public_storefront.sql)
+  is_public: boolean
+  public_phone: string | null
+  public_tagline: string | null
   created_at: string
 }
 
@@ -119,6 +123,26 @@ export type SaleItemCostLine = {
   unit_cost: number
 }
 
+// Doanh thu nhập tay theo ngày + kênh (supabase/migrations/20261024120000_daily_revenue.sql, chỉ admin)
+export type DailyRevenue = {
+  id: string
+  store_id: string
+  revenue_date: string
+  channel: 'in_store' | 'shopeefood'
+  amount: number
+  note: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+export type DailyRevenueInsert = {
+  store_id: string
+  revenue_date?: string
+  channel: DailyRevenue['channel']
+  amount: number
+  note?: string | null
+}
+
 export type Expense = {
   id: string
   store_id: string
@@ -142,6 +166,9 @@ export type StoreInsert = {
   code: string
   name: string
   default_commission_rate?: number
+  is_public?: boolean
+  public_phone?: string | null
+  public_tagline?: string | null
   created_at?: string
 }
 export type StoreUpdate = Partial<StoreInsert>
@@ -475,6 +502,14 @@ export type Database = {
         { foreignKeyName: 'sale_item_cost_lines_sale_item_id_fkey'; columns: ['sale_item_id']; isOneToOne: false; referencedRelation: 'sale_items'; referencedColumns: ['id'] },
         { foreignKeyName: 'sale_item_cost_lines_batch_id_fkey'; columns: ['batch_id']; isOneToOne: false; referencedRelation: 'stock_batches'; referencedColumns: ['id'] },
       ]>
+      daily_revenue: {
+        Row: DailyRevenue
+        Insert: DailyRevenueInsert
+        Update: Partial<DailyRevenueInsert>
+        Relationships: [
+          { foreignKeyName: 'daily_revenue_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        ]
+      }
       expenses: {
         Row: Expense
         Insert: ExpenseInsert

@@ -8,6 +8,7 @@ import {
   cartCount,
   cartTotal,
   flavorColors,
+  flavorImage,
   orderMessage,
   pruneCart,
   setCartQty,
@@ -97,7 +98,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     <div className="shop">
       <header className="shop-header">
         <div className="shop-brand">
-          <span className="shop-logo" aria-hidden="true">🥣</span>
+          <img className="shop-logo" src="/shop/hogi-mark.svg" alt="" width={40} height={40} />
           <strong>{store.name}</strong>
         </div>
         {store.phone && (
@@ -108,11 +109,15 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
       </header>
 
       <section className="shop-hero">
-        <h1>{store.name}</h1>
-        <p>{store.tagline || 'Sữa chua hũ ngon mỗi ngày. Chọn vị bạn thích và đặt hàng ngay!'}</p>
-        <a className="shop-cta" href="#thuc-don">
-          Xem thực đơn
-        </a>
+        <div className="shop-hero-copy">
+          <span className="shop-eyebrow">Sữa chua hũ thủ công</span>
+          <h1>{store.name}</h1>
+          <p>{store.tagline || 'Sữa chua hũ ngon mỗi ngày. Chọn vị bạn thích và đặt hàng ngay!'}</p>
+          <a className="shop-cta" href="#thuc-don">
+            Xem thực đơn
+          </a>
+        </div>
+        <img className="shop-hero-art" src="/shop/hero.svg" alt="Chú hũ sữa chua Hogi cùng các vị phô mai, matcha, ca cao, nếp cẩm" width={640} height={420} />
       </section>
 
       <main id="thuc-don" className="shop-menu">
@@ -124,12 +129,13 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             <div className="shop-grid">
               {list.map((item) => {
                 const [c1, c2] = flavorColors(item.name)
+                const image = flavorImage(item.name)
                 const orderable = canOrder(item)
                 const q = qty[item.id] ?? 1
                 return (
                   <article key={item.id} className={`shop-card${orderable ? '' : ' is-out'}`}>
                     <div className="shop-art" style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }} aria-hidden="true">
-                      <span>🥣</span>
+                      {image ? <img src={image} alt="" loading="lazy" width={520} height={430} /> : <span>🥣</span>}
                       <span className={`shop-status shop-status-${item.status}`}>{STATUS_TEXT[item.status]}</span>
                     </div>
                     <div className="shop-body">

@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<defs>
+
+  <linearGradient id="pot-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="55%" stop-color="#fcfbf8"/>
+    <stop offset="100%" stop-color="#ebe2d3"/>
+  </linearGradient>
+  <linearGradient id="kraft-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="#ebd1b8"/>
+    <stop offset="55%" stop-color="#d9b384"/>
+    <stop offset="100%" stop-color="#b38756"/>
+  </linearGradient>
+  <linearGradient id="leaf-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#256b40"/>
+    <stop offset="100%" stop-color="#52b788"/>
+  </linearGradient>
+  <linearGradient id="wood-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#dcb183"/>
+    <stop offset="100%" stop-color="#8d5b2d"/>
+  </linearGradient>
+
+  <linearGradient id="yogurt-cheese" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#fffbeb"/>
+    <stop offset="50%" stop-color="#fef08a"/>
+    <stop offset="100%" stop-color="#fde047"/>
+  </linearGradient>
+</defs>
+  <g id="illustration" transform="translate(300, 300) scale(1.22) translate(-300, -320)">
+<!-- Ambient organic watercolor blob -->
+  <circle cx="300" cy="320" r="220" fill="#fef9c3" opacity="0.85"/>
+  <circle cx="300" cy="320" r="185" fill="#fef08a" opacity="0.6"/>
+
+  <!-- Wooden Platter Base -->
+  <ellipse cx="300" cy="460" rx="200" ry="45" fill="#c69255" stroke="#8d5b2d" stroke-width="4"/>
+  <ellipse cx="300" cy="456" rx="185" ry="38" fill="#ddb080" opacity="0.5"/>
+
+  <!-- The Yogurt Jar -->
+  <g transform="translate(290, 340)">
+    <!-- Jar Shadow -->
+    <ellipse cx="0" cy="98" rx="85" ry="20" fill="#16301f" opacity="0.18"/>
+
+    <!-- Glass Jar Body -->
+    <path d="M -65 -50 
+             C -90 -50 -105 -20 -102 30 
+             C -98 80 -60 100 0 100 
+             C 60 100 98 80 102 30 
+             C 105 -20 90 -50 65 -50 Z" 
+          fill="url(#yogurt-cheese)" 
+          stroke="#16301f" 
+          stroke-width="5.5" 
+          stroke-linejoin="round"/>
+
+    <!-- Glass gloss reflection -->
+    <path d="M -80 -10 C -85 25 -82 60 -65 80 C -68 70 -72 30 -66 -10 Z" fill="#ffffff" opacity="0.7"/>
+    <circle cx="-60" cy="-25" r="4" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Jar Rim & Opening -->
+    <ellipse cx="0" cy="-50" rx="65" ry="18" fill="#ffffff" stroke="#16301f" stroke-width="5"/>
+    <ellipse cx="0" cy="-50" rx="58" ry="14" fill="#fef08a"/>
+
+    <!-- Diced Cheese Cubes on top of yogurt -->
+    <g transform="translate(-15, -60)">
+      <rect x="0" y="0" width="16" height="16" rx="2" fill="#f59e0b" stroke="#16301f" stroke-width="2"/>
+      <rect x="18" y="-4" width="14" height="14" rx="2" fill="#fbbf24" stroke="#16301f" stroke-width="2"/>
+      <rect x="-14" y="4" width="12" height="12" rx="2" fill="#d97706" stroke="#16301f" stroke-width="2"/>
+    </g>
+
+    <!-- Big Triangular Swiss Cheese Wedge in front -->
+    <g transform="translate(70, 45)">
+      <!-- 3D cheese wedge -->
+      <path d="M 0 0 L 70 -15 L 45 40 Z" fill="#f59e0b" stroke="#16301f" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M 0 0 L 45 40 L 45 60 L 0 20 Z" fill="#d97706" stroke="#16301f" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M 45 40 L 70 -15 L 70 5 L 45 60 Z" fill="#b45309" stroke="#16301f" stroke-width="3.5" stroke-linejoin="round"/>
+      <!-- Holes -->
+      <circle cx="30" cy="20" r="7" fill="#d97706"/>
+      <circle cx="55" cy="12" r="5" fill="#d97706"/>
+      <circle cx="20" cy="24" r="4.5" fill="#b45309"/>
+      <circle cx="38" cy="48" r="4" fill="#92400e"/>
+    </g>
+
+    <!-- Wooden Spoon on Left -->
+    <g transform="translate(-100, 20) rotate(-22)">
+      <path d="M -4 20 L -2 -90 Q 0 -95 4 -95 Q 8 -95 6 -90 L 4 20 Z" fill="#c69255" stroke="#8d5b2d" stroke-width="2.5"/>
+      <ellipse cx="0" cy="25" rx="18" ry="26" fill="#c69255" stroke="#8d5b2d" stroke-width="3"/>
+      <!-- Custard cheese yogurt dollop on spoon -->
+      <path d="M -13 22 Q 0 38 13 22 Q 0 10 -13 22 Z" fill="#fef08a" stroke="#16301f" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M 130 152 Q 130 160 138 160 Q 130 160 130 168 Q 130 160 122 160 Q 130 160 130 152 Z" fill="#f59e0b"/>
+  <path d="M 470 151 Q 470 160 479 160 Q 470 160 470 169 Q 470 160 461 160 Q 470 160 470 151 Z" fill="#f59e0b"/>
+  <path d="M 490 353 Q 490 360 497 360 Q 490 360 490 367 Q 490 360 483 360 Q 490 360 490 353 Z" fill="#f59e0b"/>
+  <path d="M 110 373 Q 110 380 117 380 Q 110 380 110 387 Q 110 380 103 380 Q 110 380 110 373 Z" fill="#f59e0b"/>
+  </g>
+</svg>

@@ -6,7 +6,7 @@ import { TabsLayout, type Tab } from './components/TabsLayout'
 import type { ReactNode } from 'react'
 import { useAuth } from './lib/auth'
 import { useStore } from './lib/store'
-import { usesDistribution, usesIngredients } from './lib/storeFeatures'
+import { usesDistribution, usesRevenueEntry } from './lib/storeFeatures'
 import { AccountPage } from './pages/AccountPage'
 import { BatchStatsPage } from './pages/BatchStatsPage'
 import { BestSellersPage } from './pages/BestSellersPage'
@@ -19,6 +19,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { PurchasePage } from './pages/PurchasePage'
 import { ReportsPage } from './pages/ReportsPage'
+import { RevenuePage } from './pages/RevenuePage'
 import { ShopPage } from './pages/ShopPage'
 import { SalePage } from './pages/SalePage'
 import { StaffPage } from './pages/StaffPage'
@@ -67,15 +68,36 @@ const LEGACY_PATHS: [string, string][] = [
 // Kho hàng: quán không có bước Phân phối (Bún đậu) thì ẩn tab đó
 function InventoryLayout() {
   const { current } = useStore()
+  if (usesRevenueEntry(current?.code)) return <Navigate to="/sales" replace />
   const tabs = usesDistribution(current?.code) ? STOCK_TABS : STOCK_TABS.filter((tab) => tab.to !== '/inventory/transfers')
   return <TabsLayout title="Kho hàng" tabs={tabs} />
 }
 
-// Quản lý: quán có nguyên liệu (Bún đậu) thêm tab Nguyên liệu & công thức
+// Quản lý: quán nhập doanh thu theo ngày (Bún đậu) chỉ còn Chi phí
 function ManageLayout() {
   const { current } = useStore()
-  const tabs = usesIngredients(current?.code) ? [...MANAGE_TABS, { to: '/manage/ingredients', label: 'Nguyên liệu', icon: 'stock' as const }] : MANAGE_TABS
+  const tabs = usesRevenueEntry(current?.code) ? MANAGE_TABS.filter((tab) => tab.to === '/manage/expenses') : MANAGE_TABS
   return <TabsLayout title="Quản lý" tabs={tabs} />
+}
+
+// Trang theo món (sản phẩm, nguyên liệu, báo cáo theo món...) không có ở quán nhập doanh thu: về trang chính của nhóm
+function ItemBased({ children, fallback }: { children: ReactNode; fallback: string }) {
+  const { current } = useStore()
+  if (usesRevenueEntry(current?.code)) return <Navigate to={fallback} replace />
+  return children
+}
+
+// /sales: quán nhập doanh thu thì hiện form doanh thu, còn lại là màn hình bán theo món
+function SalesRoute() {
+  const { current } = useStore()
+  return usesRevenueEntry(current?.code) ? <RevenuePage /> : <SalePage />
+}
+
+// Báo cáo: quán nhập doanh thu chỉ còn tab Tổng quan
+function ReportsLayout() {
+  const { current } = useStore()
+  const tabs = usesRevenueEntry(current?.code) ? REPORT_TABS.filter((tab) => tab.to === '/reports/overview') : REPORT_TABS
+  return <TabsLayout title="Báo cáo" tabs={tabs} />
 }
 
 // Mở thẳng link Phân phối ở quán không dùng bước này thì về Nhập hàng
@@ -105,7 +127,7 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
           <Route index element={<Navigate to="/sales" replace />} />
-          <Route path="sales" element={<SalePage />} />
+          <Route path="sales" element={<SalesRoute />} />
           <Route path="inventory" element={<InventoryLayout />}>
             <Route index element={<Navigate to="purchases" replace />} />
             <Route path="purchases" element={<PurchasePage />} />
@@ -116,18 +138,18 @@ function App() {
           <Route path="account" element={<AccountPage />} />
             <Route path="guide" element={<GuidePage />} />
           <Route element={<RequireAdmin />}>
-            <Route path="reports" element={<TabsLayout title="Báo cáo" tabs={REPORT_TABS} />}>
+            <Route path="reports" element={<ReportsLayout />}>
               <Route index element={<Navigate to="overview" replace />} />
               <Route path="overview" element={<ReportsPage />} />
-              <Route path="batches" element={<BatchStatsPage />} />
-              <Route path="best-sellers" element={<BestSellersPage />} />
-              <Route path="daily-log" element={<DailyLogPage />} />
+              <Route path="batches" element={<ItemBased fallback="/reports/overview"><BatchStatsPage /></ItemBased>} />
+              <Route path="best-sellers" element={<ItemBased fallback="/reports/overview"><BestSellersPage /></ItemBased>} />
+              <Route path="daily-log" element={<ItemBased fallback="/reports/overview"><DailyLogPage /></ItemBased>} />
             </Route>
             <Route path="manage" element={<ManageLayout />}>
-              <Route index element={<Navigate to="products" replace />} />
-              <Route path="products" element={<ProductsPage />} />
+              <Route index element={<ItemBased fallback="/manage/expenses"><Navigate to="products" replace /></ItemBased>} />
+              <Route path="products" element={<ItemBased fallback="/manage/expenses"><ProductsPage /></ItemBased>} />
               <Route path="expenses" element={<ExpensePage />} />
-              <Route path="ingredients" element={<IngredientsPage />} />
+              <Route path="ingredients" element={<ItemBased fallback="/manage/expenses"><IngredientsPage /></ItemBased>} />
             </Route>
             <Route path="staff" element={<StaffPage />} />
           </Route>

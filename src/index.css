@@ -3541,7 +3541,8 @@ input.overridden {
   font-size: 18px;
 }
 .shop-logo {
-  font-size: 26px;
+  width: 40px;
+  height: 40px;
 }
 .shop-contact {
   padding: 8px 14px;
@@ -3554,10 +3555,51 @@ input.overridden {
   white-space: nowrap;
 }
 .shop-hero {
-  max-width: 760px;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: 8px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 40px 20px 24px;
+  padding: 28px 20px 16px;
   text-align: center;
+}
+.shop-hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.shop-eyebrow {
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fdf3b8;
+  color: #6b5a00;
+  font-size: 13px;
+  font-weight: 700;
+}
+.shop-hero-art {
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  margin: 0 auto;
+}
+@media (min-width: 820px) {
+  .shop-hero {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding-top: 48px;
+    text-align: left;
+  }
+  .shop-hero-copy {
+    align-items: flex-start;
+  }
+  .shop-hero p {
+    margin-left: 0;
+  }
+  .shop-hero-art {
+    max-width: 100%;
+  }
 }
 .shop-hero h1 {
   margin: 0 0 8px;
@@ -3621,8 +3663,14 @@ input.overridden {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 130px;
+  height: 170px;
   font-size: 58px;
+  overflow: hidden;
+}
+.shop-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .shop-status {
   position: absolute;

@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { BRAND_NAME } from '../lib/brand'
 import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
+import { usesRevenueEntry } from '../lib/storeFeatures'
 import { useTheme, type ThemeMode } from '../lib/theme'
 import { ErrorPage } from './ErrorPage'
 import { Icon, type IconName } from './Icon'
@@ -34,7 +35,11 @@ export function AppLayout() {
   const navigate = useNavigate()
   const { t } = useI18n()
 
-  const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
+  // Quán nhập doanh thu theo ngày (Bún đậu): "Bán hàng" thành "Doanh thu", không có Kho hàng
+  const revenueStore = usesRevenueEntry(current?.code)
+  const items = NAV_ITEMS.filter((item) => (!item.adminOnly || isAdmin) && !(revenueStore && item.to === '/inventory')).map((item) =>
+    revenueStore && item.to === '/sales' ? { ...item, label: 'Doanh thu' } : item,
+  )
   const displayName = profile?.full_name || (isAdmin ? 'Admin' : t('Nhân viên'))
 
   return (
