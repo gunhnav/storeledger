@@ -9,10 +9,6 @@ import {
   cleanDomain,
   cleanFloor,
   customerIssues,
-  flavorColors,
-  flavorEmoji,
-  flavorImage,
-  flavorPosition,
   lineTitle,
   preorderPayload,
   transferNote,
@@ -20,7 +16,6 @@ import {
   type CartLine,
   type Customer,
   type MenuItem,
-  type Mix,
   type PlacedOrder,
   type PublicStore,
 } from '../lib/storefront'
@@ -28,25 +23,6 @@ import {
 const vnd = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}đ`
 // Thời điểm lập hoá đơn (gọi trong lúc bấm nút, không phải lúc vẽ)
 const now = () => new Date()
-
-// Hình các vị trong một set (tối đa 3 hình chồng nhau) để nhận ra set trong đơn
-export function SetThumbs({ mix, items }: { mix: Mix; items: MenuItem[] }) {
-  const flavors = items.filter((i) => (mix[i.id] ?? 0) > 0).slice(0, 3)
-  return (
-    <div className="shop-thumbs" aria-hidden="true">
-      {flavors.map((f) => {
-        const image = flavorImage(f.name)
-        const [c1, c2] = flavorColors(f.name)
-        const pos = flavorPosition(f.name)
-        return (
-          <span key={f.id} style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
-            {image ? <img src={image} alt="" width={44} height={44} style={{ objectPosition: pos }} /> : flavorEmoji(f.name)}
-          </span>
-        )
-      })}
-    </div>
-  )
-}
 
 interface ShopCartModalProps {
   open: boolean
