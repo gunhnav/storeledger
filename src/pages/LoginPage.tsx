@@ -39,7 +39,6 @@ export function LoginPage() {
   const location = useLocation()
   const [error, setError] = useState<string | null>(null)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [showEmailLogin, setShowEmailLogin] = useState(false)
   const {
     register,
     handleSubmit,
@@ -107,34 +106,24 @@ export function LoginPage() {
           <span>{t('hoặc')}</span>
         </div>
 
-        {!showEmailLogin ? (
-          <button
-            type="button"
-            className="link center login-toggle-btn"
-            onClick={() => setShowEmailLogin(true)}
-          >
-            {t('Đăng nhập bằng email và mật khẩu')}
+        <form onSubmit={handleSubmit(onSubmit)} className="login-email-form">
+          <label>
+            {t('Email')}
+            <input type="email" autoComplete="username" required {...register('email')} />
+          </label>
+          <label>
+            {t('Mật khẩu')}
+            <input
+              type="password"
+              autoComplete="current-password"
+              required
+              {...register('password')}
+            />
+          </label>
+          <button type="submit" className="primary" disabled={isSubmitting}>
+            {isSubmitting ? t('Đang đăng nhập…') : t('Đăng nhập')}
           </button>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="login-email-form">
-            <label>
-              {t('Email')}
-              <input type="email" autoComplete="username" required {...register('email')} />
-            </label>
-            <label>
-              {t('Mật khẩu')}
-              <input
-                type="password"
-                autoComplete="current-password"
-                required
-                {...register('password')}
-              />
-            </label>
-            <button type="submit" className="primary" disabled={isSubmitting}>
-              {isSubmitting ? t('Đang đăng nhập…') : t('Đăng nhập')}
-            </button>
-          </form>
-        )}
+        </form>
       </div>
     </div>
   )
