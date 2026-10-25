@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
+import { useConfirm } from '../lib/confirm'
 import { errorMessage } from '../lib/format'
 import { formatQty, ingredientStatus, normalizeRecipeLines } from '../lib/ingredients'
 import type { Ingredient, IngredientStockRow, Product, Recipe } from '../types/database'
@@ -66,6 +67,7 @@ function IngredientsManager({ storeId }: { storeId: string }) {
 
 function IngredientList({ storeId, data, onChange, toast }: { storeId: string; data: Data; onChange: () => void; toast: (m: string) => void }) {
   const { t } = useI18n()
+  const confirm = useConfirm()
   const [draft, setDraft] = useState({ name: '', unit: 'miếng', threshold: '' })
   const [editing, setEditing] = useState<string | null>(null)
   const [edit, setEdit] = useState({ name: '', unit: '', threshold: '' })
@@ -106,7 +108,14 @@ function IngredientList({ storeId, data, onChange, toast }: { storeId: string; d
   }
 
   const hide = async (i: Ingredient) => {
-    if (!window.confirm(t('Ẩn nguyên liệu {name}? Lịch sử nhập vẫn giữ, công thức đang dùng nó sẽ không còn tính.', { name: i.name }))) return
+    const ok = await confirm({
+      title: t('Ẩn nguyên liệu'),
+      message: t('Ẩn nguyên liệu {name}? Lịch sử nhập vẫn giữ, công thức đang dùng nó sẽ không còn tính.', { name: i.name }),
+      confirmText: t('Ẩn'),
+      cancelText: t('Đóng'),
+      danger: true,
+    })
+    if (!ok) return
     const { error: e } = await supabase.from('ingredients').update({ is_active: false }).eq('id', i.id)
     if (e) return setError(errorMessage(e))
     onChange()

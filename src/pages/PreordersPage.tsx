@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { useToast } from '../lib/toast'
+import { useConfirm } from '../lib/confirm'
 import { errorMessage, formatDate, formatVND } from '../lib/format'
 import { NEXT_STATUS, PREORDER_STATUSES, STATUS_LABEL, itemsToPrepare, summarizePreorders } from '../lib/preorders'
 import type { Preorder, PreorderStatus } from '../types/database'
@@ -22,6 +23,7 @@ export function PreordersPage() {
 function Preorders({ storeId }: { storeId: string }) {
   const { t } = useI18n()
   const toast = useToast()
+  const confirm = useConfirm()
   const [rows, setRows] = useState<Preorder[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<PreorderStatus | 'open' | 'all'>('open')
@@ -65,6 +67,17 @@ function Preorders({ storeId }: { storeId: string }) {
     if (e) return toast.error(errorMessage(e))
     toast.success(t('Đơn {code}: {status}', { code: order.code, status: t(STATUS_LABEL[status]) }))
     setVersion((v) => v + 1)
+  }
+
+  const cancelOrder = async (order: Preorder) => {
+    const ok = await confirm({
+      title: t('Huỷ đơn {code}?', { code: order.code }),
+      message: t('Bạn có chắc muốn huỷ đơn {code}? Khách và quán sẽ thấy trạng thái đơn đã huỷ.', { code: order.code }),
+      confirmText: t('Huỷ đơn'),
+      cancelText: t('Đóng'),
+      danger: true,
+    })
+    if (ok) setStatus(order, 'cancelled')
   }
 
   const askPermission = async () => {
@@ -160,7 +173,7 @@ function Preorders({ storeId }: { storeId: string }) {
                     </button>
                   )}
                   {o.status !== 'cancelled' && o.status !== 'delivered' && (
-                    <button type="button" className="link danger" disabled={busy === o.id} onClick={() => window.confirm(t('Huỷ đơn {code}?', { code: o.code })) && setStatus(o, 'cancelled')}>
+                    <button type="button" className="link danger" disabled={busy === o.id} onClick={() => cancelOrder(o)}>
                       {t('Huỷ đơn')}
                     </button>
                   )}

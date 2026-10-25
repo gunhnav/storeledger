@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
+import { useConfirm } from '../lib/confirm'
 import { MAX_MONEY, capitalizeFirst, errorMessage, formatDate, formatVND, notFuture, todayVN } from '../lib/format'
 import { expenseGroupsFor, expenseLine, isBlankDraft, parseDraft, type ExpenseDraft } from '../lib/expenses'
 import { evalExpression, isExpression } from '../lib/calc'
@@ -27,6 +28,7 @@ export function ExpensePage() {
 function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly string[] }) {
   const { t } = useI18n()
   const toast = useToast()
+  const confirm = useConfirm()
   const newDraft = (category = groups[0]): Draft => ({ id: nextId++, category, note: '', quantity: '1', unitPrice: '', total: '' })
   const [recent, setRecent] = useState<{ rows: Expense[]; error: string | null } | null>(null)
   const [version, setVersion] = useState(0)
@@ -148,7 +150,14 @@ function ExpenseForm({ storeId, groups }: { storeId: string; groups: readonly st
 
   const remove = async (row: Expense) => {
     const label = `${row.note || t(row.category)} – ${formatVND(row.amount)} (${formatDate(row.expense_date)})`
-    if (!window.confirm(t('Xoá khoản chi {label}? Không hoàn tác được.', { label }))) return
+    const ok = await confirm({
+      title: t('Xoá khoản chi'),
+      message: t('Xoá khoản chi {label}? Không hoàn tác được.', { label }),
+      confirmText: t('Xoá'),
+      cancelText: t('Đóng'),
+      danger: true,
+    })
+    if (!ok) return
     setBusyId(row.id)
     const { error } = await supabase.rpc('delete_expense', { p_expense_id: row.id })
     setBusyId(null)

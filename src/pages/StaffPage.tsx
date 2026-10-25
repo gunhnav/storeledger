@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth'
 import { LANGUAGES, useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
+import { useConfirm, usePrompt } from '../lib/confirm'
 import { errorMessage } from '../lib/format'
 import type { AdminUserRow, UserRole } from '../types/database'
 import { StorePicker } from '../components/StorePicker'
@@ -51,6 +52,8 @@ export function StaffPage() {
   const { session, refreshProfile } = useAuth()
   const { t, lang } = useI18n()
   const toast = useToast()
+  const confirm = useConfirm()
+  const prompt = usePrompt()
   const locale = LANGUAGES.find((l) => l.code === lang)?.locale ?? 'vi-VN'
   const { stores } = useStore()
   const [list, setList] = useState<{ rows: AdminUserRow[]; error: string | null } | null>(null)
@@ -121,7 +124,14 @@ export function StaffPage() {
       newRole === 'admin'
         ? t('Cấp quyền admin cho {value}? Người này sẽ thấy giá vốn, lãi, chi phí của mọi cửa hàng và quản lý được tài khoản.', { value: who })
         : t('Bỏ quyền admin của {value}? Tài khoản trở thành nhân viên, chỉ làm việc ở các cửa hàng được gán.', { value: who })
-    if (!window.confirm(question)) return
+    const ok = await confirm({
+      title: newRole === 'admin' ? t('Cấp quyền admin') : t('Bỏ quyền admin'),
+      message: question,
+      confirmText: newRole === 'admin' ? t('Cấp quyền admin') : t('Bỏ quyền admin'),
+      cancelText: t('Đóng'),
+      danger: newRole !== 'admin',
+    })
+    if (!ok) return
     setResult(null)
     setBusy(user.id)
     const { error } = await supabase.rpc('admin_set_role', { p_user_id: user.id, p_role: newRole })
@@ -166,7 +176,14 @@ export function StaffPage() {
   // Từ chối hoặc thu hồi quyền truy cập
   const rejectUser = async (user: AdminUserRow) => {
     const who = user.full_name || user.email
-    if (!window.confirm(t('Từ chối tài khoản {value}?', { value: who }))) return
+    const ok = await confirm({
+      title: t('Từ chối tài khoản'),
+      message: t('Từ chối tài khoản {value}?', { value: who }),
+      confirmText: t('Từ chối'),
+      cancelText: t('Đóng'),
+      danger: true,
+    })
+    if (!ok) return
     setResult(null)
     setBusy(user.id)
     const { error } = await supabase.rpc('admin_reject_user', { p_user_id: user.id })
@@ -177,13 +194,23 @@ export function StaffPage() {
   }
 
   const resetPassword = async (user: AdminUserRow) => {
-    const password = window.prompt(t('Mật khẩu mới cho {value} (ít nhất 6 ký tự):', { value: user.full_name || user.email }))
-    if (password === null) return
+    const who = user.full_name || user.email
+    const password = await prompt({
+      title: t('Đổi mật khẩu cho {value}', { value: who }),
+      message: t('Mật khẩu mới (ít nhất 6 ký tự):'),
+      placeholder: t('Nhập mật khẩu mới…'),
+      type: 'password',
+      confirmText: t('Lưu mật khẩu'),
+      cancelText: t('Đóng'),
+      minLength: 6,
+      required: true,
+    })
+    if (!password) return
     setResult(null)
     setBusy(user.id)
     try {
       await callAdminUsers({ action: 'set_password', user_id: user.id, password })
-      toast.success(t('Đã đổi mật khẩu cho {value}', { value: user.full_name || user.email }))
+      toast.success(t('Đã đổi mật khẩu cho {value}', { value: who }))
     } catch (e) {
       setResult({ ok: false, text: errorMessage(e) })
     }

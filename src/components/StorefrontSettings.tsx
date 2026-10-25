@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
+import { usePrompt } from '../lib/confirm'
 import { errorMessage } from '../lib/format'
 import { BANKS } from '../lib/banks'
 import { describePayload, payloadError } from '../lib/emvQr'
@@ -18,6 +19,7 @@ const digits = (text: string) => text.replace(/[^\d]/g, '')
 export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string; code: string; onSaved?: () => void }) {
   const { t } = useI18n()
   const toast = useToast()
+  const prompt = usePrompt()
   const [form, setForm] = useState<Settings | null>(null)
   const [rules, setRules] = useState<RuleDraft[]>([])
   const [products, setProducts] = useState<ProductOption[]>([])
@@ -117,7 +119,12 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
       await navigator.clipboard.writeText(link)
       toast.success(t('Đã sao chép liên kết'))
     } catch {
-      window.prompt(t('Sao chép liên kết'), link)
+      await prompt({
+        title: t('Sao chép liên kết'),
+        defaultValue: link,
+        confirmText: t('Đóng'),
+        cancelText: '',
+      })
     }
   }
 

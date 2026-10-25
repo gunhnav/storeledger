@@ -6,6 +6,7 @@ import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useAuth } from '../lib/auth'
+import { useConfirm } from '../lib/confirm'
 import { MAX_MONEY, capitalizeFirst, errorMessage, formatDate, formatVND, monthStart, notFuture, todayVN } from '../lib/format'
 import { evalExpression, isExpression } from '../lib/calc'
 import { REVENUE_CHANNELS, channelLabel, commissionOf, type RevenueChannel } from '../lib/revenue'
@@ -28,6 +29,7 @@ export function RevenuePage() {
 function RevenueForm({ storeId, rate }: { storeId: string; rate: number }) {
   const { t } = useI18n()
   const toast = useToast()
+  const confirm = useConfirm()
   const [date, setDate] = useState(todayVN())
   const [channel, setChannel] = useState<RevenueChannel>('in_store')
   const [amountText, setAmountText] = useState('')
@@ -89,7 +91,14 @@ function RevenueForm({ storeId, rate }: { storeId: string; rate: number }) {
 
   const remove = async (row: DailyRevenue) => {
     const label = `${formatDate(row.revenue_date)} · ${t(channelLabel(row.channel))} · ${formatVND(Number(row.amount))}`
-    if (!window.confirm(t('Xoá doanh thu {label}? Không hoàn tác được.', { label }))) return
+    const ok = await confirm({
+      title: t('Xoá doanh thu'),
+      message: t('Xoá doanh thu {label}? Không hoàn tác được.', { label }),
+      confirmText: t('Xoá'),
+      cancelText: t('Đóng'),
+      danger: true,
+    })
+    if (!ok) return
     setBusyId(row.id)
     const { error } = await supabase.from('daily_revenue').delete().eq('id', row.id)
     setBusyId(null)
