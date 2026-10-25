@@ -74,7 +74,7 @@ export async function renderInvoice(data: InvoiceData): Promise<HTMLCanvasElemen
   const info: [string, string][] = [
     ['Mã hoá đơn', data.code],
     ['Ngày lập', formatIssued(data.issuedAt)],
-    ['Khách hàng', data.customer.name],
+    ...(data.customer.name?.trim() ? ([['Khách hàng', data.customer.name.trim()]] as [string, string][]) : []),
     ['Domain', data.customer.domain.trim().toLowerCase()],
     ['Tầng', data.customer.floor.trim()],
   ]

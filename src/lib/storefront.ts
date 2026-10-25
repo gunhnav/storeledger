@@ -217,7 +217,6 @@ export const validFloor = (floor: string) => /^[A-Z0-9]{1,4}$/.test(cleanFloor(f
 // Thông tin khách còn thiếu / sai (hiện cạnh ô nhập); rỗng nghĩa là gửi đơn được
 export function customerIssues(c: Customer, floors: string[] | null = null): Partial<Record<'name' | 'domain' | 'floor', string>> {
   const out: Partial<Record<'name' | 'domain' | 'floor', string>> = {}
-  if (!c.name.trim()) out.name = 'Nhập tên của bạn'
   if (!c.domain.trim()) out.domain = 'Nhập domain của bạn'
   else if (!validDomain(c.domain)) out.domain = 'Domain chỉ gồm chữ không dấu, số và dấu chấm (vd: huong.vu3)'
   if (!c.floor.trim()) out.floor = floors ? 'Chọn tầng' : 'Nhập tầng'
@@ -237,9 +236,10 @@ export function vietQrUrl(bank: PublicBank, amount: number, memo: string): strin
 
 // Đơn gửi lên máy chủ (submit_preorder): chỉ gửi món và số lượng, giá do máy chủ tự tính
 export function preorderPayload(lines: CartLine[], c: Customer) {
+  const d = cleanDomain(c.domain)
   return {
-    name: c.name.trim(),
-    domain: cleanDomain(c.domain),
+    name: c.name?.trim() || d,
+    domain: d,
     floor: cleanFloor(c.floor),
     payment: c.payment,
     lines: lines.map((l) => (l.kind === 'set' ? { kind: 'set', size: l.size, mix: l.mix, qty: l.qty } : { kind: 'single', product_id: l.productId, qty: l.qty })),

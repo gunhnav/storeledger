@@ -60,7 +60,7 @@ interface ShopCartModalProps {
   onPlaced: () => void
 }
 
-// Hộp thoại đơn đặt trước. Luồng: điền tên, domain, tầng -> bấm "Đặt hàng" (máy chủ kiểm tra, tự tính lại giá, cấp mã đơn và
+// Hộp thoại đơn đặt trước. Luồng: điền domain, tầng -> bấm "Đặt hàng" (máy chủ kiểm tra, tự tính lại giá, cấp mã đơn và
 // báo cho quán) -> lúc đó mới hiện mã QR chuyển khoản có sẵn số tiền + nội dung, kèm tải QR / tải hoá đơn / nhắn Hangout.
 export function ShopCartModal({ open, onClose, storeCode, cart, items, store, onSetLineQty, onPlaced }: ShopCartModalProps) {
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER)
@@ -170,7 +170,7 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
         customer,
         lines: placed.lines.map((l) => ({ title: l.title, detail: l.detail, qty: l.qty, unitPrice: l.unit_price })),
         total: placed.total,
-        paymentText: payByTransfer ? 'Chuyển khoản' : 'Tiền mặt khi nhận',
+        paymentText: payByTransfer ? 'Chuyển khoản ngay' : 'Thanh toán sau khi nhận',
         qr:
           payByTransfer && pay && qrUrl
             ? { dataUrl: qrUrl, holder: pay.holder, label: pay.label ?? '', account: payAccount ?? '', memo }
@@ -205,8 +205,8 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
               <strong>Quán đã nhận đơn {placed.code}</strong>
               <p>
                 {payByTransfer
-                  ? 'Bạn quét mã QR bên dưới để chuyển khoản, số tiền và nội dung đã có sẵn trong mã.'
-                  : 'Bạn thanh toán tiền mặt khi nhận hàng nhé.'}
+                  ? 'Bạn quét mã QR bên dưới để chuyển khoản ngay, số tiền và nội dung đã có sẵn trong mã.'
+                  : 'Bạn thanh toán sau khi nhận hàng nhé.'}
               </p>
             </div>
 
@@ -228,7 +228,7 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
               <strong>{vnd(placed.total)}</strong>
             </div>
             <p className="shop-order-code">
-              {customer.name.trim()} · {cleanDomain(customer.domain)} · Tầng {cleanFloor(customer.floor)}
+              {customer.name?.trim() ? `${customer.name.trim()} · ` : ''}{cleanDomain(customer.domain)} · Tầng {cleanFloor(customer.floor)}
             </p>
 
             {payByTransfer && pay && (
@@ -334,10 +334,6 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
             </div>
 
             <h4 className="shop-modal-title">📋 Thông tin nhận hàng</h4>
-            <label className="shop-field">
-              <input type="text" value={customer.name} onChange={(e) => setField({ name: e.target.value })} placeholder="Tên của bạn *" autoComplete="name" />
-              {err('name')}
-            </label>
             <div className="shop-field-row">
               <label className="shop-field">
                 <input type="text" value={customer.domain} onChange={(e) => setField({ domain: e.target.value })} placeholder="Domain *" title="Domain nội bộ, vd: huong.vu3" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
@@ -365,15 +361,15 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
                 <h4 className="shop-modal-title">💳 Thanh toán</h4>
                 <div className="shop-pay" role="radiogroup" aria-label="Hình thức thanh toán">
                   <button type="button" role="radio" aria-checked={customer.payment === 'transfer'} className={customer.payment === 'transfer' ? 'active' : undefined} onClick={() => setField({ payment: 'transfer' })}>
-                    Chuyển khoản
+                    Chuyển khoản ngay
                   </button>
                   <button type="button" role="radio" aria-checked={customer.payment === 'cash'} className={customer.payment === 'cash' ? 'active' : undefined} onClick={() => setField({ payment: 'cash' })}>
-                    Tiền mặt khi nhận
+                    Thanh toán sau khi nhận
                   </button>
                 </div>
                 {payByTransfer && (
                   <p className="shop-notice">
-                    🔒 Mã QR chuyển khoản sẽ hiện sau khi bạn điền đủ <b>tên, domain, tầng</b> và bấm <b>Đặt hàng</b>. Số tiền và nội dung có sẵn trong mã.
+                    🔒 Mã QR chuyển khoản sẽ hiện sau khi bạn điền đủ <b>domain, tầng</b> và bấm <b>Đặt hàng</b>. Số tiền và nội dung có sẵn trong mã.
                   </p>
                 )}
               </>
@@ -382,7 +378,7 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
             <button type="button" className="shop-send" onClick={placeOrder} disabled={submitting}>
               {submitting ? 'Đang gửi đơn…' : `Đặt hàng · ${vnd(total)}`}
             </button>
-            {tried && !ready && <small className="shop-error">Bạn điền đủ tên, domain và chọn tầng giúp quán nhé.</small>}
+            {tried && !ready && <small className="shop-error">Bạn điền đủ domain và chọn tầng giúp quán nhé.</small>}
             {submitError && <small className="shop-error">{submitError}</small>}
             <small className="shop-hint">Bấm "Đặt hàng" là quán nhận được đơn ngay, không cần nhắn thêm.</small>
           </>

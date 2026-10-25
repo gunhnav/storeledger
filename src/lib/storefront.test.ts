@@ -125,8 +125,8 @@ describe('thông tin khách và chuyển khoản', () => {
     expect(validFloor('b1')).toBe(true)
     expect(validFloor('tầng sáu mươi')).toBe(false)
   })
-  it('báo thiếu tên, domain, tầng', () => {
-    expect(Object.keys(customerIssues(EMPTY_CUSTOMER)).sort()).toEqual(['domain', 'floor', 'name'])
+  it('báo thiếu domain, tầng', () => {
+    expect(Object.keys(customerIssues(EMPTY_CUSTOMER)).sort()).toEqual(['domain', 'floor'])
     expect(customerIssues({ ...EMPTY_CUSTOMER, name: 'Hường', domain: 'huong.vu3', floor: '6' })).toEqual({})
   })
   it('nội dung chuyển khoản dạng domain - F tầng', () => {
@@ -191,6 +191,9 @@ describe('đơn gửi lên máy chủ', () => {
       lines: [{ kind: 'set', size: 4, mix: { tt: 2, pm: 2 }, qty: 1 }, { kind: 'single', product_id: 'lq', qty: 2 }],
     })
     expect(JSON.stringify(body)).not.toContain('unitPrice')
+    // Nếu không nhập tên, tự dùng domain làm tên để không vi phạm NOT NULL của DB
+    const bodyNoName = preorderPayload(lines, { name: '', domain: 'customer.order', floor: '6', payment: 'transfer' })
+    expect(bodyNoName.name).toBe('customer.order')
   })
   it('tầng phải nằm trong danh sách giao', () => {
     const c = { ...EMPTY_CUSTOMER, name: 'A', domain: 'a.b', floor: '10' }

@@ -64,7 +64,13 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     // Cập nhật giá mới và bỏ vị đã gỡ khỏi thực đơn
     if (next) {
       setCart((c) => refreshCart(c, next.items, next.store))
-      setMix((m) => Object.fromEntries(Object.entries(m).filter(([id]) => next.items.some((i) => i.id === id))))
+      const firstLine = menuLines(next.items)[0] ?? ''
+      const firstList = next.items.filter((i) => lineOf(i) === firstLine)
+      if (firstList.length === 1 && !isSingle(firstList[0])) {
+        setMix({ [firstList[0].id]: 4 })
+      } else {
+        setMix((m) => Object.fromEntries(Object.entries(m).filter(([id]) => next.items.some((i) => i.id === id))))
+      }
     }
   }, [code])
 
@@ -112,6 +118,18 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   // Dòng món bán lẻ (vd: sữa chua Hy Lạp): không chọn set, mỗi món thêm thẳng vào đơn
   const singleLine = lineItems.length > 0 && lineItems.every(isSingle)
 
+  // Khi dòng món chỉ có đúng 1 món bán theo set (vd: Bánh flan), tự động điền đủ số hũ cho set
+  const autoMixFor = useCallback(
+    (targetLine: string, targetSize: SetSize): Mix => {
+      const list = items.filter((i) => lineOf(i) === targetLine)
+      if (list.length === 1 && !isSingle(list[0])) {
+        return { [list[0].id]: targetSize }
+      }
+      return {}
+    },
+    [items]
+  )
+
   if (menu === undefined && !error) return <div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>
   if (error) {
     return (
@@ -137,17 +155,17 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
 
   const chooseSize = (s: SetSize) => {
     setSize(s)
-    setMix({})
+    setMix(autoMixFor(activeLine, s))
     setCopies(1)
   }
   const chooseLine = (l: string) => {
     setLine(l)
-    setMix({})
+    setMix(autoMixFor(l, size))
     setCopies(1)
   }
   const addToCart = () => {
     setCart((c) => addSet(c, size, mix, copies, items, store))
-    setMix({})
+    setMix(autoMixFor(activeLine, size))
     setCopies(1)
   }
 
@@ -201,7 +219,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               Sữa chua hũ,
               <em>đặt trước theo set.</em>
             </h1>
-            <p>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi gửi đơn qua Hangout.'}</p>
+            <p>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi đặt hàng trực tiếp tiện lợi.'}</p>
             <div className="shop-hero-cta">
               <a className="shop-cta" href="#chon-set">
                 Chọn set ngay
@@ -231,10 +249,10 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
           </div>
         </li>
         <li>
-          <span aria-hidden="true">💬</span>
+          <span aria-hidden="true">⚡</span>
           <div>
-            <strong>Gửi đơn qua Hangout</strong>
-            <small>Đơn soạn sẵn, chỉ cần gửi</small>
+            <strong>Tự động nhận đơn</strong>
+            <small>Chỉ cần đặt hoặc thanh toán, cần tư vấn thì nhắn Hangout</small>
           </div>
         </li>
       </ul>
@@ -391,8 +409,8 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             </li>
             <li>
               <span className="shop-step-no">3</span>
-              <strong>{store.domain ? 'Gửi đơn qua Hangout' : store.phone ? 'Gửi đơn qua Zalo' : 'Gửi đơn cho quán'}</strong>
-              <p>{store.domain || store.phone ? 'Điền thông tin nhận hàng, nội dung đơn được soạn sẵn, bạn chỉ cần dán vào khung chat và gửi.' : 'Điền thông tin nhận hàng rồi sao chép nội dung đơn gửi cho quán để đặt trước.'}</p>
+              <strong>Đặt hàng & Nhận hàng</strong>
+              <p>Điền domain và tầng nhận hàng. Quán sẽ tự động nhận đơn ngay khi bạn bấm đặt hàng hoặc chuyển khoản mà không bắt buộc phải nhắn tin. Nếu cần tư vấn gì thêm, bạn có thể bấm "Nhắn Hangout".</p>
             </li>
           </ol>
         </div>
