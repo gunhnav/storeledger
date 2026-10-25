@@ -309,6 +309,15 @@ export function flavorImage(name: string): string | null {
   return null
 }
 
+// Điểm căn chỉnh ảnh để các món không bị sát nắp hoặc lệch trọng tâm
+export function flavorPosition(name: string): string {
+  const n = norm(name)
+  if (n.includes('hy lap') || n.includes('lam quen')) return 'center 18%'
+  if (n.includes('tri ky') || n.includes('400') || n.includes('whey')) return 'center 35%'
+  if (n.includes('flan')) return 'center 35%'
+  return 'center 28%'
+}
+
 // Mô tả ngắn từng vị hiện dưới tên món; vị lạ thì không có mô tả
 export function flavorNote(name: string): string | null {
   const n = norm(name)

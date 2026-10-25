@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { preorderPayload, cartCount, cartSingles, cartSummary, lineTitle, setSingleQty, singleQty, unitOf, EMPTY_CUSTOMER, addSet, menuLines, setPriceHints, customerIssues, transferNote, cleanFloor, validDomain, validFloor, vietQrUrl, cartJars, cartSets, cartTotal, changeMix, flavorColors, flavorImage, flavorNote, mixLabel, orderMessage, refreshCart, selectable, setLineQty, setPrice, zaloLink, hangoutEmail, type MenuItem } from './storefront'
+import { preorderPayload, cartCount, cartSingles, cartSummary, lineTitle, setSingleQty, singleQty, unitOf, EMPTY_CUSTOMER, addSet, menuLines, setPriceHints, customerIssues, transferNote, cleanFloor, validDomain, validFloor, vietQrUrl, cartJars, cartSets, cartTotal, changeMix, flavorColors, flavorImage, flavorNote, flavorPosition, mixLabel, orderMessage, refreshCart, selectable, setLineQty, setPrice, zaloLink, hangoutEmail, type MenuItem } from './storefront'
 
 const item = (id: string, name: string, price: number | null): MenuItem => ({ id, name, category: null, price })
 const items = [item('tt', 'Truyền thống', 12000), item('pm', 'Phô mai', 15000), item('mc', 'Matcha', 15000), item('x', 'Vị chưa có giá', null)]
@@ -112,6 +112,8 @@ describe('hình và mô tả theo vị', () => {
     expect(flavorNote('Matcha')).toBe('Thơm dịu vị trà xanh')
     expect(flavorNote('Dâu tằm')).toBeNull()
     expect(flavorColors('Matcha')[0]).toMatch(/^#/)
+    expect(flavorPosition('Hũ làm quen 110gr')).toBe('center 18%')
+    expect(flavorPosition('Truyền thống')).toBe('center 28%')
   })
 })
 

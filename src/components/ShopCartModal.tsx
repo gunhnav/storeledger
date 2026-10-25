@@ -13,6 +13,7 @@ import {
   flavorColors,
   flavorEmoji,
   flavorImage,
+  flavorPosition,
   lineTitle,
   preorderPayload,
   transferNote,
@@ -37,9 +38,10 @@ export function SetThumbs({ mix, items }: { mix: Mix; items: MenuItem[] }) {
       {flavors.map((f) => {
         const image = flavorImage(f.name)
         const [c1, c2] = flavorColors(f.name)
+        const pos = flavorPosition(f.name)
         return (
           <span key={f.id} style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
-            {image ? <img src={image} alt="" width={44} height={44} /> : flavorEmoji(f.name)}
+            {image ? <img src={image} alt="" width={44} height={44} style={{ objectPosition: pos }} /> : flavorEmoji(f.name)}
           </span>
         )
       })}

@@ -12,6 +12,7 @@ import {
   flavorColors,
   flavorEmoji,
   flavorImage,
+  flavorPosition,
   isSingle,
   flavorNote,
   lineOf,
@@ -314,7 +315,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                 return (
                   <article key={item.id} className={`shop-card${n > 0 ? ' is-picked' : ''}${ok ? '' : ' is-out'}`}>
                     <div className="shop-art" style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }} aria-hidden="true">
-                      {image ? <img src={image} alt="" loading="lazy" width={520} height={430} /> : <span>{flavorEmoji(item.name)}</span>}
+                      {image ? <img src={image} alt="" loading="lazy" width={520} height={430} style={{ objectPosition: flavorPosition(item.name) }} /> : <span>{flavorEmoji(item.name)}</span>}
                       {n > 0 && <span className="shop-picked">{n}</span>}
                     </div>
                     <div className="shop-body">
