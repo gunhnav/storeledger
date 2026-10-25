@@ -246,14 +246,14 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
           <span aria-hidden="true">🎨</span>
           <div>
             <strong>Tự chọn vị</strong>
-            <small>{items.filter((i) => lineOf(i) === lines[0]).length} vị, mix thoải mái trong một set</small>
+            <small>Mix đa dạng vị trong một set</small>
           </div>
         </li>
         <li>
           <span aria-hidden="true">⚡</span>
           <div>
             <strong>Tự động nhận đơn</strong>
-            <small>Chỉ cần đặt hoặc thanh toán, cần tư vấn thì nhắn Hangout</small>
+            <small>Chỉ cần đặt và thanh toán, nhắn hangout khi cần hỗ trợ</small>
           </div>
         </li>
       </ul>
@@ -361,7 +361,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             {!singleLine && (
             <div className={`shop-builder${count > 0 ? ' has-cartbar' : ''}`} aria-live="polite">
               <div className="shop-builder-info">
-                <div className="shop-dots" aria-hidden="true">
+                <div className={`shop-dots shop-dots-${size}`} aria-hidden="true">
                   {Array.from({ length: size }, (_, i) => (
                     <span key={i} className={i < picked ? 'on' : undefined} />
                   ))}

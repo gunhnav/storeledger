@@ -5,7 +5,6 @@ import { buildPaymentQr, describePayload } from '../lib/emvQr'
 import { downloadInvoice } from '../lib/invoiceImage'
 import {
   EMPTY_CUSTOMER,
-  cartSummary,
   cartTotal,
   cleanDomain,
   cleanFloor,
@@ -226,7 +225,7 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
               ))}
             </ul>
             <div className="shop-total">
-              <span>Tổng thanh toán</span>
+              <span>Tổng tiền</span>
               <strong>{vnd(placed.total)}</strong>
             </div>
             <p className="shop-order-code">
@@ -302,7 +301,6 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
                 const info = lineTitle(l, items)
                 return (
                   <li key={l.key}>
-                    <SetThumbs mix={l.kind === 'set' ? l.mix : { [l.productId]: l.qty }} items={items} />
                     <div className="shop-line-info">
                       <strong>{info.title}</strong>
                       <small>{info.detail}</small>
@@ -331,7 +329,7 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
             </ul>
 
             <div className="shop-total">
-              <span>Tổng thanh toán · {cartSummary(cart)}</span>
+              <span>Tổng tiền</span>
               <strong>{vnd(total)}</strong>
             </div>
 

@@ -4125,6 +4125,18 @@ input.overridden {
   gap: 5px;
   max-width: 92px;
 }
+.shop-dots-6 {
+  display: grid;
+  grid-template-columns: repeat(3, 18px);
+  gap: 5px;
+  max-width: none;
+}
+.shop-dots-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 18px);
+  gap: 5px;
+  max-width: none;
+}
 .shop-dots span {
   width: 18px;
   height: 18px;
@@ -4480,8 +4492,8 @@ input.overridden {
   font-size: 16px;
 }
 .shop-lines li {
-  grid-template-columns: auto 1fr auto;
-  padding: 10px;
+  grid-template-columns: 1fr auto;
+  padding: 12px 14px;
   border-radius: 18px;
   background: #fbe9e1;
 }
@@ -4734,10 +4746,10 @@ input.overridden {
     gap: 8px;
   }
   .shop-lines li {
-    grid-template-columns: auto 1fr;
+    grid-template-columns: 1fr auto;
   }
   .shop-lines li .shop-qty {
-    grid-column: 1 / -1;
+    grid-column: auto;
     justify-self: end;
   }
   .shop-brand strong {
