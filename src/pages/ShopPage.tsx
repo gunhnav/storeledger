@@ -53,6 +53,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const [mix, setMix] = useState<Mix>({})
   const [copies, setCopies] = useState(1)
   const [open, setOpen] = useState(false)
+  const [copiedContact, setCopiedContact] = useState(false)
 
   const load = useCallback(async () => {
     const { data, error: e } = await supabase.rpc('get_public_menu', { p_store_code: code })
@@ -127,6 +128,13 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     )
   }
 
+  const onContactHangout = () => {
+    if (!store?.domain) return
+    navigator.clipboard?.writeText(hangoutEmail(store.domain)).catch(() => undefined)
+    setCopiedContact(true)
+    setTimeout(() => setCopiedContact(false), 2500)
+  }
+
   const chooseSize = (s: SetSize) => {
     setSize(s)
     setMix({})
@@ -166,8 +174,15 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
           </nav>
           <div className="shop-header-actions">
             {store.domain && (
-              <a className="shop-contact" href={store.chat_url || GOOGLE_CHAT_URL} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)} title={hangoutEmail(store.domain!)}>
-                Nhắn Hangout
+              <a
+                className="shop-contact"
+                href={store.chat_url || GOOGLE_CHAT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onContactHangout}
+                title={hangoutEmail(store.domain)}
+              >
+                {copiedContact ? 'Đã chép ' + hangoutEmail(store.domain) + ' ✓' : 'Nhắn Hangout'}
               </a>
             )}
             <button type="button" className="shop-cart-btn" aria-label={`Đơn hàng, ${count} món`} onClick={() => setOpen(true)}>
@@ -405,9 +420,9 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                   href={store.chat_url || GOOGLE_CHAT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)}
+                  onClick={onContactHangout}
                 >
-                  Nhắn Hangout {hangoutEmail(store.domain)}
+                  {copiedContact ? 'Đã chép ' + hangoutEmail(store.domain) + ' ✓' : `Nhắn Hangout ${hangoutEmail(store.domain)}`}
                 </a>
               )}
             </div>
