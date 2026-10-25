@@ -11,6 +11,7 @@ import { Icon, type IconName } from './Icon'
 import { LanguageSelect } from './LanguageSelect'
 import { Logo } from './Logo'
 import { ChatWidget, ROONA_OPEN_EVENT } from './ChatWidget'
+import { PreorderNotifier } from './PreorderNotifier'
 
 type NavItem = { to: string; label: string; icon: IconName; adminOnly?: boolean }
 
@@ -106,6 +107,7 @@ export function AppLayout() {
         )}
       </main>
       <ChatWidget />
+      {isAdmin && <PreorderNotifier />}
     </div>
   )
 }

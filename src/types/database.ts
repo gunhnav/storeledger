@@ -3,6 +3,7 @@
 // Cột numeric được PostgREST trả về dạng number; date dạng 'YYYY-MM-DD'; timestamptz dạng chuỗi ISO.
 
 export type UserRole = 'admin' | 'staff'
+export type UserStatus = 'pending' | 'approved' | 'rejected'
 export type SaleChannel = 'in_store' | 'shopeefood' | 'company'
 export type StockStatus = 'ok' | 'low' | 'out'
 export type PnlPeriod = 'day' | 'week' | 'month'
@@ -14,7 +15,9 @@ export type PnlPeriod = 'day' | 'week' | 'month'
 export type Profile = {
   id: string
   full_name: string | null
+  email?: string | null
   role: UserRole
+  status: UserStatus
   created_at: string
 }
 
@@ -231,6 +234,23 @@ export type StorefrontSetPrice = {
   created_at: string
 }
 
+// Đơn đặt trước từ trang khách (supabase/migrations/20261025240000_preorders.sql): bảng RIÊNG, không tính vào bán hàng / kho / báo cáo
+export type PreorderStatus = 'new' | 'confirmed' | 'paid' | 'delivered' | 'cancelled'
+export type Preorder = {
+  id: string
+  store_id: string
+  code: string
+  customer_name: string
+  customer_domain: string
+  floor: string
+  payment: 'transfer' | 'cash'
+  lines: { kind: 'set' | 'single'; title: string; detail: string; qty: number; unit_price: number }[]
+  total: number
+  status: PreorderStatus
+  created_at: string
+  updated_at: string
+}
+
 export type Expense = {
   id: string
   store_id: string
@@ -390,6 +410,9 @@ export type PublicMenuResult = {
     bank: { code: string; account: string; holder: string } | null
     pay: { payload: string; label: string | null; holder: string } | null
     domain: string | null
+    floors: string[] | null
+    chat_url?: string | null
+    contact_email?: string | null
   }
   items: { id: string; name: string; category: string | null; price: number | null; mode: 'set' | 'single' }[]
 } | null
@@ -516,6 +539,7 @@ export type AdminUserRow = {
   email: string
   full_name: string | null
   role: UserRole
+  status: UserStatus
   created_at: string
   last_sign_in_at: string | null
   store_ids: string[]
@@ -644,6 +668,14 @@ export type Database = {
           { foreignKeyName: 'storefront_set_prices_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
         ]
       }
+      preorders: {
+        Row: Preorder
+        Insert: never
+        Update: { status?: PreorderStatus }
+        Relationships: [
+          { foreignKeyName: 'preorders_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        ]
+      }
       daily_revenue: {
         Row: DailyRevenue
         Insert: DailyRevenueInsert
@@ -694,6 +726,13 @@ export type Database = {
       get_pnl: { Args: GetPnlArgs; Returns: PnlRow[] }
       get_break_even: { Args: { p_store_id: string }; Returns: BreakEvenRow[] }
       admin_list_users: { Args: Record<never, never>; Returns: AdminUserRow[] }
+      admin_approve_user: {
+        Args: { p_user_id: string; p_role?: UserRole; p_store_ids?: string[] }
+        Returns: undefined
+      }
+      admin_reject_user: { Args: { p_user_id: string }; Returns: undefined }
+      admin_set_vault_secret: { Args: { p_name: string; p_secret: string }; Returns: undefined }
+      get_vault_secret: { Args: { p_name: string }; Returns: string }
       // supabase/migrations/20261018145530_admin_accounts.sql
       admin_set_role: { Args: { p_user_id: string; p_role: UserRole }; Returns: undefined }
       admin_set_full_name: { Args: { p_user_id: string; p_full_name: string }; Returns: undefined }
@@ -715,6 +754,11 @@ export type Database = {
       import_revenue_invoices: {
         Args: { p_store_id: string; p_rows: unknown }
         Returns: { inserted: number; updated: number; days: number }
+      }
+      // supabase/migrations/20261025240000_preorders.sql (khách không đăng nhập gọi được)
+      submit_preorder: {
+        Args: { p_store_code: string; p_order: unknown }
+        Returns: { code: string; total: number; lines: Preorder['lines'] }
       }
       // supabase/migrations/20261025180000_storefront_set_prices.sql
       save_storefront_set_prices: {

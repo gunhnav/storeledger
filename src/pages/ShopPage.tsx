@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { ShopCartModal } from '../components/ShopCartModal'
-import { randomSalt } from '../lib/invoice'
 import {
   SET_SIZES,
   addSet,
@@ -54,10 +53,6 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const [mix, setMix] = useState<Mix>({})
   const [copies, setCopies] = useState(1)
   const [open, setOpen] = useState(false)
-  // Mã ngẫu nhiên của lượt truy cập: mã hoá đơn = ngày + băm(mã này + giỏ hàng), giữ nguyên khi khách đang điền thông tin
-  const [salt] = useState(() => randomSalt())
-  // Ngày lập mã đơn: lấy lúc mở trang (không đổi giữa các lần vẽ lại)
-  const [openedAt] = useState(() => new Date())
 
   const load = useCallback(async () => {
     const { data, error: e } = await supabase.rpc('get_public_menu', { p_store_code: code })
@@ -171,7 +166,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
           </nav>
           <div className="shop-header-actions">
             {store.domain && (
-              <a className="shop-contact" href={GOOGLE_CHAT_URL} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)} title={hangoutEmail(store.domain)}>
+              <a className="shop-contact" href={store.chat_url || GOOGLE_CHAT_URL} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!, store.contact_email)).catch(() => undefined)} title={hangoutEmail(store.domain!, store.contact_email)}>
                 Nhắn Hangout
               </a>
             )}
@@ -407,12 +402,12 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               {store.domain && (
                 <a
                   className="shop-footer-btn"
-                  href={GOOGLE_CHAT_URL}
+                  href={store.chat_url || GOOGLE_CHAT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)}
+                  onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!, store.contact_email)).catch(() => undefined)}
                 >
-                  Nhắn Hangout {hangoutEmail(store.domain)}
+                  Nhắn Hangout {hangoutEmail(store.domain, store.contact_email)}
                 </a>
               )}
             </div>
@@ -436,8 +431,8 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
         items={items}
         store={store}
         onSetLineQty={(k, q) => setCart((c) => setLineQty(c, k, q))}
-        salt={salt}
-        openedAt={openedAt}
+        storeCode={code}
+        onPlaced={() => setCart([])}
       />
     </div>
   )

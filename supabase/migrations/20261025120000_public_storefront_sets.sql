@@ -6,8 +6,8 @@
 -- =============================================================================
 
 alter table public.stores
-  add column public_set_price_4 numeric(12,2) check (public_set_price_4 is null or public_set_price_4 > 0),
-  add column public_set_price_6 numeric(12,2) check (public_set_price_6 is null or public_set_price_6 > 0);
+  add column if not exists public_set_price_4 numeric(12,2) check (public_set_price_4 is null or public_set_price_4 > 0),
+  add column if not exists public_set_price_6 numeric(12,2) check (public_set_price_6 is null or public_set_price_6 > 0);
 
 comment on column public.stores.public_set_price_4 is 'Giá 1 set 4 hũ trên trang công khai (trống = cộng giá từng hũ)';
 comment on column public.stores.public_set_price_6 is 'Giá 1 set 6 hũ trên trang công khai (trống = cộng giá từng hũ)';

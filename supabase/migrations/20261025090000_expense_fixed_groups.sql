@@ -3,7 +3,7 @@
 --   * expenses_category_check và update_expense nhận thêm 3 nhóm (danh sách nhóm theo quán nằm ở src/lib/expenses.ts).
 -- =============================================================================
 
-alter table public.expenses drop constraint expenses_category_check;
+alter table public.expenses drop constraint if exists expenses_category_check;
 alter table public.expenses
   add constraint expenses_category_check check (category in (
     'Dụng cụ', 'Bao bì', 'In ấn - quảng cáo', 'Vận chuyển', 'Khác',

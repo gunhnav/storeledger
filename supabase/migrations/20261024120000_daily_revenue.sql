@@ -6,7 +6,7 @@
 --   * Dữ liệu bán theo món cũ (sales, sale_items) giữ nguyên, chỉ không còn hiện ở màn hình của Bún đậu.
 -- =============================================================================
 
-create table public.daily_revenue (
+create table if not exists public.daily_revenue (
   id            uuid primary key default gen_random_uuid(),
   store_id      uuid not null references public.stores (id),
   revenue_date  date not null default (now() at time zone 'Asia/Ho_Chi_Minh')::date,
@@ -19,24 +19,29 @@ create table public.daily_revenue (
   constraint daily_revenue_unique unique (store_id, revenue_date, channel),
   constraint daily_revenue_not_future check (revenue_date <= (now() at time zone 'Asia/Ho_Chi_Minh')::date)
 );
-create index daily_revenue_created_by_idx on public.daily_revenue (created_by);
+create index if not exists daily_revenue_created_by_idx on public.daily_revenue (created_by);
 
 alter table public.daily_revenue enable row level security;
 
 grant select, insert, update, delete on public.daily_revenue to authenticated;
 
+drop policy if exists daily_revenue_select_admin on public.daily_revenue;
 create policy daily_revenue_select_admin on public.daily_revenue
   for select to authenticated
   using ((select public.is_admin()));
 
+drop policy if exists daily_revenue_insert_admin on public.daily_revenue;
 create policy daily_revenue_insert_admin on public.daily_revenue
   for insert to authenticated
   with check ((select public.is_admin()) and created_by = (select auth.uid()));
 
+drop policy if exists daily_revenue_update_admin on public.daily_revenue;
 create policy daily_revenue_update_admin on public.daily_revenue
   for update to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
+
+drop policy if exists daily_revenue_delete_admin on public.daily_revenue;
 
 create policy daily_revenue_delete_admin on public.daily_revenue
   for delete to authenticated
@@ -53,5 +58,6 @@ begin
 end;
 $$;
 
+drop trigger if exists daily_revenue_touch on public.daily_revenue;
 create trigger daily_revenue_touch before update on public.daily_revenue
   for each row execute function public.daily_revenue_touch();

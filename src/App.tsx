@@ -19,6 +19,7 @@ import { ItemImportPage } from './pages/ItemImportPage'
 import { ItemSalesPage } from './pages/ItemSalesPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { PreordersPage } from './pages/PreordersPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { PurchasePage } from './pages/PurchasePage'
 import { ReportsPage } from './pages/ReportsPage'
@@ -35,6 +36,7 @@ import { TransferPage } from './pages/TransferPage'
 // Hogi (bán theo món, có kho)
 const HOGI_ENTRY_TABS: Tab[] = [
   { to: '/entry/sales', label: 'Bán hàng', icon: 'sale' },
+  { to: '/entry/preorders', label: 'Đơn đặt trước', icon: 'log', adminOnly: true },
   { to: '/entry/purchases', label: 'Nhập hàng', icon: 'purchase' },
   { to: '/entry/transfers', label: 'Phân phối', icon: 'transfer' },
   { to: '/entry/expenses', label: 'Chi phí', icon: 'expense', adminOnly: true },
@@ -171,6 +173,7 @@ function App() {
             <Route element={<RequireAdmin />}>
               <Route path="expenses" element={<ExpensePage />} />
               <Route path="products" element={<ItemBased fallback="/entry"><ProductsPage /></ItemBased>} />
+              <Route path="preorders" element={<ItemBased fallback="/entry"><PreordersPage /></ItemBased>} />
               <Route path="storefront" element={<ItemBased fallback="/entry"><StorefrontPage /></ItemBased>} />
               {/* Bún đậu: nhập doanh thu theo ngày */}
               <Route path="revenue" element={<RevenueOnly fallback="/entry"><RevenuePage /></RevenueOnly>} />

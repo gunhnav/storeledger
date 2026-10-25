@@ -21,6 +21,10 @@ export type PublicStore = {
   pay: PublicPay | null
   // Domain liên hệ của quán (tài khoản nội bộ công ty, ví dụ huong.vu3)
   domain: string | null
+  // Các tầng được giao (vd: 6, 7, 8, 9, 11, 12); null = không giới hạn
+  floors: string[] | null
+  chat_url?: string | null
+  contact_email?: string | null
 }
 export type PublicMenu = { store: PublicStore; items: MenuItem[] }
 
@@ -211,13 +215,14 @@ export const cleanFloor = (floor: string) =>
 export const validFloor = (floor: string) => /^[A-Z0-9]{1,4}$/.test(cleanFloor(floor))
 
 // Thông tin khách còn thiếu / sai (hiện cạnh ô nhập); rỗng nghĩa là gửi đơn được
-export function customerIssues(c: Customer): Partial<Record<'name' | 'domain' | 'floor', string>> {
+export function customerIssues(c: Customer, floors: string[] | null = null): Partial<Record<'name' | 'domain' | 'floor', string>> {
   const out: Partial<Record<'name' | 'domain' | 'floor', string>> = {}
   if (!c.name.trim()) out.name = 'Nhập tên của bạn'
   if (!c.domain.trim()) out.domain = 'Nhập domain của bạn'
   else if (!validDomain(c.domain)) out.domain = 'Domain chỉ gồm chữ không dấu, số và dấu chấm (vd: huong.vu3)'
-  if (!c.floor.trim()) out.floor = 'Nhập tầng'
+  if (!c.floor.trim()) out.floor = floors ? 'Chọn tầng' : 'Nhập tầng'
   else if (!validFloor(c.floor)) out.floor = 'Tầng chưa đúng (vd: 6)'
+  else if (floors && !floors.includes(cleanFloor(c.floor))) out.floor = `Chỉ giao tầng ${floors.join(', ')}`
   return out
 }
 
@@ -229,6 +234,21 @@ export function vietQrUrl(bank: PublicBank, amount: number, memo: string): strin
   const q = new URLSearchParams({ amount: String(Math.round(amount)), addInfo: memo, accountName: bank.holder })
   return `https://img.vietqr.io/image/${encodeURIComponent(bank.code)}-${encodeURIComponent(bank.account)}-compact2.png?${q}`
 }
+
+// Đơn gửi lên máy chủ (submit_preorder): chỉ gửi món và số lượng, giá do máy chủ tự tính
+export function preorderPayload(lines: CartLine[], c: Customer) {
+  return {
+    name: c.name.trim(),
+    domain: cleanDomain(c.domain),
+    floor: cleanFloor(c.floor),
+    payment: c.payment,
+    lines: lines.map((l) => (l.kind === 'set' ? { kind: 'set', size: l.size, mix: l.mix, qty: l.qty } : { kind: 'single', product_id: l.productId, qty: l.qty })),
+  }
+}
+
+// Đơn máy chủ đã ghi nhận (mã đơn, tổng tiền và các món với giá tính trên máy chủ)
+export type PlacedLine = { kind: 'set' | 'single'; title: string; detail: string; qty: number; unit_price: number }
+export type PlacedOrder = { code: string; total: number; lines: PlacedLine[] }
 
 // Nội dung đơn đặt trước để dán vào Hangout / Zalo
 export function orderMessage(storeName: string, lines: CartLine[], items: MenuItem[], customer: Partial<Customer> = {}, hasBank = false, code = ''): string {
@@ -250,11 +270,15 @@ export const cleanPhone = (phone: string) => phone.replace(/[^\d+]/g, '')
 export const zaloLink = (phone: string) => `https://zalo.me/${cleanPhone(phone).replace(/^\+84/, '0')}`
 export const telLink = (phone: string) => `tel:${cleanPhone(phone)}`
 
-// Hangout (Google Chat) nội bộ công ty: email = domain + đuôi công ty. Google Chat không có link mở thẳng hội thoại theo email,
-// nên trang mở Google Chat và chép sẵn email để khách dán vào ô tìm người.
-export const COMPANY_MAIL_DOMAIN = 'mservice.com.vn'
-export const hangoutEmail = (domain: string) => `${cleanDomain(domain)}@${COMPANY_MAIL_DOMAIN}`
-export const GOOGLE_CHAT_URL = 'https://chat.google.com/'
+// Hangout (Google Chat): email = domain + đuôi email nội bộ hoặc email liên hệ của quán.
+// Đuôi email được cấu hình qua biến môi trường VITE_COMPANY_MAIL_DOMAIN để không lộ thông tin nội bộ trong repo public.
+export const COMPANY_MAIL_DOMAIN = (import.meta.env.VITE_COMPANY_MAIL_DOMAIN ?? '').trim()
+export const hangoutEmail = (domain: string, storeEmail?: string | null) => {
+  if (storeEmail?.trim()) return storeEmail.trim()
+  const d = cleanDomain(domain)
+  return COMPANY_MAIL_DOMAIN ? `${d}@${COMPANY_MAIL_DOMAIN}` : d
+}
+export const GOOGLE_CHAT_URL = (import.meta.env.VITE_GOOGLE_CHAT_URL ?? 'https://chat.google.com/').trim()
 
 const norm = (v: string) => v.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/g, 'd')
 

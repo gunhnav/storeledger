@@ -8,14 +8,20 @@
 -- =============================================================================
 
 alter table public.company_sets
-  add column sold_count integer not null default 0,
-  add constraint company_sets_sold_count_check check (sold_count >= 0 and sold_count <= set_count);
+  add column if not exists sold_count integer not null default 0;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'company_sets_sold_count_check') then
+    alter table public.company_sets add constraint company_sets_sold_count_check check (sold_count >= 0 and sold_count <= set_count);
+  end if;
+end $$;
 
 -- Đơn đã bán trước khi có cột này: hai set 4 (mix 1-1-1-1 và 1-1-2) đã bán ngày 2026-10-20
 update public.company_sets set sold_count = 1
 where id in ('6c056c24-6a55-47e4-9ec7-956b0884b5ea', 'd1153dfd-4feb-4884-aeff-ac7a2517b1f5');
 
-drop function public.get_company_sets(uuid, integer);
+drop function if exists public.get_company_sets(uuid, integer);
 create or replace function public.get_company_sets(p_store_id uuid, p_days integer default 90)
 returns table (
   id                 uuid,

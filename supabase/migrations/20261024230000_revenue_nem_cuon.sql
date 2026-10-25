@@ -4,6 +4,6 @@
 --   * revenue_invoices.channel giữ nguyên (hoá đơn POS chỉ có Quán / Đối tác).
 -- =============================================================================
 
-alter table public.daily_revenue drop constraint daily_revenue_channel_check;
+alter table public.daily_revenue drop constraint if exists daily_revenue_channel_check;
 alter table public.daily_revenue
   add constraint daily_revenue_channel_check check (channel in ('in_store', 'shopeefood', 'nem_cuon'));

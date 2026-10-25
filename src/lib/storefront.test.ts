@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cartCount, cartSingles, cartSummary, lineTitle, setSingleQty, singleQty, unitOf, EMPTY_CUSTOMER, addSet, menuLines, setPriceHints, customerIssues, transferNote, cleanFloor, validDomain, validFloor, vietQrUrl, cartJars, cartSets, cartTotal, changeMix, flavorColors, flavorImage, flavorNote, mixLabel, orderMessage, refreshCart, selectable, setLineQty, setPrice, zaloLink, type MenuItem } from './storefront'
+import { preorderPayload, cartCount, cartSingles, cartSummary, lineTitle, setSingleQty, singleQty, unitOf, EMPTY_CUSTOMER, addSet, menuLines, setPriceHints, customerIssues, transferNote, cleanFloor, validDomain, validFloor, vietQrUrl, cartJars, cartSets, cartTotal, changeMix, flavorColors, flavorImage, flavorNote, mixLabel, orderMessage, refreshCart, selectable, setLineQty, setPrice, zaloLink, hangoutEmail, type MenuItem } from './storefront'
 
 const item = (id: string, name: string, price: number | null): MenuItem => ({ id, name, category: null, price })
 const items = [item('tt', 'Truyền thống', 12000), item('pm', 'Phô mai', 15000), item('mc', 'Matcha', 15000), item('x', 'Vị chưa có giá', null)]
@@ -117,8 +117,8 @@ describe('hình và mô tả theo vị', () => {
 
 describe('thông tin khách và chuyển khoản', () => {
   it('domain và tầng', () => {
-    expect(validDomain('huong.vu3')).toBe(true)
-    expect(validDomain(' Huong.Vu3@momo.vn ')).toBe(true)
+    expect(validDomain('user.test')).toBe(true)
+    expect(validDomain(' user.test@example.com ')).toBe(true)
     expect(validDomain('hương')).toBe(false)
     expect(cleanFloor('tầng 6')).toBe('6')
     expect(cleanFloor('F12')).toBe('12')
@@ -131,6 +131,9 @@ describe('thông tin khách và chuyển khoản', () => {
   })
   it('nội dung chuyển khoản dạng domain - F tầng', () => {
     expect(transferNote(' Huong.Vu3 ', 'tầng 6')).toBe('huong.vu3 - F6')
+  })
+  it('hangoutEmail ưu tiên email của quán nếu có', () => {
+    expect(hangoutEmail('user.name', 'contact@store.vn')).toBe('contact@store.vn')
   })
   it('link QR VietQR có số tiền, nội dung và tên chủ tài khoản', () => {
     const url = vietQrUrl({ code: 'TCB', account: '19038457119011', holder: 'NGO THI CAM THY' }, 108000.4, 'huong.vu3 - F6')
@@ -174,5 +177,24 @@ describe('món bán lẻ (sữa chua Hy Lạp)', () => {
   it('đơn vị bán lẻ', () => {
     expect(unitOf('Nước whey 220ml')).toBe('chai')
     expect(unitOf('Hũ tri kỷ 400gr')).toBe('hũ')
+  })
+})
+
+describe('đơn gửi lên máy chủ', () => {
+  it('chỉ gửi món + số lượng (không gửi giá), làm sạch domain và tầng', () => {
+    let lines = addSet([], 4, { tt: 2, pm: 2 }, 1, items, noFixed)
+    lines = setSingleQty(lines, { id: 'lq', name: 'Hũ làm quen', category: 'Hy Lạp', price: 30000, mode: 'single' }, 2)
+    const body = preorderPayload(lines, { name: ' Khách hàng ', domain: 'customer.order@example.com', floor: 'tầng 6', payment: 'cash' })
+    expect(body).toEqual({
+      name: 'Khách hàng', domain: 'customer.order', floor: '6', payment: 'cash',
+      lines: [{ kind: 'set', size: 4, mix: { tt: 2, pm: 2 }, qty: 1 }, { kind: 'single', product_id: 'lq', qty: 2 }],
+    })
+    expect(JSON.stringify(body)).not.toContain('unitPrice')
+  })
+  it('tầng phải nằm trong danh sách giao', () => {
+    const c = { ...EMPTY_CUSTOMER, name: 'A', domain: 'a.b', floor: '10' }
+    expect(customerIssues(c, ['6', '7', '8', '9', '11', '12']).floor).toBe('Chỉ giao tầng 6, 7, 8, 9, 11, 12')
+    expect(customerIssues({ ...c, floor: 'F11' }, ['6', '11'])).toEqual({})
+    expect(customerIssues({ ...c, floor: '' }, ['6']).floor).toBe('Chọn tầng')
   })
 })

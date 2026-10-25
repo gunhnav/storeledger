@@ -4,7 +4,7 @@
 -- =============================================================================
 
 alter table public.stores
-  add column public_contact_domain text check (public_contact_domain is null or public_contact_domain ~ '^[A-Za-z0-9._-]{2,40}$');
+  add column if not exists public_contact_domain text check (public_contact_domain is null or public_contact_domain ~ '^[A-Za-z0-9._-]{2,40}$');
 
 create or replace function public.get_public_menu(p_store_code text)
 returns jsonb

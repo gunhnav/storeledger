@@ -7,8 +7,8 @@
 -- =============================================================================
 
 alter table public.expenses
-  add column purchase_id uuid references public.purchases (id) on delete cascade;
-create index expenses_purchase_id_idx on public.expenses (purchase_id) where purchase_id is not null;
+  add column if not exists purchase_id uuid references public.purchases (id) on delete cascade;
+create index if not exists expenses_purchase_id_idx on public.expenses (purchase_id) where purchase_id is not null;
 comment on column public.expenses.purchase_id is 'Khoản chi sinh từ đợt nhập kho; báo cáo lãi lỗ / hoà vốn bỏ qua để tránh tính hai lần với giá vốn';
 
 create or replace function public.get_pnl(

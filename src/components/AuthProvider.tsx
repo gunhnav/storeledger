@@ -50,6 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }, [])
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    })
+    if (error) throw error
+  }, [])
+
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
@@ -58,8 +68,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshProfile = useCallback(() => setProfileVersion((v) => v + 1), [])
 
   const value = useMemo<AuthState>(
-    () => ({ session, profile, loading, isAdmin: profile?.role === 'admin', signIn, signOut, refreshProfile }),
-    [session, profile, loading, signIn, signOut, refreshProfile],
+    () => ({
+      session,
+      profile,
+      loading,
+      isAdmin: profile?.role === 'admin' && profile?.status === 'approved',
+      isPending: profile?.status === 'pending',
+      isApproved: profile?.status === 'approved',
+      signIn,
+      signInWithGoogle,
+      signOut,
+      refreshProfile,
+    }),
+    [session, profile, loading, signIn, signInWithGoogle, signOut, refreshProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

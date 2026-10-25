@@ -7,6 +7,7 @@ export function RequireAuth() {
   const { session, profile, loading, signOut } = useAuth()
   const { t } = useI18n()
   const location = useLocation()
+  const contactEmail = (import.meta.env.VITE_MASTER_ADMIN_EMAIL ?? '').trim()
 
   if (loading) return <p className="center muted">{t('Đang tải…')}</p>
   if (!session) {
@@ -26,14 +27,41 @@ export function RequireAuth() {
       </div>
     )
   }
-  if (!profile) {
+  if (!profile || profile.status === 'pending') {
     return (
       <div className="error-screen">
         <ErrorPage
           code={403}
-          title={t('Tài khoản chưa được phân quyền')}
-          message="Tài khoản chưa có hồ sơ trong hệ thống. Liên hệ quản trị để được cấp quyền."
+          title={t('Tài khoản đang chờ duyệt')}
+          message={t(
+            'Tài khoản của bạn đã đăng nhập và đang trong hàng chờ phê duyệt. Quản trị viên sẽ sớm xác nhận và phân quyền cửa hàng cho bạn.',
+          )}
         >
+          {contactEmail && (
+            <p className="muted" style={{ marginBottom: 14 }}>
+              {t('Liên hệ quản trị viên:')} <strong>{contactEmail}</strong>
+            </p>
+          )}
+          <button type="button" onClick={() => signOut()}>
+            {t('Đăng xuất')}
+          </button>
+        </ErrorPage>
+      </div>
+    )
+  }
+  if (profile.status === 'rejected') {
+    return (
+      <div className="error-screen">
+        <ErrorPage
+          code={403}
+          title={t('Tài khoản bị từ chối')}
+          message={t('Tài khoản của bạn đã bị từ chối quyền truy cập. Vui lòng liên hệ quản trị viên.')}
+        >
+          {contactEmail && (
+            <p className="muted" style={{ marginBottom: 14 }}>
+              {t('Liên hệ quản trị viên:')} <strong>{contactEmail}</strong>
+            </p>
+          )}
           <button type="button" onClick={() => signOut()}>
             {t('Đăng xuất')}
           </button>

@@ -7,7 +7,7 @@
 --   * Chỉ lưu dữ liệu để dùng sau; chưa trừ tồn kho. Chỉ admin đọc / ghi.
 -- =============================================================================
 
-create table public.dish_recipes (
+create table if not exists public.dish_recipes (
   id          uuid primary key default gen_random_uuid(),
   store_id    uuid not null references public.stores (id),
   name        text not null check (char_length(btrim(name)) between 1 and 80),
@@ -20,7 +20,7 @@ create table public.dish_recipes (
   unique (store_id, name)
 );
 
-create table public.dish_recipe_lines (
+create table if not exists public.dish_recipe_lines (
   id          uuid primary key default gen_random_uuid(),
   recipe_id   uuid not null references public.dish_recipes (id) on delete cascade,
   ingredient  text not null check (char_length(btrim(ingredient)) between 1 and 80),
@@ -30,14 +30,17 @@ create table public.dish_recipe_lines (
   note        text,
   sort_order  integer not null default 0
 );
-create index dish_recipe_lines_recipe_idx on public.dish_recipe_lines (recipe_id);
+create index if not exists dish_recipe_lines_recipe_idx on public.dish_recipe_lines (recipe_id);
 
 alter table public.dish_recipes enable row level security;
 alter table public.dish_recipe_lines enable row level security;
 revoke all on table public.dish_recipes, public.dish_recipe_lines from public, anon;
 grant select, insert, update, delete on public.dish_recipes, public.dish_recipe_lines to authenticated;
 
+drop policy if exists dish_recipes_admin on public.dish_recipes;
 create policy dish_recipes_admin on public.dish_recipes
   for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+
+drop policy if exists dish_recipe_lines_admin on public.dish_recipe_lines;
 create policy dish_recipe_lines_admin on public.dish_recipe_lines
   for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));

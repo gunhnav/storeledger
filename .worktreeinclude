@@ -1,0 +1,4 @@
+# Danh sách file cấu hình cần tự động sao chép sang phiên worktree mới
+.env.local
+CLAUDE.local.md
+.oxlintrc.json

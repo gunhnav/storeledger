@@ -9,10 +9,10 @@
 -- =============================================================================
 
 alter table public.sales
-  add column list_total       numeric(14,2),
-  add column discount_type    text check (discount_type in ('amount', 'percent')),
-  add column discount_value   numeric(14,2),
-  add column discount_amount  numeric(14,2) not null default 0 check (discount_amount >= 0);
+  add column if not exists list_total       numeric(14,2),
+  add column if not exists discount_type    text check (discount_type in ('amount', 'percent')),
+  add column if not exists discount_value   numeric(14,2),
+  add column if not exists discount_amount  numeric(14,2) not null default 0 check (discount_amount >= 0);
 
 comment on column public.sales.list_total is 'Tiền hàng trước giảm giá (null nếu đơn không giảm)';
 comment on column public.sales.discount_amount is 'Số tiền thực giảm; total_amount = list_total - discount_amount';

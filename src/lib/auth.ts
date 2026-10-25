@@ -8,7 +8,10 @@ export type AuthState = {
   // true cho tới khi biết đã đăng nhập hay chưa và đã tải xong profile
   loading: boolean
   isAdmin: boolean
+  isPending: boolean
+  isApproved: boolean
   signIn: (email: string, password: string) => Promise<void>
+  signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   // Tải lại profile sau khi người dùng tự sửa tên
   refreshProfile: () => void

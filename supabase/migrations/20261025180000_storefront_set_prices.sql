@@ -8,7 +8,7 @@
 --   * get_public_menu trả thêm set_prices: [{ size, product_id, price }].
 -- =============================================================================
 
-create table public.storefront_set_prices (
+create table if not exists public.storefront_set_prices (
   id          uuid primary key default gen_random_uuid(),
   store_id    uuid not null references public.stores (id) on delete cascade,
   set_size    integer not null check (set_size in (4, 6)),
@@ -16,13 +16,15 @@ create table public.storefront_set_prices (
   price       numeric(12,2) not null check (price > 0 and price <= 100000000),
   created_at  timestamptz not null default now()
 );
-create unique index storefront_set_prices_unique
+create unique index if not exists storefront_set_prices_unique
   on public.storefront_set_prices (store_id, set_size, coalesce(product_id, '00000000-0000-0000-0000-000000000000'::uuid));
-create index storefront_set_prices_product_idx on public.storefront_set_prices (product_id);
+create index if not exists storefront_set_prices_product_idx on public.storefront_set_prices (product_id);
 
 alter table public.storefront_set_prices enable row level security;
 revoke all on table public.storefront_set_prices from public, anon;
 grant select, insert, update, delete on public.storefront_set_prices to authenticated;
+
+drop policy if exists storefront_set_prices_admin on public.storefront_set_prices;
 create policy storefront_set_prices_admin on public.storefront_set_prices
   for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 

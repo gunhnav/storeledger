@@ -12,6 +12,8 @@ import { StorePicker } from '../components/StorePicker'
 import { PasswordInput } from '../components/PasswordInput'
 import { Icon, type IconName } from '../components/Icon'
 
+const MASTER_EMAIL = (import.meta.env.VITE_MASTER_ADMIN_EMAIL ?? '').trim().toLowerCase()
+
 type FormValues = { full_name: string; email: string; password: string; role: UserRole; store_ids: string[] }
 
 const EMPTY: FormValues = { full_name: '', email: '', password: '', role: 'staff', store_ids: [] }
@@ -57,6 +59,10 @@ export function StaffPage() {
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   // Đang sửa tên / email của tài khoản nào
   const [editing, setEditing] = useState<{ id: string; full_name: string; email: string } | null>(null)
+  // Phân quyền cho tài khoản chờ duyệt
+  const [pendingRoles, setPendingRoles] = useState<Record<string, UserRole>>({})
+  const [pendingStores, setPendingStores] = useState<Record<string, string[]>>({})
+
   const {
     register,
     control,
@@ -109,19 +115,64 @@ export function StaffPage() {
   }
 
   // Cấp / thu hồi quyền admin (hàm admin_set_role tự chặn tự hạ quyền và mất admin cuối cùng)
-  const changeRole = async (user: AdminUserRow, role: UserRole) => {
+  const changeRole = async (user: AdminUserRow, newRole: UserRole) => {
     const who = user.full_name || user.email
     const question =
-      role === 'admin'
+      newRole === 'admin'
         ? t('Cấp quyền admin cho {value}? Người này sẽ thấy giá vốn, lãi, chi phí của mọi cửa hàng và quản lý được tài khoản.', { value: who })
         : t('Bỏ quyền admin của {value}? Tài khoản trở thành nhân viên, chỉ làm việc ở các cửa hàng được gán.', { value: who })
     if (!window.confirm(question)) return
     setResult(null)
     setBusy(user.id)
-    const { error } = await supabase.rpc('admin_set_role', { p_user_id: user.id, p_role: role })
+    const { error } = await supabase.rpc('admin_set_role', { p_user_id: user.id, p_role: newRole })
     setBusy(null)
     if (error) return setResult({ ok: false, text: errorMessage(error) })
-    toast.success(role === 'admin' ? t('Đã cấp quyền admin cho {value}', { value: who }) : t('Đã bỏ quyền admin của {value}', { value: who }))
+    toast.success(newRole === 'admin' ? t('Đã cấp quyền admin cho {value}', { value: who }) : t('Đã bỏ quyền admin của {value}', { value: who }))
+    reload()
+  }
+
+  // Duyệt và phân quyền tài khoản chờ duyệt
+  const approvePending = async (user: AdminUserRow) => {
+    const assignedRole = pendingRoles[user.id] ?? 'staff'
+    const assignedStores = pendingStores[user.id] ?? []
+    setResult(null)
+    setBusy(user.id)
+    const { error } = await supabase.rpc('admin_approve_user', {
+      p_user_id: user.id,
+      p_role: assignedRole,
+      p_store_ids: assignedRole === 'admin' ? [] : assignedStores,
+    })
+    setBusy(null)
+    if (error) return setResult({ ok: false, text: errorMessage(error) })
+    toast.success(t('Đã phê duyệt và phân quyền cho {value}', { value: user.full_name || user.email }))
+    reload()
+  }
+
+  // Khôi phục quyền tài khoản đã bị từ chối
+  const reapproveUser = async (user: AdminUserRow) => {
+    setResult(null)
+    setBusy(user.id)
+    const { error } = await supabase.rpc('admin_approve_user', {
+      p_user_id: user.id,
+      p_role: user.role,
+      p_store_ids: user.store_ids,
+    })
+    setBusy(null)
+    if (error) return setResult({ ok: false, text: errorMessage(error) })
+    toast.success(t('Đã khôi phục quyền cho {value}', { value: user.full_name || user.email }))
+    reload()
+  }
+
+  // Từ chối hoặc thu hồi quyền truy cập
+  const rejectUser = async (user: AdminUserRow) => {
+    const who = user.full_name || user.email
+    if (!window.confirm(t('Từ chối tài khoản {value}?', { value: who }))) return
+    setResult(null)
+    setBusy(user.id)
+    const { error } = await supabase.rpc('admin_reject_user', { p_user_id: user.id })
+    setBusy(null)
+    if (error) return setResult({ ok: false, text: errorMessage(error) })
+    toast.success(t('Đã từ chối tài khoản {value}', { value: who }))
     reload()
   }
 
@@ -160,103 +211,211 @@ export function StaffPage() {
     setBusy(null)
   }
 
+  const pendingUsers = (list?.rows ?? []).filter((u) => u.status === 'pending')
+  const activeUsers = (list?.rows ?? []).filter((u) => u.status !== 'pending')
+
   return (
     <section>
-      <h2>{t('Thêm nhân viên')}</h2>
-      <form className="card form" noValidate onSubmit={handleSubmit(onCreate)}>
-        <div className="row">
-          <label>
-            {t('Tên nhân viên')}
-            <input
-              type="text"
-              aria-invalid={errors.full_name ? true : undefined}
-              {...register('full_name', {
-                validate: (v) => v.trim() !== '' || 'Nhập tên nhân viên',
-                maxLength: { value: 100, message: 'Tên tối đa 100 ký tự' },
-              })}
-            />
-            {errors.full_name && <small className="error">{t(errors.full_name.message ?? '')}</small>}
-          </label>
-          <label>
-            {t('Email đăng nhập')}
-            <input
-              type="email"
-              autoComplete="off"
-              aria-invalid={errors.email ? true : undefined}
-              {...register('email', {
-                required: 'Nhập email',
-                validate: (v) => EMAIL_PATTERN.test(v.trim()) || 'Email không hợp lệ',
-              })}
-            />
-            {errors.email && <small className="error">{t(errors.email.message ?? '')}</small>}
-          </label>
-          <label>
-            {t('Mật khẩu')}
-            <PasswordInput
-              autoComplete="new-password"
-              aria-invalid={errors.password ? true : undefined}
-              {...register('password', {
-                minLength: { value: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
-                required: 'Nhập mật khẩu',
-              })}
-            />
-            {errors.password && <small className="error">{t(errors.password.message ?? '')}</small>}
-          </label>
-        </div>
+      {/* Hàng chờ phê duyệt đăng nhập Google */}
+      {pendingUsers.length > 0 && (
+        <div className="approval-queue">
+          <div className="approval-queue-header">
+            <h3>
+              <Icon name="staff" size={20} />
+              {t('Hàng chờ phê duyệt')}
+              <span className="approval-queue-count">{pendingUsers.length}</span>
+            </h3>
+          </div>
+          <p className="muted">
+            {t('Tài khoản mới đăng nhập qua Google cần được quản trị viên phê duyệt vai trò và gán cửa hàng.')}
+          </p>
+          <div className="approval-list">
+            {pendingUsers.map((user) => {
+              const assignedRole = pendingRoles[user.id] ?? 'staff'
+              const assignedStores = pendingStores[user.id] ?? []
+              return (
+                <div key={user.id} className="approval-card">
+                  <div className="approval-card-top">
+                    <div>
+                      <strong>{user.full_name || t('(chưa có tên)')}</strong>
+                      <span className="badge badge-low" style={{ marginLeft: 8 }}>
+                        {t('Chờ duyệt')}
+                      </span>
+                      <br />
+                      <small className="muted">{user.email}</small>
+                      <br />
+                      <small className="muted">
+                        {t('Đăng nhập gần nhất: {time}', {
+                          time: formatDateTime(user.created_at, locale) ?? t('Chưa đăng nhập'),
+                        })}
+                      </small>
+                    </div>
+                    <div className="approval-card-actions">
+                      <button
+                        type="button"
+                        className="primary"
+                        disabled={busy === user.id}
+                        onClick={() => approvePending(user)}
+                      >
+                        {busy === user.id ? t('Đang lưu…') : t('Phê duyệt & Phân quyền')}
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        disabled={busy === user.id}
+                        onClick={() => rejectUser(user)}
+                      >
+                        {t('Từ chối')}
+                      </button>
+                    </div>
+                  </div>
 
-        <div>
-          <span className="field-label">{t('Vai trò')}</span>
-          <Controller
-            control={control}
-            name="role"
-            render={({ field }) => (
-              <div className="role-picker" role="radiogroup" aria-label={t('Vai trò')}>
-                {ROLE_CHOICES.map((choice) => (
-                  <button
-                    key={choice.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={field.value === choice.value}
-                    className={field.value === choice.value ? 'role-card on' : 'role-card'}
-                    onClick={() => field.onChange(choice.value)}
-                  >
-                    <Icon name={choice.icon} size={20} />
-                    <span>
-                      <strong>{t(choice.label)}</strong>
-                      <small>{t(choice.hint)}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          />
-        </div>
+                  <div className="approval-card-options">
+                    <span className="field-label">{t('Vai trò')}</span>
+                    <div className="role-picker" role="radiogroup" aria-label={t('Vai trò')}>
+                      {ROLE_CHOICES.map((choice) => (
+                        <button
+                          key={choice.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={assignedRole === choice.value}
+                          className={assignedRole === choice.value ? 'role-card on' : 'role-card'}
+                          onClick={() => setPendingRoles((prev) => ({ ...prev, [user.id]: choice.value }))}
+                        >
+                          <Icon name={choice.icon} size={18} />
+                          <span>
+                            <strong>{t(choice.label)}</strong>
+                            <small>{t(choice.hint)}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
 
-        {role === 'admin' ? (
-          <p className="muted">{t('Admin thấy tất cả cửa hàng nên không cần chọn quán.')}</p>
-        ) : (
+                    {assignedRole === 'staff' && (
+                      <div style={{ marginTop: 12 }}>
+                        <span className="field-label">{t('Làm việc tại')}</span>
+                        <StorePicker
+                          stores={stores}
+                          selected={assignedStores}
+                          onToggle={(id) =>
+                            setPendingStores((prev) => ({
+                              ...prev,
+                              [user.id]: assignedStores.includes(id)
+                                ? assignedStores.filter((v) => v !== id)
+                                : [...assignedStores, id],
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tạo tài khoản thủ công qua email/password */}
+      <details className="staff-manual-details">
+        <summary>
+          <strong>{t('Tạo tài khoản thủ công (email & mật khẩu)')}</strong>
+        </summary>
+        <form className="card form" noValidate onSubmit={handleSubmit(onCreate)} style={{ marginTop: 14 }}>
+          <div className="row">
+            <label>
+              {t('Tên nhân viên')}
+              <input
+                type="text"
+                aria-invalid={errors.full_name ? true : undefined}
+                {...register('full_name', {
+                  validate: (v) => v.trim() !== '' || 'Nhập tên nhân viên',
+                  maxLength: { value: 100, message: 'Tên tối đa 100 ký tự' },
+                })}
+              />
+              {errors.full_name && <small className="error">{t(errors.full_name.message ?? '')}</small>}
+            </label>
+            <label>
+              {t('Email đăng nhập')}
+              <input
+                type="email"
+                autoComplete="off"
+                aria-invalid={errors.email ? true : undefined}
+                {...register('email', {
+                  required: 'Nhập email',
+                  validate: (v) => EMAIL_PATTERN.test(v.trim()) || 'Email không hợp lệ',
+                })}
+              />
+              {errors.email && <small className="error">{t(errors.email.message ?? '')}</small>}
+            </label>
+            <label>
+              {t('Mật khẩu')}
+              <PasswordInput
+                autoComplete="new-password"
+                aria-invalid={errors.password ? true : undefined}
+                {...register('password', {
+                  minLength: { value: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
+                  required: 'Nhập mật khẩu',
+                })}
+              />
+              {errors.password && <small className="error">{t(errors.password.message ?? '')}</small>}
+            </label>
+          </div>
+
           <div>
-            <span className="field-label">{t('Làm việc tại')}</span>
+            <span className="field-label">{t('Vai trò')}</span>
             <Controller
               control={control}
-              name="store_ids"
+              name="role"
               render={({ field }) => (
-                <StorePicker
-                  stores={stores}
-                  selected={field.value}
-                  onToggle={(id) =>
-                    field.onChange(field.value.includes(id) ? field.value.filter((v) => v !== id) : [...field.value, id])
-                  }
-                />
+                <div className="role-picker" role="radiogroup" aria-label={t('Vai trò')}>
+                  {ROLE_CHOICES.map((choice) => (
+                    <button
+                      key={choice.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={field.value === choice.value}
+                      className={field.value === choice.value ? 'role-card on' : 'role-card'}
+                      onClick={() => field.onChange(choice.value)}
+                    >
+                      <Icon name={choice.icon} size={20} />
+                      <span>
+                        <strong>{t(choice.label)}</strong>
+                        <small>{t(choice.hint)}</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
               )}
             />
           </div>
-        )}
 
-        <button type="submit" className="primary" disabled={isSubmitting}>
-          {isSubmitting ? t('Đang tạo…') : t('Tạo tài khoản')}
-        </button>
-      </form>
+          {role === 'admin' ? (
+            <p className="muted">{t('Admin thấy tất cả cửa hàng nên không cần chọn quán.')}</p>
+          ) : (
+            <div>
+              <span className="field-label">{t('Làm việc tại')}</span>
+              <Controller
+                control={control}
+                name="store_ids"
+                render={({ field }) => (
+                  <StorePicker
+                    stores={stores}
+                    selected={field.value}
+                    onToggle={(id) =>
+                      field.onChange(field.value.includes(id) ? field.value.filter((v) => v !== id) : [...field.value, id])
+                    }
+                  />
+                )}
+              />
+            </div>
+          )}
+
+          <button type="submit" className="primary" disabled={isSubmitting}>
+            {isSubmitting ? t('Đang tạo…') : t('Tạo tài khoản')}
+          </button>
+        </form>
+      </details>
 
       <h2 className="section-title">{t('Tài khoản')}</h2>
       {result && <p className={result.ok ? 'success' : 'error'}>{t(result.text)}</p>}
@@ -270,13 +429,18 @@ export function StaffPage() {
             <thead>
               <tr>
                 <th>{t('Nhân viên')}</th>
+                <th>{t('Trạng thái')}</th>
                 <th>{t('Làm việc tại')}</th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {list.rows.map((user) => {
+              {activeUsers.map((user) => {
                 const isAdminRow = user.role === 'admin'
+                const isMaster = (user.email ?? '').toLowerCase() === MASTER_EMAIL
+                const isSelf = user.id === session?.user.id
+                const isRejected = user.status === 'rejected'
+
                 return (
                   <tr key={user.id}>
                     <td>
@@ -305,8 +469,13 @@ export function StaffPage() {
                         </div>
                       ) : (
                         <>
-                          {user.full_name || t('(chưa có tên)')}
-                          {isAdminRow && <span className="badge badge-ok"> admin</span>}
+                          <strong>{user.full_name || t('(chưa có tên)')}</strong>
+                          {isMaster && (
+                            <span className="badge badge-master" style={{ marginLeft: 6 }}>
+                              👑 {t('Quản trị chính')}
+                            </span>
+                          )}
+                          {!isMaster && isAdminRow && <span className="badge badge-ok" style={{ marginLeft: 6 }}>admin</span>}
                           <br />
                           <small className="muted">{user.email}</small>
                           <br />
@@ -319,8 +488,17 @@ export function StaffPage() {
                       )}
                     </td>
                     <td>
+                      {isRejected ? (
+                        <span className="badge badge-out">{t('Bị từ chối')}</span>
+                      ) : (
+                        <span className="badge badge-ok">{t('Đã duyệt')}</span>
+                      )}
+                    </td>
+                    <td>
                       {isAdminRow ? (
                         <span className="badge badge-ok">{t('Tất cả cửa hàng')}</span>
+                      ) : isRejected ? (
+                        <span className="muted">—</span>
                       ) : (
                         <StorePicker
                           compact
@@ -333,19 +511,19 @@ export function StaffPage() {
                       )}
                     </td>
                     <td className="actions">
-                      <button
-                        type="button"
-                        className="link"
-                        disabled={busy === user.id || editing?.id === user.id}
-                        onClick={() => {
-                          setResult(null)
-                          setEditing({ id: user.id, full_name: user.full_name ?? '', email: user.email })
-                        }}
-                      >
-                        {t('Sửa')}
-                      </button>
-                      {user.id !== session?.user.id && (
+                      {!isMaster && !isSelf && (
                         <>
+                          <button
+                            type="button"
+                            className="link"
+                            disabled={busy === user.id || editing?.id === user.id}
+                            onClick={() => {
+                              setResult(null)
+                              setEditing({ id: user.id, full_name: user.full_name ?? '', email: user.email })
+                            }}
+                          >
+                            {t('Sửa')}
+                          </button>
                           <button
                             type="button"
                             className="link"
@@ -354,14 +532,36 @@ export function StaffPage() {
                           >
                             {t('Đổi mật khẩu')}
                           </button>
-                          <button
-                            type="button"
-                            className={isAdminRow ? 'link danger' : 'link'}
-                            disabled={busy === user.id}
-                            onClick={() => changeRole(user, isAdminRow ? 'staff' : 'admin')}
-                          >
-                            {isAdminRow ? t('Bỏ quyền admin') : t('Cấp quyền admin')}
-                          </button>
+
+                          {isRejected ? (
+                            <button
+                              type="button"
+                              className="link"
+                              disabled={busy === user.id}
+                              onClick={() => reapproveUser(user)}
+                            >
+                              {t('Duyệt lại')}
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className={isAdminRow ? 'link danger' : 'link'}
+                                disabled={busy === user.id}
+                                onClick={() => changeRole(user, isAdminRow ? 'staff' : 'admin')}
+                              >
+                                {isAdminRow ? t('Bỏ quyền admin') : t('Cấp quyền admin')}
+                              </button>
+                              <button
+                                type="button"
+                                className="link danger"
+                                disabled={busy === user.id}
+                                onClick={() => rejectUser(user)}
+                              >
+                                {t('Khoá quyền')}
+                              </button>
+                            </>
+                          )}
                         </>
                       )}
                     </td>

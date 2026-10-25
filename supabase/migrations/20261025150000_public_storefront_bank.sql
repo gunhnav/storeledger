@@ -7,9 +7,9 @@
 -- =============================================================================
 
 alter table public.stores
-  add column public_bank_code    text check (public_bank_code is null or public_bank_code ~ '^[A-Za-z0-9]{2,12}$'),
-  add column public_bank_account text check (public_bank_account is null or public_bank_account ~ '^[0-9]{4,24}$'),
-  add column public_bank_holder  text check (public_bank_holder is null or char_length(btrim(public_bank_holder)) between 2 and 60);
+  add column if not exists public_bank_code    text check (public_bank_code is null or public_bank_code ~ '^[A-Za-z0-9]{2,12}$'),
+  add column if not exists public_bank_account text check (public_bank_account is null or public_bank_account ~ '^[0-9]{4,24}$'),
+  add column if not exists public_bank_holder  text check (public_bank_holder is null or char_length(btrim(public_bank_holder)) between 2 and 60);
 
 comment on column public.stores.public_bank_code is 'Mã ngân hàng VietQR hiện trên trang công khai (VD: TCB)';
 

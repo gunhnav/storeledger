@@ -10,7 +10,7 @@
 --   * get_bundau_report: số liệu bán hàng theo ngày, kênh, món, giờ (chỉ admin).
 -- =============================================================================
 
-create table public.ingredients (
+create table if not exists public.ingredients (
   id                   uuid primary key default gen_random_uuid(),
   store_id             uuid not null references public.stores (id),
   name                 text not null check (char_length(btrim(name)) between 1 and 80),
@@ -19,18 +19,18 @@ create table public.ingredients (
   is_active            boolean not null default true,
   created_at           timestamptz not null default now()
 );
-create unique index ingredients_store_name_idx on public.ingredients (store_id, lower(btrim(name)));
+create unique index if not exists ingredients_store_name_idx on public.ingredients (store_id, lower(btrim(name)));
 
-create table public.recipes (
+create table if not exists public.recipes (
   id             uuid primary key default gen_random_uuid(),
   product_id     uuid not null references public.products (id) on delete cascade,
   ingredient_id  uuid not null references public.ingredients (id) on delete cascade,
   qty            numeric(10,3) not null check (qty > 0 and qty <= 1000),
   unique (product_id, ingredient_id)
 );
-create index recipes_ingredient_idx on public.recipes (ingredient_id);
+create index if not exists recipes_ingredient_idx on public.recipes (ingredient_id);
 
-create table public.ingredient_receipts (
+create table if not exists public.ingredient_receipts (
   id             uuid primary key default gen_random_uuid(),
   ingredient_id  uuid not null references public.ingredients (id) on delete cascade,
   store_id       uuid not null references public.stores (id),
@@ -40,8 +40,8 @@ create table public.ingredient_receipts (
   created_by     uuid references public.profiles (id) on delete set null default auth.uid(),
   created_at     timestamptz not null default now()
 );
-create index ingredient_receipts_store_date_idx on public.ingredient_receipts (store_id, receipt_date);
-create index ingredient_receipts_ingredient_idx on public.ingredient_receipts (ingredient_id);
+create index if not exists ingredient_receipts_store_date_idx on public.ingredient_receipts (store_id, receipt_date);
+create index if not exists ingredient_receipts_ingredient_idx on public.ingredient_receipts (ingredient_id);
 
 alter table public.ingredients enable row level security;
 alter table public.recipes enable row level security;
@@ -51,12 +51,19 @@ grant select, insert, update, delete on public.ingredients to authenticated;
 grant select, insert, update, delete on public.recipes to authenticated;
 grant select on public.ingredient_receipts to authenticated;
 
+drop policy if exists ingredients_select on public.ingredients;
 create policy ingredients_select on public.ingredients
   for select to authenticated using ((select public.is_admin()) or public.is_store_member(store_id));
+
+drop policy if exists ingredients_write_admin on public.ingredients;
 create policy ingredients_write_admin on public.ingredients
   for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+
+drop policy if exists recipes_admin on public.recipes;
 create policy recipes_admin on public.recipes
   for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+
+drop policy if exists ingredient_receipts_select_admin on public.ingredient_receipts;
 create policy ingredient_receipts_select_admin on public.ingredient_receipts
   for select to authenticated using ((select public.is_admin()));
 

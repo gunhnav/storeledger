@@ -7,7 +7,7 @@
 --   * Chỉ admin đọc / ghi.
 -- =============================================================================
 
-create table public.revenue_invoices (
+create table if not exists public.revenue_invoices (
   id              uuid primary key default gen_random_uuid(),
   store_id        uuid not null references public.stores (id),
   invoice_code    text not null check (char_length(btrim(invoice_code)) between 1 and 40),
@@ -25,12 +25,14 @@ create table public.revenue_invoices (
   created_at      timestamptz not null default now(),
   constraint revenue_invoices_unique unique (store_id, invoice_code)
 );
-create index revenue_invoices_store_date_idx on public.revenue_invoices (store_id, revenue_date);
-create index revenue_invoices_created_by_idx on public.revenue_invoices (created_by);
+create index if not exists revenue_invoices_store_date_idx on public.revenue_invoices (store_id, revenue_date);
+create index if not exists revenue_invoices_created_by_idx on public.revenue_invoices (created_by);
 
 alter table public.revenue_invoices enable row level security;
 revoke all on table public.revenue_invoices from public, anon;
 grant select, insert, update, delete on public.revenue_invoices to authenticated;
+
+drop policy if exists revenue_invoices_admin on public.revenue_invoices;
 create policy revenue_invoices_admin on public.revenue_invoices
   for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 

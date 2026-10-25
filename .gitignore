@@ -23,6 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 
-# Env
+# Env & Secrets (Harness model)
+.env
+.env.*
+!.env.example
 .env.local
+
+# Local Harness configs & agent memories
+CLAUDE.local.md
 .claude/settings.local.json
+.claude/agent-memory/*
+!.claude/agent-memory/README.md

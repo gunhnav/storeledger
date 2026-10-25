@@ -8,9 +8,9 @@
 -- =============================================================================
 
 alter table public.stores
-  add column is_public      boolean not null default false,
-  add column public_phone   text,
-  add column public_tagline text;
+  add column if not exists is_public      boolean not null default false,
+  add column if not exists public_phone   text,
+  add column if not exists public_tagline text;
 
 comment on column public.stores.is_public is 'Bật trang bán hàng công khai /shop/<code>';
 comment on column public.stores.public_phone is 'Số Zalo / hotline hiện trên trang công khai';

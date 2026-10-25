@@ -6,8 +6,8 @@
 -- =============================================================================
 
 alter table public.stores
-  add column public_qr_payload text check (public_qr_payload is null or (public_qr_payload ~ '^000201' and char_length(public_qr_payload) <= 512)),
-  add column public_qr_label   text check (public_qr_label is null or char_length(btrim(public_qr_label)) between 1 and 40);
+  add column if not exists public_qr_payload text check (public_qr_payload is null or (public_qr_payload ~ '^000201' and char_length(public_qr_payload) <= 512)),
+  add column if not exists public_qr_label   text check (public_qr_label is null or char_length(btrim(public_qr_label)) between 1 and 40);
 
 create or replace function public.get_public_menu(p_store_code text)
 returns jsonb

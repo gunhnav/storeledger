@@ -4,7 +4,7 @@
 -- =============================================================================
 
 alter table public.products
-  add column public_sale_mode text not null default 'set' check (public_sale_mode in ('set', 'single'));
+  add column if not exists public_sale_mode text not null default 'set' check (public_sale_mode in ('set', 'single'));
 
 comment on column public.products.public_sale_mode is 'Trang đặt trước: set = bán theo set 4/6 hũ, single = bán lẻ từng phần';
 
