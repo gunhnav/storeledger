@@ -132,8 +132,9 @@ describe('thông tin khách và chuyển khoản', () => {
   it('nội dung chuyển khoản dạng domain - F tầng', () => {
     expect(transferNote(' Huong.Vu3 ', 'tầng 6')).toBe('huong.vu3 - F6')
   })
-  it('hangoutEmail ưu tiên email của quán nếu có', () => {
+  it('hangoutEmail ưu tiên email của quán nếu có, mặc định là domain', () => {
     expect(hangoutEmail('user.name', 'contact@store.vn')).toBe('contact@store.vn')
+    expect(hangoutEmail('huong.vu3')).toBe('huong.vu3')
   })
   it('link QR VietQR có số tiền, nội dung và tên chủ tài khoản', () => {
     const url = vietQrUrl({ code: 'TCB', account: '19038457119011', holder: 'NGO THI CAM THY' }, 108000.4, 'huong.vu3 - F6')
