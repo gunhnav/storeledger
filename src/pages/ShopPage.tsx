@@ -149,7 +149,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   }, [load])
 
   useEffect(() => {
-    if (menu) document.title = `${menu.store.name} – Đặt trước online`
+    if (menu) document.title = `${menu.store.name} – Sữa chua dẻo & bánh flan`
   }, [menu])
 
   const items = useMemo(() => menu?.items ?? [], [menu])
@@ -297,10 +297,10 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
       <section className="shop-hero">
         <div className="shop-hero-in">
           <div className="shop-hero-copy">
-            <span className="shop-eyebrow">{store.name} · Đặt trước</span>
+            <span className="shop-eyebrow">{store.name}</span>
             <h1>
-              Sữa chua hũ,
-              <em>đặt trước theo set.</em>
+              Sữa chua dẻo,
+              <em>dopamine dạng hũ.</em>
             </h1>
             <p>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi đặt hàng trực tiếp tiện lợi.'}</p>
             <div className="shop-hero-cta">
@@ -342,7 +342,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
 
       <main id="chon-set" className="shop-menu">
         <div className="shop-menu-head">
-          <p className="shop-kicker">Đặt trước theo set</p>
+          <p className="shop-kicker">Thực đơn theo set</p>
           <h2>Tự soạn set của bạn</h2>
           <p className="shop-sub">Chọn cỡ set, rồi chọn số hũ cho từng vị đến khi đủ.</p>
         </div>
