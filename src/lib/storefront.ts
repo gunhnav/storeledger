@@ -295,18 +295,18 @@ export function flavorColors(name: string): [string, string] {
 // Biểu tượng thay hình khi món chưa có hình minh hoạ
 export const flavorEmoji = (name: string) => (/whey|chai|ml/i.test(norm(name)) ? '🥛' : '🥣')
 
-// Hình minh hoạ theo vị (public/shop/flavor-*.svg); vị lạ thì null và trang dùng màu nền thay thế
+// Hình minh hoạ theo vị; vị lạ thì null và trang dùng màu nền thay thế
 export function flavorImage(name: string): string | null {
   const n = norm(name)
-  if (n.includes('matcha')) return '/shop/flavor-matcha.svg'
-  if (n.includes('ca cao') || n.includes('cacao') || n.includes('socola')) return '/shop/flavor-ca-cao.svg'
-  if (n.includes('nep cam')) return '/shop/flavor-nep-cam.svg'
-  if (n.includes('pho mai')) return '/shop/flavor-pho-mai.svg'
-  if (n.includes('truyen thong') || n.includes('nguyen ban')) return '/shop/flavor-truyen-thong.svg'
-  if (n.includes('flan')) return '/shop/flavor-banh-flan.svg'
+  if (n.includes('matcha')) return '/shop/matcha.jpg'
+  if (n.includes('ca cao') || n.includes('cacao') || n.includes('socola')) return '/shop/cacao.jpg'
+  if (n.includes('nep cam')) return '/shop/nepcam.jpg'
+  if (n.includes('pho mai')) return '/shop/phomai.jpg'
+  if (n.includes('truyen thong') || n.includes('nguyen ban')) return '/shop/truyenthong.jpg'
+  if (n.includes('flan')) return '/shop/flan.jpeg'
   if (n.includes('whey')) return '/shop/flavor-whey.svg'
-  if (n.includes('tri ky') || n.includes('400')) return '/shop/flavor-hy-lap-400.svg'
-  if (n.includes('hy lap') || n.includes('lam quen')) return '/shop/flavor-hy-lap.svg'
+  if (n.includes('tri ky') || n.includes('400')) return '/shop/hilaplon.jpeg'
+  if (n.includes('hy lap') || n.includes('lam quen')) return '/shop/hilap.jpeg'
   return null
 }
 

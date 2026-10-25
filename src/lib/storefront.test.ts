@@ -103,10 +103,10 @@ describe('giỏ hàng theo set', () => {
 
 describe('hình và mô tả theo vị', () => {
   it('nhận vị không phân biệt dấu và hoa thường', () => {
-    expect(flavorImage('Nếp cẩm')).toBe('/shop/flavor-nep-cam.svg')
-    expect(flavorImage('PHÔ MAI')).toBe('/shop/flavor-pho-mai.svg')
-    expect(flavorImage('Hũ làm quen 110gr')).toBe('/shop/flavor-hy-lap.svg')
-    expect(flavorImage('Hũ tri kỷ 400gr')).toBe('/shop/flavor-hy-lap-400.svg')
+    expect(flavorImage('Nếp cẩm')).toBe('/shop/nepcam.jpg')
+    expect(flavorImage('PHÔ MAI')).toBe('/shop/phomai.jpg')
+    expect(flavorImage('Hũ làm quen 110gr')).toBe('/shop/hilap.jpeg')
+    expect(flavorImage('Hũ tri kỷ 400gr')).toBe('/shop/hilaplon.jpeg')
     expect(flavorImage('Nước whey 220ml')).toBe('/shop/flavor-whey.svg')
     expect(flavorImage('Dâu tằm')).toBeNull()
     expect(flavorNote('Matcha')).toBe('Thơm dịu vị trà xanh')
