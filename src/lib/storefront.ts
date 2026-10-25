@@ -304,8 +304,7 @@ export function flavorImage(name: string): string | null {
   if (n.includes('pho mai')) return '/shop/phomai.jpg'
   if (n.includes('truyen thong') || n.includes('nguyen ban')) return '/shop/truyenthong.jpg'
   if (n.includes('flan')) return '/shop/flan.jpeg'
-  if (n.includes('whey')) return '/shop/flavor-whey.svg'
-  if (n.includes('tri ky') || n.includes('400')) return '/shop/hilaplon.jpeg'
+  if (n.includes('whey') || n.includes('tri ky') || n.includes('400')) return '/shop/hilaplon.jpeg'
   if (n.includes('hy lap') || n.includes('lam quen')) return '/shop/hilap.jpeg'
   return null
 }

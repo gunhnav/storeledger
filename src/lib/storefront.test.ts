@@ -107,7 +107,7 @@ describe('hình và mô tả theo vị', () => {
     expect(flavorImage('PHÔ MAI')).toBe('/shop/phomai.jpg')
     expect(flavorImage('Hũ làm quen 110gr')).toBe('/shop/hilap.jpeg')
     expect(flavorImage('Hũ tri kỷ 400gr')).toBe('/shop/hilaplon.jpeg')
-    expect(flavorImage('Nước whey 220ml')).toBe('/shop/flavor-whey.svg')
+    expect(flavorImage('Nước whey 220ml')).toBe('/shop/hilaplon.jpeg')
     expect(flavorImage('Dâu tằm')).toBeNull()
     expect(flavorNote('Matcha')).toBe('Thơm dịu vị trà xanh')
     expect(flavorNote('Dâu tằm')).toBeNull()
