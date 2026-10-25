@@ -152,16 +152,7 @@ function Preorders({ storeId }: { storeId: string }) {
                   <div>
                     <strong>{o.code}</strong> <span className={`badge preorder-badge-${o.status}`}>{t(STATUS_LABEL[o.status])}</span>
                     <div className="muted">
-                      {formatDate(o.created_at.slice(0, 10))} {time(o.created_at)} ·{' '}
-                      {(() => {
-                        const name = o.customer_name?.trim()
-                        const domain = o.customer_domain?.trim()
-                        if (!name || name.toLowerCase() === domain?.toLowerCase()) {
-                          return domain || name
-                        }
-                        return `${name} (${domain})`
-                      })()}{' '}
-                      · {t('Tầng {floor}', { floor: o.floor })}
+                      {formatDate(o.created_at.slice(0, 10))} {time(o.created_at)} · {o.customer_domain} · {t('Tầng {floor}', { floor: o.floor })}
                     </div>
                   </div>
                   <strong className="preorder-total">{formatVND(Number(o.total))}</strong>

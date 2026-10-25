@@ -18,12 +18,8 @@ export const NEXT_STATUS: Partial<Record<PreorderStatus, PreorderStatus>> = { ne
 const vnd = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}đ`
 
 // Câu thông báo khi có đơn mới
-export const preorderAlert = (p: Pick<Preorder, 'code' | 'customer_name' | 'customer_domain' | 'floor' | 'total'>) => {
-  const name = p.customer_name?.trim()
-  const domain = p.customer_domain?.trim()
-  const who = name && name.toLowerCase() !== domain.toLowerCase() ? `${name} (${domain}, tầng ${p.floor})` : `${domain} (tầng ${p.floor})`
-  return `Đơn đặt trước mới ${p.code}: ${who} · ${vnd(Number(p.total))}`
-}
+export const preorderAlert = (p: Pick<Preorder, 'code' | 'customer_domain' | 'floor' | 'total'>) =>
+  `Đơn đặt trước mới ${p.code}: ${p.customer_domain} (tầng ${p.floor}) · ${vnd(Number(p.total))}`
 
 // Đếm theo trạng thái và tổng tiền các đơn chưa giao, chưa huỷ (để quán chuẩn bị hàng)
 export function summarizePreorders(rows: Pick<Preorder, 'status' | 'total'>[]) {

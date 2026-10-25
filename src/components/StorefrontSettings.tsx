@@ -27,6 +27,7 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
   const [modes, setModes] = useState<Record<string, 'set' | 'single'>>({})
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [payMethod, setPayMethod] = useState<'qr' | 'bank' | 'none'>('qr')
   const link = `${window.location.origin}/shop/${code}`
 
   useEffect(() => {
@@ -50,6 +51,12 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
         qrPayload: data.public_qr_payload ?? '',
         qrLabel: data.public_qr_label ?? '',
       })
+      const initialMethod: 'qr' | 'bank' | 'none' = data.public_qr_payload?.trim()
+        ? 'qr'
+        : (data.public_bank_code || data.public_bank_account)
+          ? 'bank'
+          : 'none'
+      setPayMethod(initialMethod)
       setProducts(prods.data ?? [])
       setModes(Object.fromEntries((prods.data ?? []).map((p) => [p.category ?? '', p.public_sale_mode])))
       setRules(prices.data.map((r) => ({ uid: nextUid++, size: r.set_size, productId: r.product_id ?? '', price: String(Number(r.price)) })))
@@ -79,14 +86,29 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
     const account = form.bankAccount.replace(/\s/g, '')
     const holder = form.bankHolder.trim().toUpperCase()
     const qrPayload = form.qrPayload.replace(/\s/g, '')
-    if (qrPayload) {
+
+    let saveBankCode: string | null = null
+    let saveBankAccount: string | null = null
+    let saveQrPayload: string | null = null
+    let saveQrLabel: string | null = null
+    let saveHolder: string | null = null
+
+    if (payMethod === 'qr') {
+      if (!qrPayload) return setError('Vui lòng dán chuỗi QR gốc')
       const qrError = payloadError(qrPayload)
       if (qrError) return setError(qrError)
       if (!holder) return setError('Nhập tên người nhận để hiện cùng mã QR')
+      saveQrPayload = qrPayload
+      saveQrLabel = form.qrLabel.trim() || 'MoMo'
+      saveHolder = holder
+    } else if (payMethod === 'bank') {
+      if (!form.bankCode) return setError('Vui lòng chọn ngân hàng')
+      if (!account || !/^\d{4,24}$/.test(account)) return setError('Số tài khoản chỉ gồm chữ số')
+      if (!holder) return setError('Nhập tên chủ tài khoản')
+      saveBankCode = form.bankCode
+      saveBankAccount = account
+      saveHolder = holder
     }
-    const bankFilled = [form.bankCode, account].filter(Boolean).length
-    if (bankFilled === 1 || (bankFilled === 2 && !holder)) return setError('Nhập đủ ngân hàng, số tài khoản và tên chủ tài khoản (hoặc để trống cả ba)')
-    if (account && !/^\d{4,24}$/.test(account)) return setError('Số tài khoản chỉ gồm chữ số')
 
     setSaving(true)
     const { error: err } = await supabase
@@ -95,11 +117,11 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
         is_public: form.is_public,
         public_phone: form.public_phone.trim() || null,
         public_tagline: form.public_tagline.trim() || null,
-        public_bank_code: form.bankCode || null,
-        public_bank_account: account || null,
-        public_bank_holder: holder || null,
-        public_qr_payload: qrPayload || null,
-        public_qr_label: form.qrLabel.trim() || null,
+        public_bank_code: saveBankCode,
+        public_bank_account: saveBankAccount,
+        public_bank_holder: saveHolder,
+        public_qr_payload: saveQrPayload,
+        public_qr_label: saveQrLabel,
       })
       .eq('id', storeId)
     let saved: { error: unknown } = err ? { error: err } : await supabase.rpc('save_storefront_set_prices', { p_store_id: storeId, p_rules: parsed })
@@ -206,44 +228,78 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
       </div>
 
       <h3 className="card-title">{t('Chuyển khoản (hiện mã QR cho khách)')}</h3>
-      <label>
-        {t('Chuỗi QR gốc (bắt đầu bằng 000201)')}
-        <textarea rows={3} value={form.qrPayload} onChange={(e) => setForm({ ...form, qrPayload: e.target.value })} placeholder="00020101021138…6304XXXX" spellCheck={false} />
-      </label>
-      {form.qrPayload.trim() && <QrCheck payload={form.qrPayload.replace(/\s/g, '')} />}
-      <div className="row">
-        <label>
-          {t('Tên ví / ngân hàng hiện cho khách')}
-          <input type="text" maxLength={40} value={form.qrLabel} onChange={(e) => setForm({ ...form, qrLabel: e.target.value })} placeholder="MoMo" />
-        </label>
-        <label>
-          {t('Tên người nhận')}
-          <input type="text" value={form.bankHolder} onChange={(e) => setForm({ ...form, bankHolder: e.target.value })} placeholder="NGUYEN VAN A" />
-        </label>
+      <div className="preset-chips" role="radiogroup" aria-label={t('Hình thức chuyển khoản')} style={{ marginBottom: '12px' }}>
+        <button
+          type="button"
+          className={payMethod === 'qr' ? 'active' : undefined}
+          onClick={() => setPayMethod('qr')}
+        >
+          {t('Mã QR động (MoMo / Quỹ)')}
+        </button>
+        <button
+          type="button"
+          className={payMethod === 'bank' ? 'active' : undefined}
+          onClick={() => setPayMethod('bank')}
+        >
+          {t('Tài khoản ngân hàng')}
+        </button>
+        <button
+          type="button"
+          className={payMethod === 'none' ? 'active' : undefined}
+          onClick={() => setPayMethod('none')}
+        >
+          {t('Không dùng chuyển khoản')}
+        </button>
       </div>
-      <small className="muted">
-        {t('Dán chuỗi QR của ví / ngân hàng (ví dụ QR Góp Quỹ MoMo). Khi khách đặt, trang tự thêm số tiền, mã hoá đơn và nội dung vào mã QR. Không có chuỗi QR thì dùng số tài khoản ngân hàng bên dưới.')}
-      </small>
-      <div className="row">
-        <label>
-          {t('Ngân hàng')}
-          <select value={form.bankCode} onChange={(e) => setForm({ ...form, bankCode: e.target.value })}>
-            <option value="">{t('Không dùng chuyển khoản')}</option>
-            {BANKS.map((b) => (
-              <option key={b.code} value={b.code}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t('Số tài khoản')}
-          <input type="text" inputMode="numeric" value={form.bankAccount} onChange={(e) => setForm({ ...form, bankAccount: e.target.value })} />
-        </label>
-      </div>
-      <small className="muted">
-        {t('Trang này để khách đặt trước theo set 4 hoặc 6 hũ, tự chọn vị. Không lấy tồn kho, ai đặt gì nhận đó. Khách chỉ thấy tên món, giá và giá set, không thấy số lượng hay giá vốn.')}
-      </small>
+
+      {payMethod === 'qr' && (
+        <>
+          <label>
+            <span style={{ display: 'block', marginBottom: '4px' }}>{t('Chuỗi QR gốc (bắt đầu bằng 000201)')}</span>
+            <textarea rows={3} value={form.qrPayload} onChange={(e) => setForm({ ...form, qrPayload: e.target.value })} placeholder="00020101021138…6304XXXX" spellCheck={false} />
+          </label>
+          {form.qrPayload.trim() && <QrCheck payload={form.qrPayload.replace(/\s/g, '')} />}
+          <div className="row">
+            <label style={{ minWidth: '160px', flex: 1 }}>
+              <span style={{ display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>{t('Tên ví / ngân hàng hiện cho khách')}</span>
+              <input type="text" maxLength={40} value={form.qrLabel} onChange={(e) => setForm({ ...form, qrLabel: e.target.value })} placeholder="MoMo" />
+            </label>
+            <label style={{ minWidth: '160px', flex: 1 }}>
+              <span style={{ display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>{t('Tên người nhận')}</span>
+              <input type="text" value={form.bankHolder} onChange={(e) => setForm({ ...form, bankHolder: e.target.value })} placeholder="NGUYEN VAN A" />
+            </label>
+          </div>
+          <small className="muted">
+            {t('Dán chuỗi QR của ví / ngân hàng (ví dụ QR Góp Quỹ MoMo). Khi khách đặt, trang tự thêm số tiền, mã hoá đơn và nội dung vào mã QR. Không có chuỗi QR thì dùng số tài khoản ngân hàng bên dưới.')}
+          </small>
+        </>
+      )}
+
+      {payMethod === 'bank' && (
+        <>
+          <div className="row">
+            <label style={{ minWidth: '220px', flex: 1 }}>
+              <span style={{ display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>{t('Ngân hàng')}</span>
+              <select value={form.bankCode} onChange={(e) => setForm({ ...form, bankCode: e.target.value })} style={{ width: '100%' }}>
+                <option value="">{t('Chọn ngân hàng')}</option>
+                {BANKS.map((b) => (
+                  <option key={b.code} value={b.code}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ minWidth: '160px', flex: 1 }}>
+              <span style={{ display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>{t('Số tài khoản')}</span>
+              <input type="text" inputMode="numeric" value={form.bankAccount} onChange={(e) => setForm({ ...form, bankAccount: e.target.value })} />
+            </label>
+          </div>
+          <label>
+            <span style={{ display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>{t('Tên người nhận')}</span>
+            <input type="text" value={form.bankHolder} onChange={(e) => setForm({ ...form, bankHolder: e.target.value })} placeholder="NGUYEN VAN A" />
+          </label>
+        </>
+      )}
       {error && <p className="error">{t(error)}</p>}
       <div className="row">
         <button type="submit" className="primary" disabled={saving}>

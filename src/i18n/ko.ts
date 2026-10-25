@@ -1047,4 +1047,11 @@ export const ko: Record<string, string> = {
   'Mật khẩu mới (ít nhất 6 ký tự):': '새 비밀번호 (6자 이상):',
   'Nhập mật khẩu mới…': '새 비밀번호 입력…',
   'Lưu mật khẩu': '비밀번호 저장',
+  'Vui lòng dán chuỗi QR gốc': '원본 QR 문자열을 붙여넣으세요',
+  'Vui lòng chọn ngân hàng': '은행을 선택하세요',
+  'Nhập tên chủ tài khoản': '예금주 이름을 입력하세요',
+  'Hình thức chuyển khoản': '이체 방식',
+  'Mã QR động (MoMo / Quỹ)': '동적 QR 코드 (MoMo / 펀드)',
+  'Tài khoản ngân hàng': '은행 계좌',
+  'Chọn ngân hàng': '은행 선택',
 }

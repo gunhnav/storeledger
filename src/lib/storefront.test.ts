@@ -90,9 +90,8 @@ describe('giỏ hàng theo set', () => {
   it('nội dung đơn gửi Zalo', () => {
     const lines = addSet([], 4, { tt: 2, pm: 2 }, 2, items, noFixed)
     const head = ['Xin chào Hogi, mình muốn đặt trước:', '- 2 set 4 hũ (2 Truyền thống + 2 Phô mai): 108.000đ', 'Tổng: 108.000đ (2 set (8 hũ))']
-    expect(orderMessage('Hogi', lines, items, { name: ' An ' })).toBe([...head, 'Tên: An'].join('\n'))
     const full = { name: 'An', domain: 'An.Nguyen2', floor: 'tầng 6', payment: 'cash' as const }
-    expect(orderMessage('Hogi', lines, items, full, true)).toBe([...head, 'Tên: An', 'Domain: an.nguyen2', 'Tầng: 6', 'Thanh toán: tiền mặt khi nhận'].join('\n'))
+    expect(orderMessage('Hogi', lines, items, full, true)).toBe([...head, 'Domain: an.nguyen2', 'Tầng: 6', 'Thanh toán: tiền mặt khi nhận'].join('\n'))
     const sameNameDomain = { name: 'hung.nguyen26', domain: 'hung.nguyen26', floor: '11', payment: 'transfer' as const }
     expect(orderMessage('Hogi', lines, items, sameNameDomain, true)).toBe([...head, 'Domain: hung.nguyen26', 'Tầng: 11', 'Thanh toán: chuyển khoản'].join('\n'))
     expect(orderMessage('Hogi', lines, items, full, false)).not.toContain('Thanh toán')

@@ -1047,4 +1047,11 @@ export const ja: Record<string, string> = {
   'Mật khẩu mới (ít nhất 6 ký tự):': '新しいパスワード（6文字以上）：',
   'Nhập mật khẩu mới…': '新しいパスワードを入力…',
   'Lưu mật khẩu': 'パスワードを保存',
+  'Vui lòng dán chuỗi QR gốc': '元の QR 文字列を貼り付けてください',
+  'Vui lòng chọn ngân hàng': '銀行を選択してください',
+  'Nhập tên chủ tài khoản': '口座名義を入力してください',
+  'Hình thức chuyển khoản': '振込方法',
+  'Mã QR động (MoMo / Quỹ)': '動的 QR コード (MoMo / 基金)',
+  'Tài khoản ngân hàng': '銀行口座',
+  'Chọn ngân hàng': '銀行を選択',
 }

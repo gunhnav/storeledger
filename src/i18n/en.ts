@@ -1047,4 +1047,11 @@ export const en: Record<string, string> = {
   'Mật khẩu mới (ít nhất 6 ký tự):': 'New password (at least 6 characters):',
   'Nhập mật khẩu mới…': 'Enter new password…',
   'Lưu mật khẩu': 'Save password',
+  'Vui lòng dán chuỗi QR gốc': 'Please paste the original QR string',
+  'Vui lòng chọn ngân hàng': 'Please select a bank',
+  'Nhập tên chủ tài khoản': 'Enter account holder name',
+  'Hình thức chuyển khoản': 'Transfer method',
+  'Mã QR động (MoMo / Quỹ)': 'Dynamic QR (MoMo / Fund)',
+  'Tài khoản ngân hàng': 'Bank account',
+  'Chọn ngân hàng': 'Select a bank',
 }

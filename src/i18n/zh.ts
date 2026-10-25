@@ -1047,4 +1047,11 @@ export const zh: Record<string, string> = {
   'Mật khẩu mới (ít nhất 6 ký tự):': '新密码（至少 6 位）：',
   'Nhập mật khẩu mới…': '输入新密码…',
   'Lưu mật khẩu': '保存密码',
+  'Vui lòng dán chuỗi QR gốc': '请粘贴原始二维码字符串',
+  'Vui lòng chọn ngân hàng': '请选择银行',
+  'Nhập tên chủ tài khoản': '输入账户持有人姓名',
+  'Hình thức chuyển khoản': '转账方式',
+  'Mã QR động (MoMo / Quỹ)': '动态二维码 (MoMo / 基金)',
+  'Tài khoản ngân hàng': '银行账户',
+  'Chọn ngân hàng': '选择银行',
 }
