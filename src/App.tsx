@@ -154,13 +154,37 @@ function StoreScope() {
   )
 }
 
+const ShopFallback = (
+  <div className="shop shop-loading-screen" role="status" aria-live="polite">
+    <div className="shop-loading-card">
+      <div className="shop-loading-mascot-wrap">
+        <img src="/shop/hogi-mark.svg" alt="" width={88} height={88} className="shop-loading-mascot" />
+        <div className="shop-loading-shadow" aria-hidden="true" />
+      </div>
+      <h2>Đang tải thực đơn...</h2>
+      <p>Sữa chua tươi ngon và bánh flan sắp sẵn sàng rồi 🥣✨</p>
+      <div className="shop-progress-box">
+        <div className="shop-progress-track">
+          <div className="shop-progress-fill" style={{ width: '40%' }}>
+            <span className="shop-progress-shimmer" aria-hidden="true" />
+          </div>
+        </div>
+        <div className="shop-progress-info">
+          <span className="shop-progress-status">Đang tải…</span>
+          <span className="shop-progress-pct">40%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       {/* Trang bán hàng công khai, không cần đăng nhập */}
-      <Route path="/hogi" element={<Suspense fallback={<div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>}><ShopPage code="hogi" /></Suspense>} />
-      <Route path="/shop/:code" element={<Suspense fallback={<div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>}><ShopPage /></Suspense>} />
+      <Route path="/hogi" element={<Suspense fallback={ShopFallback}><ShopPage code="hogi" /></Suspense>} />
+      <Route path="/shop/:code" element={<Suspense fallback={ShopFallback}><ShopPage /></Suspense>} />
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
           <Route index element={<Navigate to="/entry" replace />} />

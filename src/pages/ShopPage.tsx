@@ -42,6 +42,29 @@ const vnd = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}đ`
 const REFRESH_MS = 60_000
 
 function ShopLoading() {
+  const [percent, setPercent] = useState(24)
+  const [phase, setPhase] = useState('Đang kết nối tới Hogi Food…')
+
+  useEffect(() => {
+    const t1 = setTimeout(() => {
+      setPercent(52)
+      setPhase('Đang tải danh sách sữa chua & bánh flan…')
+    }, 180)
+    const t2 = setTimeout(() => {
+      setPercent(78)
+      setPhase('Đang chuẩn bị bảng giá & ưu đãi set…')
+    }, 450)
+    const t3 = setTimeout(() => {
+      setPercent(92)
+      setPhase('Sắp hoàn tất rồi…')
+    }, 850)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+    }
+  }, [])
+
   return (
     <div className="shop shop-loading-screen" role="status" aria-live="polite">
       <div className="shop-loading-card">
@@ -49,9 +72,20 @@ function ShopLoading() {
           <img src="/shop/hogi-mark.svg" alt="" width={88} height={88} className="shop-loading-mascot" />
           <div className="shop-loading-shadow" aria-hidden="true" />
         </div>
-        <div className="shop-loading-spinner" aria-hidden="true" />
-        <h2>Đang tải thực đơn Hogi...</h2>
+        <h2>Đang chuẩn bị thực đơn Hogi</h2>
         <p>Sữa chua tươi ngon và bánh flan sắp sẵn sàng rồi 🥣✨</p>
+
+        <div className="shop-progress-box">
+          <div className="shop-progress-track">
+            <div className="shop-progress-fill" style={{ width: `${percent}%` }}>
+              <span className="shop-progress-shimmer" aria-hidden="true" />
+            </div>
+          </div>
+          <div className="shop-progress-info">
+            <span className="shop-progress-status">{phase}</span>
+            <span className="shop-progress-pct">{percent}%</span>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -63,7 +97,9 @@ function ShopLoading() {
 export function ShopPage({ code: fixedCode }: { code?: string }) {
   const params = useParams()
   const code = (fixedCode ?? params.code ?? '').toLowerCase()
-  const [menu, setMenu] = useState<PublicMenu | null | undefined>(() => getCachedMenu(code))
+  const cached = useMemo(() => (code ? getCachedMenu(code) : null), [code])
+  const [menu, setMenu] = useState<PublicMenu | null | undefined>(cached ?? undefined)
+  const [loading, setLoading] = useState(() => !cached)
   const [error, setError] = useState(false)
   const [cart, setCart] = useState<CartLine[]>([])
   // Set đang soạn: cỡ, số hũ từng vị, và số set giống hệt muốn đặt
@@ -75,22 +111,29 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const [copiedContact, setCopiedContact] = useState(false)
 
   const load = useCallback(async () => {
-    const { data, error: e } = await supabase.rpc('get_public_menu', { p_store_code: code })
-    if (e) return setError(true)
-    setError(false)
-    const next: PublicMenu | null = data ?? null
-    setMenu(next)
-    // Cập nhật giá mới và bỏ vị đã gỡ khỏi thực đơn
-    if (next) {
-      setCachedMenu(code, next)
-      setCart((c) => refreshCart(c, next.items, next.store))
-      const firstLine = menuLines(next.items)[0] ?? ''
-      const firstList = next.items.filter((i) => lineOf(i) === firstLine)
-      if (firstList.length === 1 && !isSingle(firstList[0])) {
-        setMix({ [firstList[0].id]: 4 })
-      } else {
-        setMix((m) => Object.fromEntries(Object.entries(m).filter(([id]) => next.items.some((i) => i.id === id))))
+    try {
+      const { data, error: e } = await supabase.rpc('get_public_menu', { p_store_code: code })
+      if (e) {
+        setError(true)
+        return
       }
+      setError(false)
+      const next: PublicMenu | null = data ?? null
+      setMenu(next)
+      // Cập nhật giá mới và bỏ vị đã gỡ khỏi thực đơn
+      if (next) {
+        setCachedMenu(code, next)
+        setCart((c) => refreshCart(c, next.items, next.store))
+        const firstLine = menuLines(next.items)[0] ?? ''
+        const firstList = next.items.filter((i) => lineOf(i) === firstLine)
+        if (firstList.length === 1 && !isSingle(firstList[0])) {
+          setMix({ [firstList[0].id]: 4 })
+        } else {
+          setMix((m) => Object.fromEntries(Object.entries(m).filter(([id]) => next.items.some((i) => i.id === id))))
+        }
+      }
+    } finally {
+      setLoading(false)
     }
   }, [code])
 
@@ -150,7 +193,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     [items]
   )
 
-  if (menu === undefined && !error) return <ShopLoading />
+  if (loading && !menu) return <ShopLoading />
   if (error && !menu) {
     return (
       <div className="shop shop-loading-screen" role="alert">
@@ -158,7 +201,15 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
           <span className="shop-loading-err-icon" aria-hidden="true">🥣</span>
           <h2>Chưa tải được thực đơn</h2>
           <p>Kết nối mạng hơi chậm hoặc gián đoạn, bạn bấm thử lại nhé.</p>
-          <button type="button" className="shop-cta" onClick={() => void load()}>
+          <button
+            type="button"
+            className="shop-cta"
+            onClick={() => {
+              setError(false)
+              setLoading(true)
+              void load()
+            }}
+          >
             Tải lại thực đơn
           </button>
         </div>
@@ -166,6 +217,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     )
   }
   if (!menu || !store) {
+    if (loading) return <ShopLoading />
     return (
       <div className="shop shop-loading-screen">
         <div className="shop-loading-card">
