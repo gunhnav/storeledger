@@ -158,7 +158,7 @@ const ShopFallback = (
   <div className="shop shop-loading-screen" role="status" aria-live="polite">
     <div className="shop-loading-card">
       <div className="shop-loading-mascot-wrap">
-        <img src="/shop/hogi-mark.svg" alt="" width={88} height={88} className="shop-loading-mascot" />
+        <img src="/shop/hogi-logo.png" alt="" width={92} height={92} className="shop-loading-mascot" />
         <div className="shop-loading-shadow" aria-hidden="true" />
       </div>
       <h2>Đang tải thực đơn...</h2>

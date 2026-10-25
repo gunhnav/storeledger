@@ -69,7 +69,7 @@ function ShopLoading() {
     <div className="shop shop-loading-screen" role="status" aria-live="polite">
       <div className="shop-loading-card">
         <div className="shop-loading-mascot-wrap">
-          <img src="/shop/hogi-mark.svg" alt="" width={88} height={88} className="shop-loading-mascot" />
+          <img src="/shop/hogi-logo.png" alt="" width={92} height={92} className="shop-loading-mascot" />
           <div className="shop-loading-shadow" aria-hidden="true" />
         </div>
         <h2>Đang chuẩn bị thực đơn Hogi</h2>
@@ -265,7 +265,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
       <header className="shop-header">
         <div className="shop-header-in">
           <a className="shop-brand" href="#top">
-            <img className="shop-logo" src="/shop/hogi-mark.svg" alt="" width={40} height={40} />
+            <img className="shop-logo" src="/shop/hogi-logo.png" alt={store.name} width={40} height={40} />
             <strong>{store.name}</strong>
           </a>
           <nav className="shop-nav" aria-label="Điều hướng">
@@ -502,7 +502,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
       <footer id="lien-he" className="shop-footer">
         <div className="shop-footer-in">
           <div className="shop-footer-brand">
-            <img src="/shop/hogi-mark.svg" alt="" width={44} height={44} />
+            <img className="shop-logo" src="/shop/hogi-logo.png" alt="" width={44} height={44} />
             <div>
               <strong>{store.name}</strong>
               <p>Cảm ơn bạn đã ủng hộ 🌿</p>

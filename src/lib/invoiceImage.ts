@@ -55,7 +55,7 @@ const loadImage = (src: string) =>
 
 export async function renderInvoice(data: InvoiceData): Promise<HTMLCanvasElement> {
   await document.fonts?.load(`600 16px ${FONT}`).catch(() => undefined)
-  const [logo, qr] = await Promise.all([loadImage('/shop/hogi-mark.svg'), data.qr ? loadImage(data.qr.dataUrl) : Promise.resolve(null)])
+  const [logo, qr] = await Promise.all([loadImage('/shop/hogi-logo.png'), data.qr ? loadImage(data.qr.dataUrl) : Promise.resolve(null)])
 
   const canvas = document.createElement('canvas')
   const probe = canvas.getContext('2d')!

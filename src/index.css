@@ -3739,8 +3739,12 @@ input.overridden {
 
 .shop-loading-mascot {
   display: block;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
   animation: hogiBounce 1.5s ease-in-out infinite;
-  filter: drop-shadow(0 6px 12px rgba(22, 48, 31, 0.12));
+  filter: drop-shadow(0 8px 18px rgba(22, 48, 31, 0.16));
 }
 
 .shop-loading-shadow {
@@ -3931,6 +3935,10 @@ input.overridden {
 .shop-logo {
   width: 40px;
   height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(22, 48, 31, 0.12);
 }
 .shop-nav {
   display: none;
@@ -4450,6 +4458,13 @@ input.overridden {
   align-items: center;
   gap: 12px;
   text-align: left;
+}
+.shop-footer-brand img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 .shop-footer-brand strong {
   color: #f7f3ea;
