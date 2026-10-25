@@ -258,7 +258,9 @@ export function orderMessage(storeName: string, lines: CartLine[], items: MenuIt
     return `- ${l.qty} ${unit} ${title}: ${vnd(l.unitPrice * l.qty)}`
   })
   const out = [`Xin chào ${storeName}, mình muốn đặt trước${code ? ` (mã đơn ${code})` : ''}:`, ...rows, `Tổng: ${vnd(cartTotal(lines))} (${cartSummary(lines)})`]
-  if (customer.name?.trim()) out.push(`Tên: ${customer.name.trim()}`)
+  if (customer.name?.trim() && customer.name.trim().toLowerCase() !== customer.domain?.trim().toLowerCase()) {
+    out.push(`Tên: ${customer.name.trim()}`)
+  }
   if (customer.domain?.trim()) out.push(`Domain: ${cleanDomain(customer.domain)}`)
   if (customer.floor?.trim()) out.push(`Tầng: ${cleanFloor(customer.floor)}`)
   if (hasBank && customer.payment) out.push(`Thanh toán: ${customer.payment === 'transfer' ? 'chuyển khoản' : 'tiền mặt khi nhận'}`)

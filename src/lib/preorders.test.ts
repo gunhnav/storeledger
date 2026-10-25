@@ -18,5 +18,6 @@ describe('đơn đặt trước phía quản trị', () => {
   })
   it('câu thông báo đơn mới', () => {
     expect(preorderAlert({ code: 'HG26298ABCD', customer_name: 'Hường', customer_domain: 'huong.vu3', floor: '6', total: 115000 })).toBe('Đơn đặt trước mới HG26298ABCD: Hường (huong.vu3, tầng 6) · 115.000đ')
+    expect(preorderAlert({ code: 'HG26298ZXA', customer_name: 'hung.nguyen26', customer_domain: 'hung.nguyen26', floor: '11', total: 80000 })).toBe('Đơn đặt trước mới HG26298ZXA: hung.nguyen26 (tầng 11) · 80.000đ')
   })
 })
