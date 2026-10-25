@@ -332,3 +332,33 @@ export function flavorNote(name: string): string | null {
   if (n.includes('tri ky')) return 'Sữa chua Hy Lạp, hũ lớn dùng cả tuần'
   return null
 }
+
+const MENU_CACHE_PREFIX = 'hogi_public_menu_'
+
+// Lưu bộ nhớ đệm thực đơn để khách vào lại hoặc chuyển tab được tải tức thì (0ms)
+export function getCachedMenu(code: string, storage?: { getItem: (k: string) => string | null }): PublicMenu | null {
+  const s = storage ?? (typeof window !== 'undefined' ? window.sessionStorage : null)
+  if (!s || !code) return null
+  try {
+    const raw = s.getItem(MENU_CACHE_PREFIX + code)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { ts: number; data: PublicMenu }
+    if (parsed?.data?.store && Array.isArray(parsed?.data?.items) && parsed.data.items.length > 0) {
+      return parsed.data
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export function setCachedMenu(code: string, menu: PublicMenu, storage?: { setItem: (k: string, v: string) => void }): void {
+  const s = storage ?? (typeof window !== 'undefined' ? window.sessionStorage : null)
+  if (!s || !code) return
+  try {
+    const payload = JSON.stringify({ ts: Date.now(), data: menu })
+    s.setItem(MENU_CACHE_PREFIX + code, payload)
+  } catch {
+    // Không làm gián đoạn nếu bộ nhớ đầy hoặc chế độ ẩn danh
+  }
+}

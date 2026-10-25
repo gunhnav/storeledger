@@ -13,6 +13,8 @@ import {
   flavorEmoji,
   flavorImage,
   flavorPosition,
+  getCachedMenu,
+  setCachedMenu,
   isSingle,
   flavorNote,
   lineOf,
@@ -39,13 +41,29 @@ import {
 const vnd = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}đ`
 const REFRESH_MS = 60_000
 
+function ShopLoading() {
+  return (
+    <div className="shop shop-loading-screen" role="status" aria-live="polite">
+      <div className="shop-loading-card">
+        <div className="shop-loading-mascot-wrap">
+          <img src="/shop/hogi-mark.svg" alt="" width={88} height={88} className="shop-loading-mascot" />
+          <div className="shop-loading-shadow" aria-hidden="true" />
+        </div>
+        <div className="shop-loading-spinner" aria-hidden="true" />
+        <h2>Đang tải thực đơn Hogi...</h2>
+        <p>Sữa chua tươi ngon và bánh flan sắp sẵn sàng rồi 🥣✨</p>
+      </div>
+    </div>
+  )
+}
+
 // Trang đặt trước của một quán (/hogi, /shop/<mã quán>): khách không cần đăng nhập.
 // Bán theo SET 4 hoặc 6 hũ, khách tự chọn vị cho từng set (giống kênh Công ty). Không lấy tồn kho: ai đặt gì nhận đó.
 // Tiếng Việt cố định vì dành cho khách của quán (không đi qua bộ dịch của app).
 export function ShopPage({ code: fixedCode }: { code?: string }) {
   const params = useParams()
   const code = (fixedCode ?? params.code ?? '').toLowerCase()
-  const [menu, setMenu] = useState<PublicMenu | null | undefined>(undefined)
+  const [menu, setMenu] = useState<PublicMenu | null | undefined>(() => getCachedMenu(code))
   const [error, setError] = useState(false)
   const [cart, setCart] = useState<CartLine[]>([])
   // Set đang soạn: cỡ, số hũ từng vị, và số set giống hệt muốn đặt
@@ -64,6 +82,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     setMenu(next)
     // Cập nhật giá mới và bỏ vị đã gỡ khỏi thực đơn
     if (next) {
+      setCachedMenu(code, next)
       setCart((c) => refreshCart(c, next.items, next.store))
       const firstLine = menuLines(next.items)[0] ?? ''
       const firstList = next.items.filter((i) => lineOf(i) === firstLine)
@@ -131,18 +150,29 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
     [items]
   )
 
-  if (menu === undefined && !error) return <div className="shop"><p className="shop-state">Đang tải thực đơn…</p></div>
-  if (error) {
+  if (menu === undefined && !error) return <ShopLoading />
+  if (error && !menu) {
     return (
-      <div className="shop">
-        <p className="shop-state">Không tải được thực đơn. Bạn thử tải lại trang nhé.</p>
+      <div className="shop shop-loading-screen" role="alert">
+        <div className="shop-loading-card">
+          <span className="shop-loading-err-icon" aria-hidden="true">🥣</span>
+          <h2>Chưa tải được thực đơn</h2>
+          <p>Kết nối mạng hơi chậm hoặc gián đoạn, bạn bấm thử lại nhé.</p>
+          <button type="button" className="shop-cta" onClick={() => void load()}>
+            Tải lại thực đơn
+          </button>
+        </div>
       </div>
     )
   }
   if (!menu || !store) {
     return (
-      <div className="shop">
-        <p className="shop-state">Không tìm thấy cửa hàng này.</p>
+      <div className="shop shop-loading-screen">
+        <div className="shop-loading-card">
+          <span className="shop-loading-err-icon" aria-hidden="true">🔍</span>
+          <h2>Không tìm thấy cửa hàng</h2>
+          <p>Đường dẫn có thể chưa đúng hoặc cửa hàng tạm ngưng.</p>
+        </div>
       </div>
     )
   }

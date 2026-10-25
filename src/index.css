@@ -3693,6 +3693,113 @@ input.overridden {
   color: var(--s-muted);
 }
 
+/* Màn hình hoạt ảnh tải thực đơn Hogi */
+.shop-loading-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--s-cream, #f7f3ea);
+}
+
+.shop-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 360px;
+  width: 100%;
+  padding: 36px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(37, 107, 64, 0.12);
+  border-radius: 28px;
+  box-shadow: 0 16px 36px rgba(22, 48, 31, 0.08);
+}
+
+.shop-loading-mascot-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.shop-loading-mascot {
+  display: block;
+  animation: hogiBounce 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 6px 12px rgba(22, 48, 31, 0.12));
+}
+
+.shop-loading-shadow {
+  width: 64px;
+  height: 10px;
+  margin-top: -2px;
+  background: radial-gradient(ellipse at center, rgba(22, 48, 31, 0.24) 0%, rgba(22, 48, 31, 0) 72%);
+  border-radius: 50%;
+  animation: hogiShadow 1.5s ease-in-out infinite;
+}
+
+@keyframes hogiBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+  50% {
+    transform: translateY(-16px) scale(0.97, 1.03);
+  }
+}
+
+@keyframes hogiShadow {
+  0%, 100% {
+    transform: scale(1.08);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(0.65);
+    opacity: 0.16;
+  }
+}
+
+.shop-loading-spinner {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 16px;
+  border: 3px solid rgba(37, 107, 64, 0.15);
+  border-top-color: var(--s-green, #256b40);
+  border-radius: 50%;
+  animation: hogiSpin 0.85s linear infinite;
+}
+
+@keyframes hogiSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.shop-loading-card h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--s-ink, #16301f);
+}
+
+.shop-loading-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--s-muted, #5f6d61);
+}
+
+.shop-loading-err-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.shop-loading-card .shop-cta {
+  margin-top: 20px;
+}
+
 /* Đầu trang */
 .shop-header {
   position: sticky;

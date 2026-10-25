@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { preorderPayload, cartCount, cartSingles, cartSummary, lineTitle, setSingleQty, singleQty, unitOf, EMPTY_CUSTOMER, addSet, menuLines, setPriceHints, customerIssues, transferNote, cleanFloor, validDomain, validFloor, vietQrUrl, cartJars, cartSets, cartTotal, changeMix, flavorColors, flavorImage, flavorNote, flavorPosition, mixLabel, orderMessage, refreshCart, selectable, setLineQty, setPrice, zaloLink, hangoutEmail, type MenuItem } from './storefront'
+import { preorderPayload, cartCount, cartSingles, cartSummary, lineTitle, setSingleQty, singleQty, unitOf, EMPTY_CUSTOMER, addSet, menuLines, setPriceHints, customerIssues, transferNote, cleanFloor, validDomain, validFloor, vietQrUrl, cartJars, cartSets, cartTotal, changeMix, flavorColors, flavorImage, flavorNote, flavorPosition, getCachedMenu, setCachedMenu, mixLabel, orderMessage, refreshCart, selectable, setLineQty, setPrice, zaloLink, hangoutEmail, type MenuItem, type PublicMenu } from './storefront'
 
 const item = (id: string, name: string, price: number | null): MenuItem => ({ id, name, category: null, price })
 const items = [item('tt', 'Truyền thống', 12000), item('pm', 'Phô mai', 15000), item('mc', 'Matcha', 15000), item('x', 'Vị chưa có giá', null)]
@@ -202,5 +202,26 @@ describe('đơn gửi lên máy chủ', () => {
     expect(customerIssues(c, ['6', '7', '8', '9', '11', '12']).floor).toBe('Chỉ giao tầng 6, 7, 8, 9, 11, 12')
     expect(customerIssues({ ...c, floor: 'F11' }, ['6', '11'])).toEqual({})
     expect(customerIssues({ ...c, floor: '' }, ['6']).floor).toBe('Chọn tầng')
+  })
+})
+
+describe('bộ nhớ đệm thực đơn (SWR cache)', () => {
+  it('lưu và lấy lại thực đơn từ storage nhanh tức thì', () => {
+    const memory: Record<string, string> = {}
+    const mockStorage = {
+      getItem: (k: string) => memory[k] ?? null,
+      setItem: (k: string, v: string) => {
+        memory[k] = v
+      },
+    }
+    const sample: PublicMenu = {
+      store: { name: 'Hogi Food', phone: null, tagline: null, set_prices: [], bank: null, pay: null, domain: 'huong.vu3', floors: null },
+      items: [{ id: '1', name: 'Matcha', category: 'Sữa chua', price: 15000, mode: 'set' }],
+    }
+    expect(getCachedMenu('hogi', mockStorage)).toBeNull()
+    setCachedMenu('hogi', sample, mockStorage)
+    const cached = getCachedMenu('hogi', mockStorage)
+    expect(cached?.store.name).toBe('Hogi Food')
+    expect(cached?.items).toHaveLength(1)
   })
 })
