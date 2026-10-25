@@ -441,7 +441,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             <li>
               <span className="shop-step-no">3</span>
               <strong>Đặt hàng & Nhận hàng</strong>
-              <p>Điền domain và tầng nhận hàng. Quán sẽ tự động nhận trạng thái của đơn khi bạn đặt hàng hoặc chuyển khoản mà không bắt buộc phải nhắn tin. Nếu cần tư vấn gì thêm, bạn có thể bấm "Nhắn Hangout".</p>
+              <p>Điền domain và tầng nhận hàng. Quán sẽ tự động nhận trạng thái của đơn khi bạn đặt hàng và chuyển khoản. Nếu cần tư vấn gì thêm, bạn có thể bấm "Nhắn Hangout".</p>
             </li>
           </ol>
         </div>
