@@ -2,7 +2,7 @@
 // Gọi Gemini generateContent; model quá tải (503/429), hết hạn (404) hoặc quá chậm thì chuyển ngay
 // sang model khác thay vì gọi lại đúng model đó. Chi tiết lỗi chỉ ghi log, người dùng thấy thông báo gọn.
 import "@supabase/functions-js/edge-runtime.d.ts";
-import { historyContents, normalizeText, pickStore, sanitizeText, validRange, type Content, type Part } from "./lib.ts";
+import { historyContents, normalizeText, pickStore, sanitizeText, validRange, type Content } from "./lib.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

@@ -166,7 +166,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
           </nav>
           <div className="shop-header-actions">
             {store.domain && (
-              <a className="shop-contact" href={store.chat_url || GOOGLE_CHAT_URL} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!, store.contact_email)).catch(() => undefined)} title={hangoutEmail(store.domain!, store.contact_email)}>
+              <a className="shop-contact" href={store.chat_url || GOOGLE_CHAT_URL} target="_blank" rel="noopener noreferrer" onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)} title={hangoutEmail(store.domain!)}>
                 Nhắn Hangout
               </a>
             )}
@@ -405,9 +405,9 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                   href={store.chat_url || GOOGLE_CHAT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!, store.contact_email)).catch(() => undefined)}
+                  onClick={() => navigator.clipboard?.writeText(hangoutEmail(store.domain!)).catch(() => undefined)}
                 >
-                  Nhắn Hangout {hangoutEmail(store.domain, store.contact_email)}
+                  Nhắn Hangout {hangoutEmail(store.domain)}
                 </a>
               )}
             </div>

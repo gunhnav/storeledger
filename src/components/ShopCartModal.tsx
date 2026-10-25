@@ -5,7 +5,6 @@ import { buildPaymentQr, describePayload } from '../lib/emvQr'
 import { downloadInvoice } from '../lib/invoiceImage'
 import {
   EMPTY_CUSTOMER,
-  GOOGLE_CHAT_URL,
   cartSummary,
   cartTotal,
   cleanDomain,
@@ -14,7 +13,6 @@ import {
   flavorColors,
   flavorEmoji,
   flavorImage,
-  hangoutEmail,
   lineTitle,
   preorderPayload,
   transferNote,
@@ -70,7 +68,6 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
-  const [copied, setCopied] = useState(false)
   // Lỗi khi tạo ảnh hoá đơn / mã QR (hiện ngay trong hộp thoại thay vì alert)
   const [fileError, setFileError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
@@ -146,25 +143,6 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
     if (error || !data) return setSubmitError(error?.message ?? 'Chưa gửi được đơn, bạn thử lại nhé.')
     setPlaced({ code: data.code, total: Number(data.total), lines: data.lines.map((l) => ({ ...l, unit_price: Number(l.unit_price) })) })
     onPlaced()
-  }
-
-  // Nội dung nhắn cho quán sau khi đặt (kèm mã đơn để quán dò)
-  const placedMessage = placed
-    ? [
-        `Xin chào ${store.name}, mình vừa đặt trước đơn ${placed.code}:`,
-        ...placed.lines.map((l) => `- ${l.qty} × ${l.title}${l.kind === 'set' ? ` (${l.detail})` : ''}: ${vnd(l.unit_price * l.qty)}`),
-        `Tổng: ${vnd(placed.total)}`,
-        `Tên: ${customer.name.trim()} · Domain: ${cleanDomain(customer.domain)} · Tầng: ${cleanFloor(customer.floor)}`,
-        `Thanh toán: ${payByTransfer ? 'chuyển khoản' : 'tiền mặt khi nhận'}`,
-      ].join('\n')
-    : ''
-
-  // Mở Google Chat ngay trong sự kiện bấm (để điện thoại không chặn) và chép sẵn nội dung đơn
-  const messageShop = () => {
-    navigator.clipboard?.writeText(placedMessage).catch(() => undefined)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
-    window.open(store.chat_url || GOOGLE_CHAT_URL, '_blank', 'noopener')
   }
 
   // Tải ảnh mã QR thanh toán về máy (để mở MoMo quét từ thư viện ảnh)
@@ -308,15 +286,7 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
             <button type="button" className="shop-copy shop-download" onClick={saveInvoice} disabled={downloading}>
               {downloading ? 'Đang tạo hoá đơn…' : '⬇ Tải hoá đơn về máy'}
             </button>
-            {store.domain && (
-              <button type="button" className="shop-copy" onClick={messageShop}>
-                {copied ? 'Đã chép nội dung đơn ✓' : 'Nhắn Hangout cho quán'}
-              </button>
-            )}
             {fileError && <small className="shop-error">{fileError}</small>}
-            {store.domain && (
-              <small className="shop-hint">Không bắt buộc: quán đã nhận đơn. Muốn hỏi thêm thì bấm "Nhắn Hangout", tìm {hangoutEmail(store.domain, store.contact_email)} rồi dán nội dung đã chép sẵn.</small>
-            )}
             <button type="button" className="shop-send" onClick={close}>
               Xong, đặt đơn khác
             </button>

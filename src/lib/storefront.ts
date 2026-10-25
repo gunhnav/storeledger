@@ -270,10 +270,9 @@ export const cleanPhone = (phone: string) => phone.replace(/[^\d+]/g, '')
 export const zaloLink = (phone: string) => `https://zalo.me/${cleanPhone(phone).replace(/^\+84/, '0')}`
 export const telLink = (phone: string) => `tel:${cleanPhone(phone)}`
 
-// Hangout (Google Chat): liên hệ theo domain (ví dụ huong.vu3) hoặc email của quán nếu có
+// Hangout (Google Chat): liên hệ theo domain (ví dụ huong.vu3)
 export const hangoutEmail = (domain: string, storeEmail?: string | null) => {
-  if (storeEmail?.trim()) return storeEmail.trim()
-  return cleanDomain(domain)
+  return cleanDomain(domain || storeEmail || '')
 }
 export const GOOGLE_CHAT_URL = (import.meta.env.VITE_GOOGLE_CHAT_URL ?? 'https://chat.google.com/').trim()
 
