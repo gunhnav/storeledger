@@ -8,6 +8,7 @@ export type AuthState = {
   // true cho tới khi biết đã đăng nhập hay chưa và đã tải xong profile
   loading: boolean
   isAdmin: boolean
+  isSuperAdmin: boolean
   isPending: boolean
   isApproved: boolean
   signIn: (email: string, password: string) => Promise<void>

@@ -38,6 +38,7 @@ async function callAdminUsers(body: AdminUsersBody): Promise<void> {
 const ROLE_CHOICES: { value: UserRole; label: string; hint: string; icon: IconName }[] = [
   { value: 'staff', label: 'Nhân viên', hint: 'Bán hàng và kho, không thấy giá vốn / lãi', icon: 'user' },
   { value: 'admin', label: 'Quản trị', hint: 'Thấy mọi cửa hàng, báo cáo, chi phí, tài khoản', icon: 'staff' },
+  { value: 'super_admin', label: 'Super Admin', hint: 'Cấp cao nhất, toàn quyền hệ thống và bảo mật', icon: 'staff' },
 ]
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -49,7 +50,7 @@ function formatDateTime(value: string | null, locale: string): string | null {
 
 // Chỉ admin (route bọc RequireAdmin; RPC và Edge Function cũng tự kiểm tra)
 export function StaffPage() {
-  const { session, refreshProfile } = useAuth()
+  const { session, refreshProfile, isSuperAdmin } = useAuth()
   const { t, lang } = useI18n()
   const toast = useToast()
   const confirm = useConfirm()
@@ -65,6 +66,8 @@ export function StaffPage() {
   // Phân quyền cho tài khoản chờ duyệt
   const [pendingRoles, setPendingRoles] = useState<Record<string, UserRole>>({})
   const [pendingStores, setPendingStores] = useState<Record<string, string[]>>({})
+
+  const availableChoices = ROLE_CHOICES.filter((c) => c.value !== 'super_admin' || isSuperAdmin)
 
   const {
     register,
@@ -96,7 +99,7 @@ export function StaffPage() {
         email: values.email.trim(),
         password: values.password,
         role: values.role,
-        store_ids: values.role === 'admin' ? [] : values.store_ids,
+        store_ids: values.role === 'staff' ? values.store_ids : [],
       })
       toast.success(t('Đã tạo tài khoản cho {value}', { value: values.full_name.trim() }))
       reset(EMPTY)
@@ -117,19 +120,35 @@ export function StaffPage() {
     reload()
   }
 
-  // Cấp / thu hồi quyền admin (hàm admin_set_role tự chặn tự hạ quyền và mất admin cuối cùng)
+  // Cấp / thu hồi quyền admin & super admin (hàm admin_set_role tự chặn tự hạ quyền và mất admin cuối cùng)
   const changeRole = async (user: AdminUserRow, newRole: UserRole) => {
     const who = user.full_name || user.email
-    const question =
-      newRole === 'admin'
-        ? t('Cấp quyền admin cho {value}? Người này sẽ thấy giá vốn, lãi, chi phí của mọi cửa hàng và quản lý được tài khoản.', { value: who })
-        : t('Bỏ quyền admin của {value}? Tài khoản trở thành nhân viên, chỉ làm việc ở các cửa hàng được gán.', { value: who })
+    let question = ''
+    let title = ''
+    let confirmText = ''
+    let danger = false
+
+    if (newRole === 'super_admin') {
+      title = t('Cấp quyền Super Admin')
+      confirmText = t('Cấp quyền Super Admin')
+      question = t('Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.', { value: who })
+    } else if (newRole === 'admin') {
+      title = t('Cấp quyền admin')
+      confirmText = t('Cấp quyền admin')
+      question = t('Cấp quyền admin cho {value}? Người này sẽ thấy giá vốn, lãi, chi phí của mọi cửa hàng và quản lý được tài khoản.', { value: who })
+    } else {
+      title = t('Bỏ quyền admin')
+      confirmText = t('Bỏ quyền admin')
+      question = t('Bỏ quyền admin của {value}? Tài khoản trở thành nhân viên, chỉ làm việc ở các cửa hàng được gán.', { value: who })
+      danger = true
+    }
+
     const ok = await confirm({
-      title: newRole === 'admin' ? t('Cấp quyền admin') : t('Bỏ quyền admin'),
+      title,
       message: question,
-      confirmText: newRole === 'admin' ? t('Cấp quyền admin') : t('Bỏ quyền admin'),
+      confirmText,
       cancelText: t('Đóng'),
-      danger: newRole !== 'admin',
+      danger,
     })
     if (!ok) return
     setResult(null)
@@ -137,7 +156,13 @@ export function StaffPage() {
     const { error } = await supabase.rpc('admin_set_role', { p_user_id: user.id, p_role: newRole })
     setBusy(null)
     if (error) return setResult({ ok: false, text: errorMessage(error) })
-    toast.success(newRole === 'admin' ? t('Đã cấp quyền admin cho {value}', { value: who }) : t('Đã bỏ quyền admin của {value}', { value: who }))
+    if (newRole === 'super_admin') {
+      toast.success(t('Đã cấp quyền Super Admin cho {value}', { value: who }))
+    } else if (newRole === 'admin') {
+      toast.success(t('Đã cấp quyền admin cho {value}', { value: who }))
+    } else {
+      toast.success(t('Đã bỏ quyền admin của {value}', { value: who }))
+    }
     reload()
   }
 
@@ -150,7 +175,7 @@ export function StaffPage() {
     const { error } = await supabase.rpc('admin_approve_user', {
       p_user_id: user.id,
       p_role: assignedRole,
-      p_store_ids: assignedRole === 'admin' ? [] : assignedStores,
+      p_store_ids: assignedRole === 'staff' ? assignedStores : [],
     })
     setBusy(null)
     if (error) return setResult({ ok: false, text: errorMessage(error) })
@@ -300,7 +325,7 @@ export function StaffPage() {
                   <div className="approval-card-options">
                     <span className="field-label">{t('Vai trò')}</span>
                     <div className="role-picker" role="radiogroup" aria-label={t('Vai trò')}>
-                      {ROLE_CHOICES.map((choice) => (
+                      {availableChoices.map((choice) => (
                         <button
                           key={choice.value}
                           type="button"
@@ -396,7 +421,7 @@ export function StaffPage() {
               name="role"
               render={({ field }) => (
                 <div className="role-picker" role="radiogroup" aria-label={t('Vai trò')}>
-                  {ROLE_CHOICES.map((choice) => (
+                  {availableChoices.map((choice) => (
                     <button
                       key={choice.value}
                       type="button"
@@ -417,7 +442,7 @@ export function StaffPage() {
             />
           </div>
 
-          {role === 'admin' ? (
+          {role !== 'staff' ? (
             <p className="muted">{t('Admin thấy tất cả cửa hàng nên không cần chọn quán.')}</p>
           ) : (
             <div>
@@ -463,10 +488,13 @@ export function StaffPage() {
             </thead>
             <tbody>
               {activeUsers.map((user) => {
+                const isMainSuper = (user.email ?? '').toLowerCase() === 'hungng28900@gmail.com'
+                const isSuperAdminRow = user.role === 'super_admin' || isMainSuper
                 const isAdminRow = user.role === 'admin'
-                const isMaster = (user.email ?? '').toLowerCase() === MASTER_EMAIL
+                const isMaster = (user.email ?? '').toLowerCase() === MASTER_EMAIL || isMainSuper
                 const isSelf = user.id === session?.user.id
                 const isRejected = user.status === 'rejected'
+                const canManageUser = !isSelf && !isMainSuper && (!isSuperAdminRow || isSuperAdmin)
 
                 return (
                   <tr key={user.id}>
@@ -497,12 +525,19 @@ export function StaffPage() {
                       ) : (
                         <>
                           <strong>{user.full_name || t('(chưa có tên)')}</strong>
-                          {isMaster && (
+                          {isSuperAdminRow ? (
+                            <span className="badge badge-master" style={{ marginLeft: 6 }}>
+                              👑 Super Admin
+                            </span>
+                          ) : isMaster ? (
                             <span className="badge badge-master" style={{ marginLeft: 6 }}>
                               👑 {t('Quản trị chính')}
                             </span>
-                          )}
-                          {!isMaster && isAdminRow && <span className="badge badge-ok" style={{ marginLeft: 6 }}>admin</span>}
+                          ) : isAdminRow ? (
+                            <span className="badge badge-ok" style={{ marginLeft: 6 }}>
+                              admin
+                            </span>
+                          ) : null}
                           <br />
                           <small className="muted">{user.email}</small>
                           <br />
@@ -522,7 +557,7 @@ export function StaffPage() {
                       )}
                     </td>
                     <td>
-                      {isAdminRow ? (
+                      {isAdminRow || isSuperAdminRow ? (
                         <span className="badge badge-ok">{t('Tất cả cửa hàng')}</span>
                       ) : isRejected ? (
                         <span className="muted">—</span>
@@ -538,7 +573,7 @@ export function StaffPage() {
                       )}
                     </td>
                     <td className="actions">
-                      {!isMaster && !isSelf && (
+                      {canManageUser && (
                         <>
                           <button
                             type="button"
@@ -571,14 +606,37 @@ export function StaffPage() {
                             </button>
                           ) : (
                             <>
-                              <button
-                                type="button"
-                                className={isAdminRow ? 'link danger' : 'link'}
-                                disabled={busy === user.id}
-                                onClick={() => changeRole(user, isAdminRow ? 'staff' : 'admin')}
-                              >
-                                {isAdminRow ? t('Bỏ quyền admin') : t('Cấp quyền admin')}
-                              </button>
+                              {isSuperAdmin && (
+                                isSuperAdminRow ? (
+                                  <button
+                                    type="button"
+                                    className="link danger"
+                                    disabled={busy === user.id}
+                                    onClick={() => changeRole(user, 'admin')}
+                                  >
+                                    {t('Hạ xuống Admin')}
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="link"
+                                    disabled={busy === user.id}
+                                    onClick={() => changeRole(user, 'super_admin')}
+                                  >
+                                    {t('Cấp quyền Super Admin')}
+                                  </button>
+                                )
+                              )}
+                              {!isSuperAdminRow && (
+                                <button
+                                  type="button"
+                                  className={isAdminRow ? 'link danger' : 'link'}
+                                  disabled={busy === user.id}
+                                  onClick={() => changeRole(user, isAdminRow ? 'staff' : 'admin')}
+                                >
+                                  {isAdminRow ? t('Bỏ quyền admin') : t('Cấp quyền admin')}
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className="link danger"

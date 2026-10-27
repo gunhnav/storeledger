@@ -1054,4 +1054,9 @@ export const ja: Record<string, string> = {
   'Mã QR động (MoMo / Quỹ)': '動的 QR コード (MoMo / 基金)',
   'Tài khoản ngân hàng': '銀行口座',
   'Chọn ngân hàng': '銀行を選択',
+  'Cấp cao nhất, toàn quyền hệ thống và bảo mật': '最高権限、全システムおよびセキュリティ権限',
+  'Cấp quyền Super Admin': 'スーパー管理者権限を付与',
+  'Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.': '{value} にスーパー管理者権限を付与しますか？権限設定やセキュリティを含むすべての最高権限が付与されます。',
+  'Đã cấp quyền Super Admin cho {value}': '{value} にスーパー管理者権限を付与しました',
+  'Hạ xuống Admin': '一般管理者に降格',
 }

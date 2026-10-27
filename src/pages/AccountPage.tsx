@@ -21,7 +21,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Mỗi người tự sửa tên, email đăng nhập, mật khẩu và chọn giao diện sáng / tối
 export function AccountPage() {
-  const { session, profile, isAdmin, refreshProfile } = useAuth()
+  const { session, profile, isAdmin, isSuperAdmin, refreshProfile } = useAuth()
   const { t } = useI18n()
   const toast = useToast()
   const { mode, change } = useTheme()
@@ -101,7 +101,7 @@ export function AccountPage() {
         </div>
         <small className="muted">
           {t('Vai trò: {role}. Đổi email cần bấm link xác nhận gửi tới email mới.', {
-            role: isAdmin ? t('Quản trị') : t('Nhân viên'),
+            role: isSuperAdmin ? 'Super Admin' : isAdmin ? t('Quản trị') : t('Nhân viên'),
           })}
         </small>
         {(profileErrors.full_name || profileErrors.email) && (

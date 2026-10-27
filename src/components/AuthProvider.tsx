@@ -72,7 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       loading,
-      isAdmin: profile?.role === 'admin' && profile?.status === 'approved',
+      isAdmin:
+        (profile?.role === 'admin' ||
+          profile?.role === 'super_admin' ||
+          profile?.email?.toLowerCase() === 'hungng28900@gmail.com') &&
+        profile?.status === 'approved',
+      isSuperAdmin:
+        (profile?.role === 'super_admin' || profile?.email?.toLowerCase() === 'hungng28900@gmail.com') &&
+        profile?.status === 'approved',
       isPending: profile?.status === 'pending',
       isApproved: profile?.status === 'approved',
       signIn,

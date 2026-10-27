@@ -34,7 +34,7 @@ function initials(name: string): string {
 }
 
 export function AppLayout() {
-  const { profile, isAdmin, signOut } = useAuth()
+  const { profile, isAdmin, isSuperAdmin, signOut } = useAuth()
   const { stores, current, loading, error, select } = useStore()
   const navigate = useNavigate()
   const { t } = useI18n()
@@ -42,7 +42,7 @@ export function AppLayout() {
   // Quán nhập doanh thu theo ngày (Bún đậu): menu chỉ có hai phần, Nhập liệu và Báo cáo
   const revenueStore = usesRevenueEntry(current?.code)
   const items = (revenueStore ? REVENUE_NAV_ITEMS : NAV_ITEMS).filter((item) => !item.adminOnly || isAdmin)
-  const displayName = profile?.full_name || (isAdmin ? 'Admin' : t('Nhân viên'))
+  const displayName = profile?.full_name || (isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin' : t('Nhân viên'))
 
   return (
     <div className="layout">
@@ -75,6 +75,7 @@ export function AppLayout() {
             <UserMenu
               name={displayName}
               isAdmin={isAdmin}
+              isSuperAdmin={isSuperAdmin}
               onSignOut={async () => {
                 await signOut()
                 navigate('/login', { replace: true })
@@ -122,10 +123,12 @@ const THEME_CHOICES: { value: ThemeMode; label: string; icon: IconName }[] = [
 function UserMenu({
   name,
   isAdmin,
+  isSuperAdmin,
   onSignOut,
 }: {
   name: string
   isAdmin: boolean
+  isSuperAdmin: boolean
   onSignOut: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -172,7 +175,7 @@ function UserMenu({
         </span>
         <span className="user-text">
           <span className="user-name">{name}</span>
-          <span className="user-role">{isAdmin ? t('Quản trị') : t('Nhân viên')}</span>
+          <span className="user-role">{isSuperAdmin ? 'Super Admin' : isAdmin ? t('Quản trị') : t('Nhân viên')}</span>
         </span>
         <span className={`caret${open ? ' up' : ''}`} aria-hidden="true">
           ▾
@@ -182,7 +185,7 @@ function UserMenu({
         <div className="user-dropdown" role="menu">
           <div className="user-dropdown-head">
             <strong>{name}</strong>
-            <span className="muted">{isAdmin ? t('Quản trị') : t('Nhân viên')}</span>
+            <span className="muted">{isSuperAdmin ? 'Super Admin' : isAdmin ? t('Quản trị') : t('Nhân viên')}</span>
           </div>
           <NavLink to="/account" role="menuitem" className="user-dropdown-item">
             <Icon name="user" />

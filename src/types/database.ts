@@ -2,7 +2,7 @@
 // Có thể dùng với createClient<Database>(...).
 // Cột numeric được PostgREST trả về dạng number; date dạng 'YYYY-MM-DD'; timestamptz dạng chuỗi ISO.
 
-export type UserRole = 'admin' | 'staff'
+export type UserRole = 'super_admin' | 'admin' | 'staff'
 export type UserStatus = 'pending' | 'approved' | 'rejected'
 export type SaleChannel = 'in_store' | 'shopeefood' | 'company'
 export type StockStatus = 'ok' | 'low' | 'out'
@@ -708,6 +708,7 @@ export type Database = {
     }
     Views: Record<never, never>
     Functions: {
+      is_super_admin: { Args: Record<never, never>; Returns: boolean }
       is_admin: { Args: Record<never, never>; Returns: boolean }
       is_store_member: { Args: { p_store_id: string }; Returns: boolean }
       create_purchase: { Args: CreatePurchaseArgs; Returns: string }

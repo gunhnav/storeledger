@@ -1054,4 +1054,9 @@ export const zh: Record<string, string> = {
   'Mã QR động (MoMo / Quỹ)': '动态二维码 (MoMo / 基金)',
   'Tài khoản ngân hàng': '银行账户',
   'Chọn ngân hàng': '选择银行',
+  'Cấp cao nhất, toàn quyền hệ thống và bảo mật': '最高权限，拥有全部系统与安全权限',
+  'Cấp quyền Super Admin': '授予超级管理员',
+  'Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.': '授予 {value} 超级管理员权限？该用户将拥有最高权限，包括权限分配与系统安全。',
+  'Đã cấp quyền Super Admin cho {value}': '已授予 {value} 超级管理员权限',
+  'Hạ xuống Admin': '降级为管理员',
 }

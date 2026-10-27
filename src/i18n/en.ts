@@ -1054,4 +1054,9 @@ export const en: Record<string, string> = {
   'Mã QR động (MoMo / Quỹ)': 'Dynamic QR (MoMo / Fund)',
   'Tài khoản ngân hàng': 'Bank account',
   'Chọn ngân hàng': 'Select a bank',
+  'Cấp cao nhất, toàn quyền hệ thống và bảo mật': 'Highest level, full system and security access',
+  'Cấp quyền Super Admin': 'Grant Super Admin',
+  'Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.': 'Grant Super Admin to {value}? This user will have full access including permissions and security.',
+  'Đã cấp quyền Super Admin cho {value}': 'Granted Super Admin to {value}',
+  'Hạ xuống Admin': 'Downgrade to Admin',
 }

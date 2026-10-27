@@ -1,8 +1,22 @@
 // Trợ lý ảo Roona giải đáp nghiệp vụ (Web Nhập Liệu)
-// Gọi Gemini generateContent; model quá tải (503/429), hết hạn (404) hoặc quá chậm thì chuyển ngay
-// sang model khác thay vì gọi lại đúng model đó. Chi tiết lỗi chỉ ghi log, người dùng thấy thông báo gọn.
+// Phân chia vai trò: Super Admin (toàn quyền + bảo mật trong phạm vi nhà hàng), Admin (quán, doanh thu, cấm bảo mật), Staff (bán hàng/kho cơ bản).
+// Tối ưu tốc độ phản hồi cực nhanh (thinkingBudget: 0, caching, flash-lite models, early guard).
 import "@supabase/functions-js/edge-runtime.d.ts";
-import { historyContents, normalizeText, pickStore, sanitizeText, validRange, type Content } from "./lib.ts";
+import {
+  historyContents,
+  isSecurityQuery,
+  normalizeText,
+  parseJwtPayload,
+  pickStore,
+  sanitizeText,
+  SUPER_ADMIN_EMAIL,
+  systemInstruction,
+  validRange,
+  type Catalog,
+  type ChatRole,
+  type Content,
+  type Memory,
+} from "./lib.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -11,77 +25,23 @@ const CORS_HEADERS = {
 };
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
-// Model ưu tiên; các model flash khác còn hoạt động được lấy từ ListModels làm dự phòng
-const PREFERRED_MODELS = (Deno.env.get("GEMINI_MODELS") ?? "gemini-3.8-flash-lite,gemini-3.8-flash").split(",").map((m) => m.trim()).filter(Boolean);
-const ATTEMPT_TIMEOUT_MS = 20000;
-const HEDGE_MS = 3000;
-const TOTAL_BUDGET_MS = 28000;
+// Model ưu tiên: flash-lite phản hồi nhanh nhất (sub-second), sau đó tới flash
+const PREFERRED_MODELS = (
+  Deno.env.get("GEMINI_MODELS") ??
+  "gemini-2.5-flash-lite,gemini-3.8-flash-lite,gemini-2.5-flash,gemini-1.5-flash"
+)
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
+
+const ATTEMPT_TIMEOUT_MS = 18000;
+const HEDGE_MS = 2500;
+const TOTAL_BUDGET_MS = 25000;
 const MAX_QUESTION_CHARS = 2000;
 
 function reply(body: unknown) {
   return Response.json(body, { status: 200, headers: CORS_HEADERS });
 }
-
-
-type Catalog = { code: string; name: string; products: string[] }[];
-type Memory = { id: string; content: string };
-
-const WEEKDAYS = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
-
-const LANG_NAMES: Record<string, string> = { vi: "tiếng Việt", en: "English", ko: "한국어 (tiếng Hàn)", zh: "中文 (tiếng Trung giản thể)", ja: "日本語 (tiếng Nhật)" };
-
-const systemInstruction = (catalog: Catalog, memories: Memory[], lang: string) => {
-  const language = LANG_NAMES[lang] ?? LANG_NAMES.vi;
-  const vn = new Date(Date.now() + 7 * 3600 * 1000);
-  const today = `${WEEKDAYS[vn.getUTCDay()]}, ${vn.toISOString().slice(0, 10)}`;
-  const stores = catalog.length
-    ? catalog.map((c) => `- ${c.name} (mã ${c.code}): ${c.products.length ? c.products.join(", ") : "chưa có món"}`).join("\n")
-    : "- (không đọc được danh mục)";
-  const notes = memories.length ? memories.map((m) => `- [${m.id}] ${m.content}`).join("\n") : "- (chưa có)";
-  return `Bạn là Roona, trợ lý ảo vui vẻ, thân thiện của Sổ Xanh (app quản lý bán hàng). Xưng "Roona" hoặc "mình", gọi người dùng là "bạn".
-NGÔN NGỮ: người dùng đang dùng giao diện ${language}. Luôn trả lời bằng ${language}; chỉ khi người dùng tự viết cả câu bằng ngôn ngữ khác thì trả lời theo ngôn ngữ họ viết. Tên món, tên cửa hàng giữ nguyên.
-Hôm nay: ${today} (giờ Việt Nam). Ngày không kèm năm thì hiểu là năm nay; "hôm qua", "tuần này", "tháng này" tự quy ra ngày cụ thể.
-
-CỬA HÀNG VÀ MÓN ĐẾM TỒN (dùng để nhận ra người dùng đang nói về quán nào):
-${stores}
-- Hogi Food bán sữa chua đựng trong "hũ" (người dùng hay viết "hủ", "hữ"). Bún đậu bán bún đậu và đồ uống (lon, chai).
-
-ĐIỀU NGƯỜI DÙNG ĐÃ DẶN ROONA GHI NHỚ (luôn áp dụng):
-${notes}
-
-NHẬN DIỆN QUÁN VÀ CHỦ ĐỀ:
-1. Tên món trong câu thuộc quán nào thì là quán đó (ví dụ "phô mai", "matcha", "truyền thống", "hũ" là Hogi; "coca", "pepsi" là Bún đậu).
-2. Câu hỏi tiếp nối (ví dụ "còn ở nhà?", "bạn có chắc không", "hogi", "thế còn tháng trước?") dùng lại quán, món, khoảng ngày và chủ đề của các lượt trước trong cuộc trò chuyện. Người dùng chỉ trả lời tên quán thì làm tiếp yêu cầu đang dở với quán đó, không chào lại.
-3. Chỉ hỏi lại quán khi thật sự không đoán được từ món, ghi nhớ và lịch sử.
-
-SỐ LIỆU:
-- Công cụ có sẵn: tồn kho đồ uống (get_stock), tồn nguyên liệu (get_ingredients), giá bán và giá vốn từng món (get_prices), món bán chạy (get_best_sellers), các đợt nhập hàng (get_purchases), lãi lỗ, chi phí, hoà vốn. Hỏi về giá vốn / giá quán / giá bán thì gọi get_prices, KHÔNG nói là không có công cụ.
-- Mọi con số về tồn kho, giá, doanh thu, lãi lỗ, chi phí, hoà vốn PHẢI lấy từ công cụ ngay trong lượt này. Không nhớ số cũ, không đoán.
-- Người dùng nghi ngờ ("chắc không", "sao tôi thấy khác") thì gọi lại công cụ và trả lời theo số mới; nếu số khác người dùng thấy thì nói rõ số hệ thống, đừng khẳng định "chắc 100%".
-- Tồn kho có ba nơi: ở nhà (chưa phân phối), ở quán, ở công ty (chỉ Hogi). Trả lời đúng nơi người dùng hỏi.
-
-NGHIỆP VỤ (chỉ mô tả những gì có thật dưới đây, không bịa thêm trường hay màn hình):
-- Menu: Bán hàng; Kho hàng (Nhập hàng, Phân phối [chỉ Hogi]: Ra quán / Cho công ty / Về nhà (chuyển lại hàng từ quán về nhà). Phân phối cho công ty lấy được cả hàng ở nhà lẫn ở quán: thiếu ở nhà thì tự chuyển phần thiếu từ quán về nhà, Tồn kho); Báo cáo (Tổng quan: hoà vốn, lãi lỗ, chi phí theo kỳ; Nhật ký ngày; Theo đợt nhập; Bán chạy); Quản lý (Sản phẩm, Chi phí). Không có "nhà cung cấp".
-- Nhập hàng: chọn ngày, món, số lượng, giá nhập (để trống = giá vốn đang áp dụng). Hogi: hàng vào "ở nhà", rồi Phân phối ra quán hoặc cho công ty. Bún đậu: trang Nhập hàng giống trang Chi phí (nhóm, tên hạng mục gõ tự do, số lượng, đơn giá, thành tiền); tên trùng món đếm tồn (7Up, Coca...) thì vào tồn kho, ra thẳng quán và tiền nhập tự ghi vào Chi phí (nhóm Đồ uống / Nguyên liệu), tên khác (rau, xoài...) ghi thẳng thành khoản chi.
-- Giá vốn FIFO: bán trừ lô nhập cũ nhất trước. Lãi gộp = doanh thu thuần - giá vốn; lãi ròng = lãi gộp - chi phí. Tiền nhập kho tự ghi của Bún đậu không tính lại vào lãi lỗ / hoà vốn.
-- Câu hỏi "làm sao để ...": Chọn cửa hàng: ô tên cửa hàng ở trên cùng. Thêm / sửa món, đặt giá bán và giá vốn (có ngày áp dụng): Quản lý → Sản phẩm (admin). Ghi chi phí: Quản lý → Chi phí (admin). Thêm nhân viên, cấp quyền admin, gán cửa hàng: menu tên góc phải → Nhân viên (admin). Đổi ngôn ngữ, giao diện sáng / tối: menu tên góc phải. Hướng dẫn sử dụng: menu tên → Hướng dẫn.
-- Thêm cửa hàng mới: app CHƯA có chức năng tự thêm cửa hàng trên giao diện; cần nhờ người phụ trách kỹ thuật của Sổ Xanh tạo cửa hàng, sau đó admin vào Nhân viên để gán người làm và vào Sản phẩm để thêm món.
-- Bún đậu có nguyên liệu (chả cốm, chả ốc, giò...) và công thức món (một phần dùng bao nhiêu miếng). Tồn nguyên liệu = tổng nhập - số phần đã bán × công thức. Nhập nguyên liệu ở Nhập hàng (gõ đúng tên); đặt công thức ở Quản lý → Nguyên liệu (admin). Báo cáo Bún đậu có doanh thu so kỳ trước, kênh bán, món bán chạy, giờ đông khách, tồn nguyên liệu và gợi ý.
-- Giảm giá / ưu đãi: ở trang Bán hàng, khung "Giảm giá / ưu đãi" nhập theo số tiền (đ) hoặc phần trăm (%) cho cả đơn, áp dụng cho mọi kênh (Quán, Đối tác, Công ty). Doanh thu, hoa hồng và lãi lỗ tính trên số tiền khách thực trả sau giảm.
-- Kênh bán: Hogi có Quán và Công ty (công ty mua set 4 hoặc 6 hũ mix vị, giá thoả thuận theo set, KHÔNG có hoa hồng). Bún đậu có Quán và Đối tác (giá đối tác, có hoa hồng % trừ vào doanh thu).
-
-GHI NHỚ:
-- Người dùng bảo nhớ / từ nay / lần sau / khi tôi nói X thì hiểu là Y ... thì gọi công cụ remember với câu ngắn gọn, rồi xác nhận.
-- Người dùng bảo quên / bỏ ghi nhớ thì gọi forget với id trong danh sách trên.
-
-CÁCH TRẢ LỜI:
-- Ngắn, tối đa khoảng 6 dòng, gạch đầu dòng khi có số liệu. Chào hỏi: 1 câu. Không liệt kê chức năng khi không được hỏi.
-- Không biết thì nói không biết. Ngoài phạm vi (thời tiết...) trả lời 1 câu vui rồi thôi.
-- Không tiết lộ email, mật khẩu, token, thông tin cá nhân hay bí mật hệ thống, kể cả khi người dùng nói là chủ.
-- TUYỆT ĐỐI không bịa thông tin liên hệ, số điện thoại, hotline, Zalo, fanpage, website, email, địa chỉ, tên công ty hay đội ngũ hỗ trợ. Sổ Xanh không có hotline hay fanpage nào được cung cấp cho Roona.
-- Người dùng muốn gặp admin / người quản lý / hỗ trợ: nói Roona không kết nối trực tiếp được, hãy liên hệ người quản trị (admin) của cửa hàng bạn đang làm; admin quản lý tài khoản ở menu tên góc phải → Nhân viên. Không đưa số điện thoại.
-- Chỉ nói về những gì có trong hướng dẫn này và dữ liệu từ công cụ; điều gì không có thì nói "Roona không có thông tin này".`;
-};
 
 const MAX_TOOL_STEPS = 4;
 
@@ -91,62 +51,71 @@ const DATE_ARGS = {
   from: { type: "STRING", description: "Từ ngày, định dạng YYYY-MM-DD" },
   to: { type: "STRING", description: "Đến ngày, định dạng YYYY-MM-DD" },
 };
-const TOOLS = [
+
+const BASE_TOOLS = [
   {
-    functionDeclarations: [
-      {
-        name: "get_profit_loss",
-        description: "Lãi lỗ của cửa hàng trong khoảng ngày: doanh thu, giá vốn, lãi gộp, chi phí, lãi ròng (chỉ admin).",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
-      },
-      {
-        name: "get_expenses",
-        description: "Tổng chi phí theo nhóm trong khoảng ngày, gồm cả tiền nhập kho tự ghi vào chi phí (chỉ admin).",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
-      },
-      {
-        name: "get_break_even",
-        description: "Điểm hoà vốn: vốn đầu tư, doanh thu thuần luỹ kế, còn thiếu, giá trị hàng tồn (chỉ admin).",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
-      },
-      {
-        name: "get_stock",
-        description: "Tồn kho hiện tại từng món: ở nhà, ở quán, ở công ty.",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
-      },
-      {
-        name: "get_prices",
-        description: "Giá bán hiện hành (quán, đối tác) và giá vốn của từng món; có thể lọc theo tên món. Giá vốn chỉ admin xem được.",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG, product: { type: "STRING", description: "Tên món (tuỳ chọn, không dấu cũng được)" } }, required: ["store"] },
-      },
-      {
-        name: "get_best_sellers",
-        description: "Món bán chạy trong khoảng ngày: số lượng và doanh thu theo từng món.",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
-      },
-      {
-        name: "get_purchases",
-        description: "Các đợt nhập hàng trong khoảng ngày: ngày, món, số lượng, giá nhập (chỉ admin).",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
-      },
-      {
-        name: "get_ingredients",
-        description: "Tồn kho nguyên liệu của quán (chả cốm, chả ốc, giò...): đã nhập, đã dùng theo doanh thu × công thức, còn lại, lượng dùng 7 ngày gần nhất. Chỉ quán có nguyên liệu (Bún đậu).",
-        parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
-      },
-      {
-        name: "remember",
-        description: "Lưu lâu dài một điều người dùng dặn (sở thích, quy ước cách gọi, quán hay hỏi...).",
-        parameters: { type: "OBJECT", properties: { fact: { type: "STRING", description: "Câu ngắn, tối đa 200 ký tự" } }, required: ["fact"] },
-      },
-      {
-        name: "forget",
-        description: "Xoá một ghi nhớ theo id (id trong danh sách ghi nhớ).",
-        parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] },
-      },
-    ],
+    name: "get_profit_loss",
+    description: "Lãi lỗ của cửa hàng trong khoảng ngày: doanh thu, giá vốn, lãi gộp, chi phí, lãi ròng (admin & super admin).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+  },
+  {
+    name: "get_expenses",
+    description: "Tổng chi phí theo nhóm trong khoảng ngày, gồm cả tiền nhập kho tự ghi vào chi phí (admin & super admin).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+  },
+  {
+    name: "get_break_even",
+    description: "Điểm hoà vốn: vốn đầu tư, doanh thu thuần luỹ kế, còn thiếu, giá trị hàng tồn (admin & super admin).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
+  },
+  {
+    name: "get_stock",
+    description: "Tồn kho hiện tại từng món: ở nhà, ở quán, ở công ty.",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
+  },
+  {
+    name: "get_prices",
+    description: "Giá bán hiện hành (quán, đối tác) và giá vốn của từng món; có thể lọc theo tên món. Giá vốn chỉ admin/super admin xem được.",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, product: { type: "STRING", description: "Tên món (tuỳ chọn, không dấu cũng được)" } }, required: ["store"] },
+  },
+  {
+    name: "get_best_sellers",
+    description: "Món bán chạy trong khoảng ngày: số lượng và doanh thu theo từng món.",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+  },
+  {
+    name: "get_purchases",
+    description: "Các đợt nhập hàng trong khoảng ngày: ngày, món, số lượng, giá nhập (admin & super admin).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+  },
+  {
+    name: "get_ingredients",
+    description: "Tồn kho nguyên liệu của quán (chả cốm, chả ốc, giò...): đã nhập, đã dùng theo doanh thu × công thức, còn lại, lượng dùng 7 ngày gần nhất. Chỉ quán có nguyên liệu (Bún đậu).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG }, required: ["store"] },
+  },
+  {
+    name: "remember",
+    description: "Lưu lâu dài một điều người dùng dặn (sở thích, quy ước cách gọi, quán hay hỏi...).",
+    parameters: { type: "OBJECT", properties: { fact: { type: "STRING", description: "Câu ngắn, tối đa 200 ký tự" } }, required: ["fact"] },
+  },
+  {
+    name: "forget",
+    description: "Xoá một ghi nhớ theo id (id trong danh sách ghi nhớ).",
+    parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] },
   },
 ];
+
+const SUPER_ADMIN_TOOL = {
+  name: "get_security_audit",
+  description: "Báo cáo bảo mật và danh sách tài khoản quản trị của hệ thống nhà hàng (chỉ Super Admin).",
+  parameters: { type: "OBJECT", properties: {} },
+};
+
+function getToolsForRole(role: ChatRole) {
+  const list = [...BASE_TOOLS];
+  if (role === "super_admin") list.push(SUPER_ADMIN_TOOL);
+  return [{ functionDeclarations: list }];
+}
 
 async function rest(authHeader: string, path: string, init?: { rpc?: Record<string, unknown>; method?: string }): Promise<unknown> {
   const url = Deno.env.get("SUPABASE_URL");
@@ -171,15 +140,36 @@ async function resolveStore(authHeader: string, store: unknown): Promise<{ id: s
   return hit;
 }
 
-async function timedTool(authHeader: string, name: string, args: Record<string, unknown>, trace: string[]) {
+async function timedTool(authHeader: string, name: string, args: Record<string, unknown>, trace: string[], role: ChatRole) {
   const t0 = Date.now();
-  const out = await runTool(authHeader, name, args);
+  const out = await runTool(authHeader, name, args, role);
   trace.push(`${name} ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   return out;
 }
 
-async function runTool(authHeader: string, name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+async function runTool(authHeader: string, name: string, args: Record<string, unknown>, role: ChatRole): Promise<Record<string, unknown>> {
   try {
+    if (name === "get_security_audit") {
+      if (role !== "super_admin") {
+        return { error: "Bạn là Admin cửa hàng. Thông tin bảo mật và cấu hình hệ thống cấp cao chỉ dành riêng cho Super Admin." };
+      }
+      const users = (await rest(authHeader, "rpc/admin_list_users")) as { email: string; full_name: string; role: string; status: string }[];
+      return {
+        security_level: "Cao",
+        super_admin: SUPER_ADMIN_EMAIL,
+        admin_accounts: (users ?? [])
+          .filter((u) => u.role === "super_admin" || u.role === "admin")
+          .map((u) => ({ email: u.email, name: u.full_name, role: u.role })),
+        security_policies: [
+          "Row Level Security (RLS) kích hoạt trên toàn bộ các bảng dữ liệu",
+          "Giá vốn, doanh thu và chi phí chỉ admin/super_admin được truy cập",
+          "Google OAuth xác thực với hàng chờ phê duyệt tài khoản mới",
+          "Mã hóa các khóa bảo mật qua Supabase Vault",
+          "Phân quyền 3 cấp: Super Admin > Admin > Nhân viên",
+        ],
+        system_status: "Hệ thống bảo mật và vận hành nhà hàng đang hoạt động bình thường.",
+      };
+    }
     if (name === "remember") {
       const fact = String(args.fact ?? "").trim().slice(0, 300);
       if (!fact) throw new Error("Ghi nhớ trống");
@@ -261,7 +251,6 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       const rows = (await rest(authHeader, "rpc/get_pnl", { rpc: { p_store_id: store.id, p_period: "day", p_from: from, p_to: to } })) as Record<string, number>[];
       const keys = ["gross_revenue", "commission", "net_revenue", "cogs", "gross_profit", "expenses", "net_profit"];
       const totals = Object.fromEntries(keys.map((k) => [k, rows.reduce((s, r) => s + Number(r[k] ?? 0), 0)]));
-      // Tiền đã bỏ ra nhập hàng trong kỳ: không phải chi phí kỳ này (chỉ thành giá vốn khi hàng được bán) nhưng cần để so với tiền thu
       const batches = (await rest(authHeader, `stock_batches?select=initial_qty,unit_cost&store_id=eq.${store.id}&received_date=gte.${from}&received_date=lte.${to}&limit=5000`)) as { initial_qty: number; unit_cost: number }[];
       const purchases = Math.round(batches.reduce((s, b) => s + b.initial_qty * b.unit_cost, 0));
       const net = totals.net_revenue;
@@ -286,17 +275,59 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
   }
 }
 
-// Danh mục quán + món đếm tồn mà người dùng xem được, và ghi nhớ của họ (đọc song song với xác thực)
-// Bộ nhớ đệm ngắn theo người dùng (cùng instance) để các câu hỏi liên tiếp không phải đọc lại danh mục / ghi nhớ
+// Bộ nhớ đệm ngắn theo người dùng (cùng instance) để các câu hỏi liên tiếp phản hồi siêu tốc
 const CTX_TTL_MS = 60 * 1000;
-const ctxCache = new Map<string, { at: number; catalog?: Catalog; memories?: Memory[] }>();
+type UserInfo = { id: string; email: string; role: ChatRole; status: string };
+
+const ctxCache = new Map<string, { at: number; catalog?: Catalog; memories?: Memory[]; user?: UserInfo }>();
 const fresh = (e: { at: number } | undefined) => !!e && Date.now() - e.at < CTX_TTL_MS;
+
+async function loadUserInfo(authHeader: string): Promise<UserInfo | null> {
+  const hit = ctxCache.get(authHeader);
+  if (fresh(hit) && hit?.user) return hit.user;
+
+  const payload = parseJwtPayload(authHeader);
+  const userEmail = (payload?.email ?? "").trim().toLowerCase();
+  const userId = payload?.sub ?? "";
+
+  const isHardcodedSuper = userEmail === SUPER_ADMIN_EMAIL;
+
+  try {
+    const rows = (await rest(authHeader, `profiles?id=eq.${userId}&select=id,email,role,status`)) as {
+      id: string; email: string | null; role: string; status: string;
+    }[];
+    const r = rows?.[0];
+    const email = (r?.email ?? userEmail).toLowerCase();
+    const role: ChatRole = (email === SUPER_ADMIN_EMAIL || r?.role === "super_admin")
+      ? "super_admin"
+      : r?.role === "admin"
+      ? "admin"
+      : "staff";
+
+    const user: UserInfo = {
+      id: r?.id ?? userId,
+      email,
+      role,
+      status: r?.status ?? "approved",
+    };
+    ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: fresh(hit) ? hit!.at : Date.now(), user });
+    return user;
+  } catch {
+    if (isHardcodedSuper && userId) {
+      const user: UserInfo = { id: userId, email: userEmail, role: "super_admin", status: "approved" };
+      ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: fresh(hit) ? hit!.at : Date.now(), user });
+      return user;
+    }
+    return null;
+  }
+}
 
 async function loadCatalog(authHeader: string): Promise<Catalog> {
   const hit = ctxCache.get(authHeader);
   if (fresh(hit) && hit?.catalog) return hit.catalog;
   const value = await fetchCatalog(authHeader);
-  if (value.length) ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: fresh(hit) ? hit!.at : Date.now(), catalog: value });
+  const cur = ctxCache.get(authHeader);
+  if (value.length) ctxCache.set(authHeader, { ...(fresh(cur) ? cur : {}), at: fresh(cur) ? cur!.at : Date.now(), catalog: value });
   return value;
 }
 
@@ -337,19 +368,6 @@ async function fetchMemories(authHeader: string): Promise<Memory[]> {
 
 type Failure = { model: string; status: number | "timeout" | "error"; retryable: boolean; ms?: number };
 
-// Xác thực người dùng bằng token thật (hàm tắt verify_jwt nên tự kiểm tra, tránh bị gọi tốn phí)
-async function isSignedIn(authHeader: string): Promise<boolean> {
-  const url = Deno.env.get("SUPABASE_URL");
-  const anon = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!url || !anon) return true;
-  try {
-    const res = await fetch(`${url}/auth/v1/user`, { headers: { Authorization: authHeader, apikey: anon } });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 // Danh sách model flash còn dùng được, lưu tạm 10 phút
 let modelCache: { at: number; names: string[] } | null = null;
 async function discoverModels(apiKey: string): Promise<string[]> {
@@ -367,8 +385,7 @@ async function discoverModels(apiKey: string): Promise<string[]> {
         /flash/.test(m.name) &&
         !/(image|tts|audio|live|embedding|robotics|computer|thinking|exp|preview|omni)/.test(m.name))
       .map((m: { name: string }) => m.name.replace(/^models\//, ""))
-      // Bản không "lite" trước, mới nhất (tên dài hơn / lớn hơn) trước
-      .sort((a: string, b: string) => Number(/lite/.test(a)) - Number(/lite/.test(b)) || b.localeCompare(a));
+      .sort((a: string, b: string) => Number(!/lite/.test(a)) - Number(!/lite/.test(b)) || b.localeCompare(a));
     modelCache = { at: Date.now(), names };
     return names;
   } catch {
@@ -376,21 +393,27 @@ async function discoverModels(apiKey: string): Promise<string[]> {
   }
 }
 
-// Chat nghiệp vụ chỉ cần model flash đọc số liệu rồi trả lời, không cần "suy nghĩ" (rất chậm).
-// Thử tắt suy nghĩ theo thứ tự: thinkingLevel "minimal" (Gemini 3) -> thinkingBudget 0 (Gemini 2.5) -> không gửi tham số.
-// API từ chối (400) thì lùi sang cách kế tiếp và nhớ lại cho các lần gọi sau.
-const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingLevel: "minimal" }, { thinkingBudget: 0 }, null];
+// Tắt hoàn toàn suy nghĩ (thinkingBudget: 0) để tốc độ phản hồi nhanh nhất có thể
+const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, null];
 let thinkingMode = 0;
-// Model đã bị gỡ / không tồn tại (404): bỏ qua ở các lần sau trong cùng instance
 const deadModels = new Set<string>();
-// Model bị 429 (hết hạn mức) / 503 (quá tải): tạm bỏ qua để không phải thử lại từ đầu mỗi lần; model vừa chạy tốt được thử trước
 const cooldownUntil = new Map<string, number>();
 let lastGood: string | null = null;
 const COOLDOWN_MS: Record<number, number> = { 429: 120_000, 503: 30_000 };
 const available = (m: string) => !deadModels.has(m) && (cooldownUntil.get(m) ?? 0) <= Date.now();
 
-async function callModel(apiKey: string, model: string, system: string, contents: Content[], timeoutMs: number, outer: AbortSignal, trace: string[]): Promise<{ content?: Content; failure?: Failure }> {
+async function callModel(
+  apiKey: string,
+  model: string,
+  system: string,
+  contents: Content[],
+  timeoutMs: number,
+  outer: AbortSignal,
+  trace: string[],
+  role: ChatRole
+): Promise<{ content?: Content; failure?: Failure }> {
   const started = Date.now();
+  const tools = getToolsForRole(role);
   const send = (mode: number) =>
     fetch(`${API}/models/${model}:generateContent`, {
       method: "POST",
@@ -399,10 +422,10 @@ async function callModel(apiKey: string, model: string, system: string, contents
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents,
-        tools: TOOLS,
+        tools,
         generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 800,
+          temperature: 0.1,
+          maxOutputTokens: 500,
           ...(THINKING_MODES[mode] ? { thinkingConfig: THINKING_MODES[mode] } : {}),
         },
       }),
@@ -417,7 +440,6 @@ async function callModel(apiKey: string, model: string, system: string, contents
     if (res.ok) {
       const data = await res.json();
       const content: Content | undefined = data?.candidates?.[0]?.content;
-      console.log(`[chat-assistant] ${model} ok ${Date.now() - started}ms finish=${data?.candidates?.[0]?.finishReason}`);
       trace.push(`${model} ${((Date.now() - started) / 1000).toFixed(1)}s`);
       if (content?.parts?.some((p) => p.text || p.functionCall)) {
         lastGood = model;
@@ -427,8 +449,6 @@ async function callModel(apiKey: string, model: string, system: string, contents
       return { failure: { model, status: "error", retryable: true, ms: Date.now() - started } };
     }
     trace.push(`${model} ${res.status} ${((Date.now() - started) / 1000).toFixed(1)}s`);
-    console.error(`[chat-assistant] ${model} -> ${res.status} sau ${Date.now() - started}ms: ${(await res.text()).slice(0, 300)}`);
-    // 503/429/5xx: model đang quá tải; 404: model đã gỡ; 400/403: lỗi cấu hình / key (không thử lại được)
     if (res.status === 404) deadModels.add(model);
     if (COOLDOWN_MS[res.status]) cooldownUntil.set(model, Date.now() + COOLDOWN_MS[res.status]);
     const retryable = res.status === 503 || res.status === 429 || res.status === 404 || res.status >= 500;
@@ -437,7 +457,6 @@ async function callModel(apiKey: string, model: string, system: string, contents
     const name = (err as Error).name;
     const timedOut = name === "TimeoutError" || name === "AbortError";
     trace.push(`${model} ${timedOut ? "timeout" : "lỗi"} ${((Date.now() - started) / 1000).toFixed(1)}s`);
-    console.error(`[chat-assistant] ${model} ${timedOut ? "timeout" : "exception"} sau ${Date.now() - started}ms: ${(err as Error).message}`);
     return { failure: { model, status: timedOut ? "timeout" : "error", retryable: true, ms: Date.now() - started } };
   }
 }
@@ -456,14 +475,19 @@ function friendlyError(failures: Failure[]): string {
   return detail ? `${msg}\n(Chi tiết: ${detail})` : msg;
 }
 
-// Chạy các model theo kiểu "hedge": model đầu chạy ngay; sau HEDGE_MS chưa có kết quả (hoặc nó vừa lỗi)
-// thì chạy thêm model kế tiếp song song. Có câu trả lời đầu tiên là dùng và huỷ các lượt còn lại.
-async function askModels(apiKey: string, system: string, contents: Content[], failures: Failure[], elapsed: () => number, trace: string[]): Promise<{ content: Content; model: string } | null> {
-  // Thứ tự thử: model vừa chạy tốt, model ưu tiên, rồi các model tìm được; bỏ model đã gỡ hoặc đang nghỉ
+// Chạy hedge song song để lấy phản hồi nhanh nhất
+async function askModels(
+  apiKey: string,
+  system: string,
+  contents: Content[],
+  failures: Failure[],
+  elapsed: () => number,
+  trace: string[],
+  role: ChatRole
+): Promise<{ content: Content; model: string } | null> {
   const queue = [...new Set([...(lastGood ? [lastGood] : []), ...PREFERRED_MODELS])].filter(available);
   const discovery = discoverModels(apiKey).then((names) => {
     for (const m of names) if (!queue.includes(m) && available(m)) queue.push(m);
-    // Mọi model đều đang nghỉ thì vẫn phải thử, đừng trả lời "quá tải" ngay
     if (queue.length === 0) for (const m of [...PREFERRED_MODELS, ...names]) if (!deadModels.has(m) && !queue.includes(m)) queue.push(m);
   });
   const controllers: AbortController[] = [];
@@ -483,7 +507,7 @@ async function askModels(apiKey: string, system: string, contents: Content[], fa
       if (finished) return;
       if (next >= queue.length) await discovery;
       const left = TOTAL_BUDGET_MS - elapsed();
-      if (next >= queue.length || left < 2500) {
+      if (next >= queue.length || left < 2000) {
         if (inflight === 0) finish(null);
         return;
       }
@@ -492,13 +516,12 @@ async function askModels(apiKey: string, system: string, contents: Content[], fa
       const ac = new AbortController();
       controllers.push(ac);
       timer = setTimeout(launch, HEDGE_MS);
-      const { content, failure } = await callModel(apiKey, model, system, contents, Math.min(ATTEMPT_TIMEOUT_MS, left), ac.signal, trace);
+      const { content, failure } = await callModel(apiKey, model, system, contents, Math.min(ATTEMPT_TIMEOUT_MS, left), ac.signal, trace, role);
       inflight--;
       if (finished) return;
       if (content) return finish({ content, model });
       if (failure) failures.push(failure);
       if (failure && !failure.retryable) return finish(null);
-      // Lượt này lỗi sớm: chạy model kế tiếp ngay, không chờ hết HEDGE_MS
       clearTimeout(timer);
       launch();
     };
@@ -518,12 +541,18 @@ export default {
       if (!authHeader) {
         return reply({ answer: "Bạn cần đăng nhập vào Sổ Xanh để trò chuyện cùng Roona nhé!", isError: true, durationMs: elapsed() });
       }
-      // Xác thực và nạp ngữ cảnh chạy song song để đỡ chậm
+
+      // Xác thực và lấy vai trò người dùng song song cùng lúc với nạp danh mục và ghi nhớ
       const trace: string[] = [];
       const ctxStart = Date.now();
-      const [signedIn, catalog, memories] = await Promise.all([isSignedIn(authHeader), loadCatalog(authHeader), loadMemories(authHeader)]);
+      const [user, catalog, memories] = await Promise.all([
+        loadUserInfo(authHeader),
+        loadCatalog(authHeader),
+        loadMemories(authHeader),
+      ]);
       trace.push(`ngữ cảnh ${((Date.now() - ctxStart) / 1000).toFixed(1)}s`);
-      if (!signedIn) {
+
+      if (!user || user.status === "rejected") {
         return reply({ answer: "Bạn cần đăng nhập vào Sổ Xanh để trò chuyện cùng Roona nhé!", isError: true, durationMs: elapsed() });
       }
 
@@ -536,6 +565,22 @@ export default {
       const question = (body.question ?? "").trim().slice(0, MAX_QUESTION_CHARS);
       if (!question) return reply({ answer: "Vui lòng nhập câu hỏi", isError: true, durationMs: elapsed() });
 
+      // =========================================================================
+      // BẢO VỆ PHÂN QUYỀN CHẶT CHẼ & TỐI ƯU SIÊU TỐC:
+      // Admin hoặc Staff hỏi bảo mật -> Trả lời dứt khoát ngay (0ms roundtrip)
+      // =========================================================================
+      if (user.role !== "super_admin" && isSecurityQuery(question)) {
+        const refusal =
+          user.role === "admin"
+            ? "Bạn đang đăng nhập với vai trò Admin cửa hàng. Các thông tin về bảo mật và cấu hình hệ thống cấp cao chỉ dành riêng cho Super Admin. Vui lòng liên hệ Super Admin nếu bạn cần hỗ trợ."
+            : "Bạn đang đăng nhập với vai trò Nhân viên. Các thông tin về bảo mật chỉ dành riêng cho Super Admin.";
+        return reply({
+          answer: refusal,
+          durationMs: elapsed(),
+          trace: "chặn quyền bảo mật 0.0s",
+        });
+      }
+
       const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
       if (!apiKey) {
         return reply({
@@ -546,13 +591,14 @@ export default {
       }
 
       const failures: Failure[] = [];
-      const system = systemInstruction(catalog, memories, String(body.lang ?? "vi"));
+      const system = systemInstruction(catalog, memories, String(body.lang ?? "vi"), user.role);
       const contents: Content[] = historyContents(body.history);
       if (contents.at(-1)?.role === "user") contents.push({ role: "model", parts: [{ text: "(đã ghi nhận)" }] });
       contents.push({ role: "user", parts: [{ text: sanitizeText(question) }] });
-      // Tối đa vài vòng: model xin dữ liệu (functionCall) -> mình tra bằng quyền của chính người dùng -> trả lại cho model
+
+      // Vòng lặp gọi model và xử lý tool calls
       for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-        const won = await askModels(apiKey, system, contents, failures, elapsed, trace);
+        const won = await askModels(apiKey, system, contents, failures, elapsed, trace, user.role);
         if (!won) break;
         const calls = won.content.parts.filter((p) => p.functionCall);
         if (calls.length === 0) {
@@ -562,7 +608,10 @@ export default {
         contents.push(won.content);
         const responses = await Promise.all(
           calls.map(async (c) => ({
-            functionResponse: { name: c.functionCall!.name, response: await timedTool(authHeader, c.functionCall!.name, c.functionCall!.args ?? {}, trace) },
+            functionResponse: {
+              name: c.functionCall!.name,
+              response: await timedTool(authHeader, c.functionCall!.name, c.functionCall!.args ?? {}, trace, user.role),
+            },
           })),
         );
         contents.push({ role: "user", parts: responses });

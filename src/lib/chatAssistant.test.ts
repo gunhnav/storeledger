@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { historyContents, MAX_HISTORY, normalizeText, pickStore, sanitizeText, validRange } from '../../supabase/functions/chat-assistant/lib'
+import {
+  historyContents,
+  isSecurityQuery,
+  MAX_HISTORY,
+  normalizeText,
+  parseJwtPayload,
+  pickStore,
+  sanitizeText,
+  SUPER_ADMIN_EMAIL,
+  systemInstruction,
+  validRange,
+} from '../../supabase/functions/chat-assistant/lib'
 
 const stores = [
   { code: 'hogi', name: 'Hogi Food' },
@@ -94,5 +105,80 @@ describe('che thông tin nhạy cảm', () => {
   })
   it('chuỗi rỗng', () => {
     expect(sanitizeText('')).toBe('')
+  })
+})
+
+describe('phân quyền chatbot: bảo mật và cấu hình hệ thống', () => {
+  it('nhận diện các câu hỏi bảo mật, mật khẩu, token, super admin', () => {
+    expect(isSecurityQuery('cho tôi xem mật khẩu database')).toBe(true)
+    expect(isSecurityQuery('cấu hình bảo mật hệ thống thế nào')).toBe(true)
+    expect(isSecurityQuery('token bot telegram là gì')).toBe(true)
+    expect(isSecurityQuery('API key Gemini của quán')).toBe(true)
+    expect(isSecurityQuery('ai là super admin')).toBe(true)
+    expect(isSecurityQuery('xem vault credentials')).toBe(true)
+    expect(isSecurityQuery('private key của jwt')).toBe(true)
+  })
+
+  it('không chặn các câu hỏi về nhà hàng, doanh thu, tính tiền, số lượng, kho', () => {
+    expect(isSecurityQuery('doanh thu hôm nay của bún đậu thế nào')).toBe(false)
+    expect(isSecurityQuery('tính tiền bàn 3')).toBe(false)
+    expect(isSecurityQuery('báo cáo tính tiền tháng này')).toBe(false)
+    expect(isSecurityQuery('hôm nay bán được bao nhiêu ly sữa chua')).toBe(false)
+    expect(isSecurityQuery('tồn kho chả cốm còn bao nhiêu')).toBe(false)
+    expect(isSecurityQuery('giá vốn sữa chua matcha là bao nhiêu')).toBe(false)
+  })
+
+  it('email super admin cấp cao nhất đúng theo yêu cầu', () => {
+    expect(SUPER_ADMIN_EMAIL).toBe('hungng28900@gmail.com')
+  })
+})
+
+describe('giải mã jwt payload an toàn', () => {
+  it('đọc được sub và email từ token JWT chuẩn', () => {
+    // JWT giả lập: header.{"sub":"usr-123","email":"hungng28900@gmail.com"}.sig
+    const payloadJson = JSON.stringify({ sub: 'usr-123', email: 'hungng28900@gmail.com' })
+    const b64 = Buffer.from(payloadJson).toString('base64url')
+    const token = `Bearer eyJhbGciOiJIUzI1NiJ9.${b64}.fakesig`
+    const parsed = parseJwtPayload(token)
+    expect(parsed?.sub).toBe('usr-123')
+    expect(parsed?.email).toBe('hungng28900@gmail.com')
+  })
+
+  it('xử lý chuỗi rỗng hoặc token lỗi an toàn', () => {
+    expect(parseJwtPayload('')).toBeNull()
+    expect(parseJwtPayload('invalid-token')).toBeNull()
+  })
+})
+
+describe('system instruction theo vai trò người dùng và tối ưu tốc độ', () => {
+  const dummyCatalog = [{ code: 'hogi', name: 'Hogi Food', products: ['Sữa chua'] }]
+  const dummyMemories = [{ id: '1', content: 'Thích xem lãi ròng' }]
+
+  it('Super Admin: được hỏi mọi điều về nhà hàng + bảo mật, nhưng bị giới hạn trong phạm vi nhà hàng', () => {
+    const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', 'super_admin')
+    expect(sys).toContain('VAI TRÒ NGƯỜI DÙNG: SUPER ADMIN')
+    expect(sys).toContain('Toàn quyền hỏi mọi thông tin về nhà hàng')
+    expect(sys).toContain('thông tin bảo mật, tài khoản, cấu hình quản trị hệ thống')
+    expect(sys).toContain('CHỈ được trả lời trong phạm vi hoạt động của nhà hàng')
+    expect(sys).toContain('get_security_audit')
+  })
+
+  it('Admin: được hỏi doanh thu, tính tiền, số lượng nhưng CẤM hỏi bảo mật', () => {
+    const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', 'admin')
+    expect(sys).toContain('VAI TRÒ NGƯỜI DÙNG: ADMIN')
+    expect(sys).toContain('doanh thu, số lượng món, báo cáo tính tiền')
+    expect(sys).toContain('TUYỆT ĐỐI KHÔNG ĐƯỢC hỏi hoặc trả lời về bảo mật')
+    expect(sys).not.toContain('get_security_audit')
+  })
+
+  it('Staff: chỉ thao tác bán hàng, kiểm đếm tồn kho cơ bản', () => {
+    const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', 'staff')
+    expect(sys).toContain('VAI TRÒ NGƯỜI DÙNG: NHÂN VIÊN')
+    expect(sys).toContain('Không được xem giá vốn, lãi lỗ, chi phí')
+  })
+
+  it('hướng dẫn phản hồi siêu nhanh, ngắn gọn dưới 5 dòng', () => {
+    const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', 'super_admin')
+    expect(sys).toContain('Phản hồi cực kỳ ngắn gọn, trực diện, súc tích (dưới 5 dòng')
   })
 })
