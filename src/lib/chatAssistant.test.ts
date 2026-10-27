@@ -177,8 +177,17 @@ describe('system instruction theo vai trò người dùng và tối ưu tốc đ
     expect(sys).toContain('Không được xem giá vốn, lãi lỗ, chi phí')
   })
 
-  it('hướng dẫn phản hồi siêu nhanh, ngắn gọn dưới 5 dòng', () => {
+  it('hướng dẫn phản hồi siêu nhanh, ngắn gọn dưới 5 dòng và chỉ gọi 1 công cụ', () => {
     const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', 'super_admin')
     expect(sys).toContain('Phản hồi cực kỳ ngắn gọn, trực diện, súc tích (dưới 5 dòng')
+    expect(sys).toContain('CHỈ GỌI TỐI ĐA 1 CÔNG CỤ DUY NHẤT CHO MỖI CÂU HỎI')
+    expect(sys).toContain('TUYỆT ĐỐI KHÔNG gọi thêm công cụ khác để kiểm tra lại')
+  })
+
+  it('cung cấp mốc ngày chuẩn theo giờ Việt Nam cho tuần này, tháng này', () => {
+    const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', 'admin')
+    expect(sys).toContain('LỊCH & THỜI GIAN CHUẨN (giờ Việt Nam):')
+    expect(sys).toContain('Tuần này: từ')
+    expect(sys).toContain('Tháng này: từ')
   })
 })

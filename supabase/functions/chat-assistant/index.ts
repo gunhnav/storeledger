@@ -28,22 +28,23 @@ const API = "https://generativelanguage.googleapis.com/v1beta";
 // Model ưu tiên: flash-lite phản hồi nhanh nhất (sub-second), sau đó tới flash
 const PREFERRED_MODELS = (
   Deno.env.get("GEMINI_MODELS") ??
-  "gemini-2.5-flash-lite,gemini-3.8-flash-lite,gemini-2.5-flash,gemini-1.5-flash"
+  "gemini-3.8-flash-lite,gemini-3.8-flash,gemini-2.0-flash,gemini-1.5-flash"
 )
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
 
-const ATTEMPT_TIMEOUT_MS = 18000;
-const HEDGE_MS = 2500;
-const TOTAL_BUDGET_MS = 25000;
+const ATTEMPT_TIMEOUT_MS = 12000;
+const HEDGE_MS = 2000;
+const TOTAL_BUDGET_MS = 20000;
 const MAX_QUESTION_CHARS = 2000;
 
 function reply(body: unknown) {
   return Response.json(body, { status: 200, headers: CORS_HEADERS });
 }
 
-const MAX_TOOL_STEPS = 4;
+// Giới hạn 2 lượt tối đa: Lượt 0 gọi công cụ, Lượt 1 ép trả lời kết quả dứt khoát
+const MAX_TOOL_STEPS = 2;
 
 // Công cụ tra số liệu thật của cửa hàng (chạy bằng quyền của người dùng: RLS và các hàm admin vẫn áp dụng)
 const STORE_ARG = { type: "STRING", description: "Mã cửa hàng: hogi hoặc bundau (hoặc tên cửa hàng)" };
@@ -133,21 +134,25 @@ async function rest(authHeader: string, path: string, init?: { rpc?: Record<stri
   return await res.json();
 }
 
-async function resolveStore(authHeader: string, store: unknown): Promise<{ id: string; name: string }> {
+async function resolveStore(authHeader: string, catalog: Catalog, store: unknown): Promise<{ id: string; name: string }> {
+  const hit = pickStore(catalog, store);
+  if (hit?.id) return { id: hit.id, name: hit.name };
+  if (catalog.length === 1 && catalog[0].id) return { id: catalog[0].id, name: catalog[0].name };
   const rows = (await rest(authHeader, "stores?select=id,code,name")) as { id: string; code: string; name: string }[];
-  const hit = pickStore(rows, store);
-  if (!hit) throw new Error(`Không tìm thấy cửa hàng "${store}". Cửa hàng bạn xem được: ${rows.map((r) => r.code).join(", ")}`);
-  return hit;
+  const dbHit = pickStore(rows, store);
+  if (dbHit) return dbHit;
+  if (rows.length === 1) return rows[0];
+  throw new Error(`Không tìm thấy cửa hàng "${store}". Cửa hàng bạn xem được: ${rows.map((r) => r.code).join(", ")}`);
 }
 
-async function timedTool(authHeader: string, name: string, args: Record<string, unknown>, trace: string[], role: ChatRole) {
+async function timedTool(authHeader: string, catalog: Catalog, name: string, args: Record<string, unknown>, trace: string[], role: ChatRole) {
   const t0 = Date.now();
-  const out = await runTool(authHeader, name, args, role);
+  const out = await runTool(authHeader, catalog, name, args, role);
   trace.push(`${name} ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   return out;
 }
 
-async function runTool(authHeader: string, name: string, args: Record<string, unknown>, role: ChatRole): Promise<Record<string, unknown>> {
+async function runTool(authHeader: string, catalog: Catalog, name: string, args: Record<string, unknown>, role: ChatRole): Promise<Record<string, unknown>> {
   try {
     if (name === "get_security_audit") {
       if (role !== "super_admin") {
@@ -184,7 +189,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       ctxCache.delete(authHeader);
       return { deleted: rows.length > 0 };
     }
-    const store = await resolveStore(authHeader, args.store);
+    const store = await resolveStore(authHeader, catalog, args.store);
     if (name === "get_stock") {
       return { store: store.name, rows: await rest(authHeader, "rpc/get_stock_status", { rpc: { p_store_id: store.id } }) };
     }
@@ -197,7 +202,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       let history: { product_id: string; effective_from: string; sale_price: number | null; app_price: number | null; unit_cost: number | null }[] = [];
       let costVisible = true;
       try {
-        history = (await rest(authHeader, `product_prices?select=product_id,effective_from,sale_price,app_price,unit_cost&effective_from=lte.${today}&order=effective_from.desc&limit=2000`)) as typeof history;
+        history = (await rest(authHeader, `product_prices?select=product_id,effective_from,sale_price,app_price,unit_cost&effective_from=lte.${today}&order=effective_from.desc&limit=1000`)) as typeof history;
       } catch {
         costVisible = false;
         const rows = (await rest(authHeader, "rpc/get_store_prices", { rpc: { p_store_id: store.id, p_date: today } })) as { product_id: string; sale_price: number; app_price: number | null; effective_from: string }[];
@@ -226,7 +231,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
     if (!range) throw new Error("Khoảng ngày không hợp lệ (cần YYYY-MM-DD, từ <= đến).");
     const { from, to } = range;
     if (name === "get_best_sellers") {
-      const sales = (await rest(authHeader, `sales?select=channel,sale_items(quantity,unit_price,products(name))&store_id=eq.${store.id}&sale_date=gte.${from}&sale_date=lte.${to}&limit=5000`)) as {
+      const sales = (await rest(authHeader, `sales?select=sale_items(quantity,unit_price,products(name))&store_id=eq.${store.id}&sale_date=gte.${from}&sale_date=lte.${to}&limit=2000`)) as {
         sale_items: { quantity: number; unit_price: number; products: { name: string } | null }[];
       }[];
       const agg = new Map<string, { qty: number; revenue: number }>();
@@ -241,7 +246,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       return { store: store.name, from, to, orders: sales.length, top };
     }
     if (name === "get_purchases") {
-      const rows = (await rest(authHeader, `stock_batches?select=received_date,initial_qty,unit_cost,products(name)&store_id=eq.${store.id}&received_date=gte.${from}&received_date=lte.${to}&order=received_date&limit=2000`)) as {
+      const rows = (await rest(authHeader, `stock_batches?select=received_date,initial_qty,unit_cost,products(name)&store_id=eq.${store.id}&received_date=gte.${from}&received_date=lte.${to}&order=received_date.desc&limit=500`)) as {
         received_date: string; initial_qty: number; unit_cost: number; products: { name: string } | null;
       }[];
       const items = rows.map((r) => ({ date: r.received_date, name: r.products?.name ?? "?", qty: r.initial_qty, unit_cost: r.unit_cost, total: Math.round(r.initial_qty * r.unit_cost) }));
@@ -251,7 +256,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       const rows = (await rest(authHeader, "rpc/get_pnl", { rpc: { p_store_id: store.id, p_period: "day", p_from: from, p_to: to } })) as Record<string, number>[];
       const keys = ["gross_revenue", "commission", "net_revenue", "cogs", "gross_profit", "expenses", "net_profit"];
       const totals = Object.fromEntries(keys.map((k) => [k, rows.reduce((s, r) => s + Number(r[k] ?? 0), 0)]));
-      const batches = (await rest(authHeader, `stock_batches?select=initial_qty,unit_cost&store_id=eq.${store.id}&received_date=gte.${from}&received_date=lte.${to}&limit=5000`)) as { initial_qty: number; unit_cost: number }[];
+      const batches = (await rest(authHeader, `stock_batches?select=initial_qty,unit_cost&store_id=eq.${store.id}&received_date=gte.${from}&received_date=lte.${to}&limit=2000`)) as { initial_qty: number; unit_cost: number }[];
       const purchases = Math.round(batches.reduce((s, b) => s + b.initial_qty * b.unit_cost, 0));
       const net = totals.net_revenue;
       return {
@@ -264,7 +269,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
       };
     }
     if (name === "get_expenses") {
-      const rows = (await rest(authHeader, `expenses?select=category,amount,expense_date&store_id=eq.${store.id}&expense_date=gte.${from}&expense_date=lte.${to}&limit=5000`)) as { category: string; amount: number }[];
+      const rows = (await rest(authHeader, `expenses?select=category,amount,expense_date&store_id=eq.${store.id}&expense_date=gte.${from}&expense_date=lte.${to}&limit=3000`)) as { category: string; amount: number }[];
       const byCategory: Record<string, number> = {};
       for (const r of rows) byCategory[r.category] = (byCategory[r.category] ?? 0) + Number(r.amount);
       return { store: store.name, from, to, total: rows.reduce((s, r) => s + Number(r.amount), 0), byCategory, count: rows.length };
@@ -276,7 +281,7 @@ async function runTool(authHeader: string, name: string, args: Record<string, un
 }
 
 // Bộ nhớ đệm ngắn theo người dùng (cùng instance) để các câu hỏi liên tiếp phản hồi siêu tốc
-const CTX_TTL_MS = 60 * 1000;
+const CTX_TTL_MS = 5 * 60 * 1000;
 type UserInfo = { id: string; email: string; role: ChatRole; status: string };
 
 const ctxCache = new Map<string, { at: number; catalog?: Catalog; memories?: Memory[]; user?: UserInfo }>();
@@ -290,7 +295,12 @@ async function loadUserInfo(authHeader: string): Promise<UserInfo | null> {
   const userEmail = (payload?.email ?? "").trim().toLowerCase();
   const userId = payload?.sub ?? "";
 
-  const isHardcodedSuper = userEmail === SUPER_ADMIN_EMAIL;
+  // Super Admin khớp email -> phản hồi 0ms ngay không cần truy vấn profiles
+  if (userEmail === SUPER_ADMIN_EMAIL) {
+    const user: UserInfo = { id: userId, email: userEmail, role: "super_admin", status: "approved" };
+    ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: Date.now(), user });
+    return user;
+  }
 
   try {
     const rows = (await rest(authHeader, `profiles?id=eq.${userId}&select=id,email,role,status`)) as {
@@ -310,12 +320,12 @@ async function loadUserInfo(authHeader: string): Promise<UserInfo | null> {
       role,
       status: r?.status ?? "approved",
     };
-    ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: fresh(hit) ? hit!.at : Date.now(), user });
+    ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: Date.now(), user });
     return user;
   } catch {
-    if (isHardcodedSuper && userId) {
-      const user: UserInfo = { id: userId, email: userEmail, role: "super_admin", status: "approved" };
-      ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: fresh(hit) ? hit!.at : Date.now(), user });
+    if (userId) {
+      const user: UserInfo = { id: userId, email: userEmail, role: "staff", status: "approved" };
+      ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: Date.now(), user });
       return user;
     }
     return null;
@@ -333,10 +343,11 @@ async function loadCatalog(authHeader: string): Promise<Catalog> {
 
 async function fetchCatalog(authHeader: string): Promise<Catalog> {
   try {
-    const rows = (await rest(authHeader, "stores?select=code,name,products(name,tracks_stock,is_active)")) as {
-      code: string; name: string; products: { name: string; tracks_stock: boolean; is_active: boolean }[];
+    const rows = (await rest(authHeader, "stores?select=id,code,name,products(name,tracks_stock,is_active)")) as {
+      id: string; code: string; name: string; products: { name: string; tracks_stock: boolean; is_active: boolean }[];
     }[];
     return rows.map((r) => ({
+      id: r.id,
       code: r.code,
       name: r.name,
       products: r.products.filter((p) => p.tracks_stock && p.is_active).map((p) => p.name).sort(),
@@ -393,8 +404,9 @@ async function discoverModels(apiKey: string): Promise<string[]> {
   }
 }
 
-// Tắt hoàn toàn suy nghĩ (thinkingBudget: 0) để tốc độ phản hồi nhanh nhất có thể
-const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingBudget: 0 }, { thinkingLevel: "minimal" }, null];
+// Chat nghiệp vụ: ưu tiên tối đa phản hồi nhanh.
+// Thử tắt suy nghĩ: thinkingLevel "minimal" (Gemini 3) -> thinkingBudget 0 (Gemini 2.5) -> không gửi tham số.
+const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingLevel: "minimal" }, { thinkingBudget: 0 }, null];
 let thinkingMode = 0;
 const deadModels = new Set<string>();
 const cooldownUntil = new Map<string, number>();
@@ -410,10 +422,11 @@ async function callModel(
   timeoutMs: number,
   outer: AbortSignal,
   trace: string[],
-  role: ChatRole
+  role: ChatRole,
+  allowTools = true
 ): Promise<{ content?: Content; failure?: Failure }> {
   const started = Date.now();
-  const tools = getToolsForRole(role);
+  const tools = allowTools ? getToolsForRole(role) : undefined;
   const send = (mode: number) =>
     fetch(`${API}/models/${model}:generateContent`, {
       method: "POST",
@@ -422,10 +435,10 @@ async function callModel(
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents,
-        tools,
+        ...(tools ? { tools } : {}),
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 500,
+          maxOutputTokens: 400,
           ...(THINKING_MODES[mode] ? { thinkingConfig: THINKING_MODES[mode] } : {}),
         },
       }),
@@ -483,7 +496,8 @@ async function askModels(
   failures: Failure[],
   elapsed: () => number,
   trace: string[],
-  role: ChatRole
+  role: ChatRole,
+  allowTools = true
 ): Promise<{ content: Content; model: string } | null> {
   const queue = [...new Set([...(lastGood ? [lastGood] : []), ...PREFERRED_MODELS])].filter(available);
   const discovery = discoverModels(apiKey).then((names) => {
@@ -516,7 +530,17 @@ async function askModels(
       const ac = new AbortController();
       controllers.push(ac);
       timer = setTimeout(launch, HEDGE_MS);
-      const { content, failure } = await callModel(apiKey, model, system, contents, Math.min(ATTEMPT_TIMEOUT_MS, left), ac.signal, trace, role);
+      const { content, failure } = await callModel(
+        apiKey,
+        model,
+        system,
+        contents,
+        Math.min(ATTEMPT_TIMEOUT_MS, left),
+        ac.signal,
+        trace,
+        role,
+        allowTools
+      );
       inflight--;
       if (finished) return;
       if (content) return finish({ content, model });
@@ -596,9 +620,10 @@ export default {
       if (contents.at(-1)?.role === "user") contents.push({ role: "model", parts: [{ text: "(đã ghi nhận)" }] });
       contents.push({ role: "user", parts: [{ text: sanitizeText(question) }] });
 
-      // Vòng lặp gọi model và xử lý tool calls
+      // Vòng lặp gọi model: bước 0 cho phép gọi công cụ (hoặc trả lời trực tiếp), bước 1 ép trả lời text dứt khoát
       for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-        const won = await askModels(apiKey, system, contents, failures, elapsed, trace, user.role);
+        const allowTools = step === 0;
+        const won = await askModels(apiKey, system, contents, failures, elapsed, trace, user.role, allowTools);
         if (!won) break;
         const calls = won.content.parts.filter((p) => p.functionCall);
         if (calls.length === 0) {
@@ -610,7 +635,7 @@ export default {
           calls.map(async (c) => ({
             functionResponse: {
               name: c.functionCall!.name,
-              response: await timedTool(authHeader, c.functionCall!.name, c.functionCall!.args ?? {}, trace, user.role),
+              response: await timedTool(authHeader, catalog, c.functionCall!.name, c.functionCall!.args ?? {}, trace, user.role),
             },
           })),
         );

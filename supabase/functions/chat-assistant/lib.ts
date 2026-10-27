@@ -86,7 +86,8 @@ export function historyContents(history: unknown): Content[] {
   return out;
 }
 
-export type Catalog = { code: string; name: string; products: string[] }[];
+export type CatalogStore = { id?: string; code: string; name: string; products: string[] };
+export type Catalog = CatalogStore[];
 export type Memory = { id: string; content: string };
 
 const WEEKDAYS = ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"];
@@ -106,7 +107,19 @@ export const systemInstruction = (
 ) => {
   const language = LANG_NAMES[lang] ?? LANG_NAMES.vi;
   const vn = new Date(Date.now() + 7 * 3600 * 1000);
-  const today = `${WEEKDAYS[vn.getUTCDay()]}, ${vn.toISOString().slice(0, 10)}`;
+  const todayStr = vn.toISOString().slice(0, 10);
+  const dayOfWeek = vn.getUTCDay(); // 0: Chủ nhật, 1: Thứ hai...
+  const today = `${WEEKDAYS[dayOfWeek]}, ${todayStr}`;
+
+  // Tính Thứ hai đầu tuần và Chủ nhật cuối tuần theo giờ VN
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(vn.getTime() + diffToMonday * 86400000);
+  const sunday = new Date(monday.getTime() + 6 * 86400000);
+  const mondayStr = monday.toISOString().slice(0, 10);
+  const sundayStr = sunday.toISOString().slice(0, 10);
+  const monthStartStr = `${todayStr.slice(0, 7)}-01`;
+  const yesterdayStr = new Date(vn.getTime() - 86400000).toISOString().slice(0, 10);
+
   const stores = catalog.length
     ? catalog.map((c) => `- ${c.name} (mã ${c.code}): ${c.products.length ? c.products.join(", ") : "chưa có món"}`).join("\n")
     : "- (không đọc được danh mục)";
@@ -131,7 +144,13 @@ export const systemInstruction = (
 
   return `Bạn là Roona, trợ lý ảo thông minh, phản hồi siêu nhanh, ngắn gọn và chính xác của Sổ Xanh (app quản lý nhà hàng). Xưng "Roona" hoặc "mình", gọi người dùng là "bạn".
 NGÔN NGỮ: người dùng đang dùng giao diện ${language}. Luôn trả lời bằng ${language}; chỉ khi người dùng tự viết cả câu bằng ngôn ngữ khác thì trả lời theo ngôn ngữ họ viết. Tên món, tên cửa hàng giữ nguyên.
-Hôm nay: ${today} (giờ Việt Nam).
+
+LỊCH & THỜI GIAN CHUẨN (giờ Việt Nam):
+- Hôm nay: ${today} (${todayStr})
+- Hôm qua: ${yesterdayStr}
+- Tuần này: từ ${mondayStr} đến ${sundayStr}
+- Tháng này: từ ${monthStartStr} đến ${todayStr}
+Khi người dùng hỏi "hôm nay", "hôm qua", "tuần này", "tháng này", dùng đúng các mốc ngày trên cho tham số from/to.
 
 ${roleSection}
 
@@ -149,7 +168,8 @@ NHẬN DIỆN QUÁN VÀ CHỦ ĐỀ:
 
 SỐ LIỆU VÀ CÔNG CỤ:
 - Công cụ có sẵn: tồn kho đồ uống (get_stock), tồn nguyên liệu (get_ingredients), giá bán và giá vốn từng món (get_prices), món bán chạy (get_best_sellers), các đợt nhập hàng (get_purchases), lãi lỗ (get_profit_loss), chi phí (get_expenses), hoà vốn (get_break_even)${userRole === 'super_admin' ? ', bảo mật hệ thống (get_security_audit)' : ''}.
-- Mọi con số về tồn kho, giá, doanh thu, lãi lỗ, chi phí, hoà vốn PHẢI lấy từ công cụ ngay trong lượt này. Không đoán số.
+- CHỈ GỌI TỐI ĐA 1 CÔNG CỤ DUY NHẤT CHO MỖI CÂU HỎI. Chọn đúng công cụ cần thiết nhất.
+- Khi tra cứu bán hàng, doanh thu, tồn kho: nếu kết quả trả về 0 đơn, rỗng hoặc chưa có dữ liệu, hãy LẬP TỨC THÔNG BÁO CHO NGƯỜI DÙNG với kết quả đó (ví dụ: "Tính từ đầu tuần này (${mondayStr} đến ${todayStr}), Hogi Food chưa phát sinh đơn bán hàng nào bạn nhé!"). TUYỆT ĐỐI KHÔNG gọi thêm công cụ khác để kiểm tra lại.
 - Tồn kho có ba nơi: ở nhà (chưa phân phối), ở quán, ở công ty (chỉ Hogi). Trả lời đúng nơi người dùng hỏi.
 
 TỐC ĐỘ & CÁCH TRẢ LỜI:
