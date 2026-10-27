@@ -108,6 +108,7 @@ export const ko: Record<string, string> = {
   'Chọn ngày': '날짜를 선택하세요',
   'Chọn ngày bán': '판매 날짜를 선택하세요',
   'Chọn ngày nhập': '매입 날짜를 선택하세요',
+  'Chọn ngày chuyển': '이동일을 선택하세요',
   'Chọn ngày phân phối': '배분일을 선택하세요',
   'Chọn ngày áp dụng': '적용 날짜를 선택하세요',
   'Chọn tất cả': '모두 선택',

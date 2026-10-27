@@ -108,6 +108,7 @@ export const ja: Record<string, string> = {
   'Chọn ngày': '日付を選択してください',
   'Chọn ngày bán': '販売日を選択してください',
   'Chọn ngày nhập': '仕入日を選択してください',
+  'Chọn ngày chuyển': '移動日を選んでください',
   'Chọn ngày phân phối': '配送日を選んでください',
   'Chọn ngày áp dụng': '適用日を選択してください',
   'Chọn tất cả': 'すべて選択',

@@ -108,6 +108,7 @@ export const en: Record<string, string> = {
   'Chọn ngày': 'Choose a date',
   'Chọn ngày bán': 'Choose a sale date',
   'Chọn ngày nhập': 'Choose a purchase date',
+  'Chọn ngày chuyển': 'Choose the transfer date',
   'Chọn ngày phân phối': 'Choose the distribution date',
   'Chọn ngày áp dụng': 'Choose an effective date',
   'Chọn tất cả': 'Select all',

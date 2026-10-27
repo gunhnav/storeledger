@@ -77,7 +77,7 @@ export function TransferGrid({ storeId }: { storeId: string }) {
   const stocked = products.filter((p) => p.tracks_stock)
   const names = new Map(stocked.map((p) => [p.id, p.name]))
   const home = new Map(stocked.map((p) => [p.id, stock.get(p.id)?.qty_home ?? 0]))
-  const { entries, errors } = parseEntries(inputs, today)
+  const { entries, errors } = parseEntries(inputs)
   const errorAt = new Map(errors.map((e) => [e.key, t(REASONS[e.reason])]))
   const over = overHome(entries, home)
   const overIds = new Set(over.map((o) => o.productId))
@@ -165,7 +165,7 @@ export function TransferGrid({ storeId }: { storeId: string }) {
         <button type="button" onClick={() => setEnd(today)} disabled={end === today}>
           {t('Hôm nay')}
         </button>
-        <button type="button" onClick={() => setEnd(addDays(end, DAYS) > today ? today : addDays(end, DAYS))} disabled={end === today}>
+        <button type="button" onClick={() => setEnd(addDays(end, DAYS))}>
           {t('{count} ngày sau', { count: DAYS })} →
         </button>
         <span className="muted">

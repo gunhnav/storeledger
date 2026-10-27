@@ -27,9 +27,9 @@ export function movedByCell(transfers: { productId: string; date: string; qty: n
   return map
 }
 
-// Đọc các ô đã gõ: ô trống / 0 bỏ qua; số lẻ, âm, quá lớn hoặc ngày tương lai là lỗi.
+// Đọc các ô đã gõ: ô trống / 0 bỏ qua; số lẻ, âm, quá lớn là lỗi (nếu truyền today thì chặn thêm ngày tương lai).
 // Kết quả sắp theo ngày tăng dần để lưu ngày cũ trước.
-export function parseEntries(inputs: Record<string, string>, today: string): { entries: GridEntry[]; errors: CellError[] } {
+export function parseEntries(inputs: Record<string, string>, today?: string): { entries: GridEntry[]; errors: CellError[] } {
   const entries: GridEntry[] = []
   const errors: CellError[] = []
   for (const [key, raw] of Object.entries(inputs)) {
@@ -39,7 +39,7 @@ export function parseEntries(inputs: Record<string, string>, today: string): { e
     const { productId, date } = splitKey(key)
     if (!Number.isInteger(qty) || qty < 0) errors.push({ key, reason: 'not_integer' })
     else if (qty > MAX_QTY) errors.push({ key, reason: 'too_large' })
-    else if (date > today) errors.push({ key, reason: 'future' })
+    else if (today && date > today) errors.push({ key, reason: 'future' })
     else entries.push({ productId, date, qty })
   }
   entries.sort((a, b) => a.date.localeCompare(b.date) || a.productId.localeCompare(b.productId))

@@ -8,7 +8,7 @@ import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { useStoreCatalog } from '../lib/useStoreCatalog'
-import { MAX_QTY, errorMessage, formatDate, notFuture, todayVN } from '../lib/format'
+import { MAX_QTY, errorMessage, formatDate, todayVN } from '../lib/format'
 import type { Product } from '../types/database'
 import { TransferGrid } from './TransferGrid'
 import { CompanyDistribution } from './CompanyDistribution'
@@ -227,12 +227,11 @@ function TransferForm({ storeId, mode = 'out' }: { storeId: string; mode?: 'out'
             <Controller
               control={control}
               name="transfer_date"
-              rules={{ required: 'Chọn ngày phân phối', validate: notFuture }}
+              rules={{ required: back ? 'Chọn ngày chuyển' : 'Chọn ngày phân phối' }}
               render={({ field, fieldState }) => (
                 <DatePicker
                   value={field.value}
                   onChange={field.onChange}
-                  max={todayVN()}
                   label={back ? t('Ngày chuyển') : t('Ngày phân phối')}
                   invalid={!!fieldState.error}
                 />

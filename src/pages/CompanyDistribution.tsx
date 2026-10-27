@@ -89,7 +89,7 @@ export function CompanyDistribution({ storeId }: { storeId: string }) {
       <div className="row">
         <div className="field">
           {t('Ngày phân phối')}
-          <DatePicker value={date} onChange={setDate} max={todayVN()} label={t('Ngày phân phối')} />
+          <DatePicker value={date} onChange={setDate} label={t('Ngày phân phối')} />
         </div>
         <label className="field">
           {t('Ghi chú')}

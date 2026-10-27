@@ -29,7 +29,28 @@ describe('lưới Mang ra quán', () => {
     expect(splitKey(cellKey('a|b', '2026-10-18'))).toEqual({ productId: 'a|b', date: '2026-10-18' })
   })
 
-  it('đọc ô: bỏ ô trống / 0, báo số lẻ, âm, quá lớn, ngày tương lai; sắp ngày cũ trước', () => {
+  it('đọc ô: cho phép ngày tương lai khi không truyền today', () => {
+    const { entries, errors } = parseEntries({
+      [cellKey('tt', '2026-10-15')]: ' 25 ',
+      [cellKey('tt', '2026-10-16')]: '3',
+      [cellKey('nc', '2026-10-19')]: '1',
+      [cellKey('pm', '2026-10-15')]: '1.5',
+      [cellKey('cc', '2026-10-15')]: '-2',
+      [cellKey('cc', '2026-10-16')]: '20000',
+    })
+    expect(entries).toEqual([
+      { productId: 'tt', date: '2026-10-15', qty: 25 },
+      { productId: 'tt', date: '2026-10-16', qty: 3 },
+      { productId: 'nc', date: '2026-10-19', qty: 1 },
+    ])
+    expect(errors).toEqual([
+      { key: cellKey('pm', '2026-10-15'), reason: 'not_integer' },
+      { key: cellKey('cc', '2026-10-15'), reason: 'not_integer' },
+      { key: cellKey('cc', '2026-10-16'), reason: 'too_large' },
+    ])
+  })
+
+  it('đọc ô: báo ngày tương lai nếu truyền today để ràng buộc', () => {
     const { entries, errors } = parseEntries(
       {
         [cellKey('tt', '2026-10-16')]: '3',

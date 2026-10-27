@@ -108,6 +108,7 @@ export const zh: Record<string, string> = {
   'Chọn ngày': '请选择日期',
   'Chọn ngày bán': '请选择销售日期',
   'Chọn ngày nhập': '请选择进货日期',
+  'Chọn ngày chuyển': '请选择转移日期',
   'Chọn ngày phân phối': '请选择配送日期',
   'Chọn ngày áp dụng': '请选择生效日期',
   'Chọn tất cả': '全选',
