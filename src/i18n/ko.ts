@@ -1065,4 +1065,7 @@ export const ko: Record<string, string> = {
   'Số hũ đã bán': '판매한 통 수',
   'Tổng giảm giá': '총 할인',
   'Lịch sử bán hàng công ty': '회사 판매 내역',
+  'Có phiên bản mới của ứng dụng.': '앱의 새 버전이 있습니다.',
+  'Tải lại': '새로고침',
+  'Nhập: {name}': '입고: {name}',
 }

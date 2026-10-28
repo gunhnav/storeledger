@@ -1065,4 +1065,7 @@ export const ja: Record<string, string> = {
   'Số hũ đã bán': '販売個数',
   'Tổng giảm giá': '値引き合計',
   'Lịch sử bán hàng công ty': '会社販売履歴',
+  'Có phiên bản mới của ứng dụng.': 'アプリの新しいバージョンがあります。',
+  'Tải lại': '再読み込み',
+  'Nhập: {name}': '入荷：{name}',
 }

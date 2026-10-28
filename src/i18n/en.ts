@@ -1065,4 +1065,7 @@ export const en: Record<string, string> = {
   'Số hũ đã bán': 'Jars sold',
   'Tổng giảm giá': 'Total discount',
   'Lịch sử bán hàng công ty': 'Company sales history',
+  'Có phiên bản mới của ứng dụng.': 'New version of the app is available.',
+  'Tải lại': 'Reload',
+  'Nhập: {name}': 'Purchased: {name}',
 }

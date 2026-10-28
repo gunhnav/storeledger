@@ -1065,4 +1065,7 @@ export const zh: Record<string, string> = {
   'Số hũ đã bán': '已售罐数',
   'Tổng giảm giá': '折扣合计',
   'Lịch sử bán hàng công ty': '公司销售记录',
+  'Có phiên bản mới của ứng dụng.': '应用有新版本。',
+  'Tải lại': '重新加载',
+  'Nhập: {name}': '进货：{name}',
 }

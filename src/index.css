@@ -5264,3 +5264,23 @@ input.overridden {
   background: var(--surface-2);
   border-color: var(--muted);
 }
+
+/* Thanh báo có bản mới của app (UpdateWatcher) */
+.update-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 10px 12px 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.4);
+}

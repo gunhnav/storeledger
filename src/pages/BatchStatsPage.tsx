@@ -56,6 +56,11 @@ function BatchStats({ storeId }: { storeId: string }) {
             <tr>
               <th className="sticky-col">{t('Đợt nhập')}</th>
               <th className="num">{t('Tổng hũ')}</th>
+              {productIds.map((id) => (
+                <th key={id} className="num">
+                  {t('Nhập: {name}', { name: names.get(id) ?? '' })}
+                </th>
+              ))}
               <th className="num">{t('Vốn nhập')}</th>
               <th className="num">{t('Đã bán')}</th>
               <th className="num">{t('% đã bán')}</th>
@@ -87,6 +92,11 @@ function BatchStats({ storeId }: { storeId: string }) {
                   {b.note && <small className="muted batch-date">{b.note}</small>}
                 </td>
                 <td className="num">{b.totalQty}</td>
+                {productIds.map((id) => (
+                  <td key={id} className="num">
+                    {b.lines.find((l) => l.productId === id)?.qty ?? '—'}
+                  </td>
+                ))}
                 <td className="num">{formatVND(b.cost)}</td>
                 <td className="num">{b.sold}</td>
                 <td className="num">{pct(b.soldPct)}</td>
@@ -121,6 +131,11 @@ function BatchStats({ storeId }: { storeId: string }) {
             <tr className="total-row">
               <td className="sticky-col">{t('Tổng cộng')}</td>
               <td className="num">{totals.totalQty}</td>
+              {productIds.map((id) => (
+                <td key={id} className="num">
+                  {batches.reduce((sum, b) => sum + (b.lines.find((l) => l.productId === id)?.qty ?? 0), 0)}
+                </td>
+              ))}
               <td className="num">{formatVND(totals.cost)}</td>
               <td className="num">{totals.sold}</td>
               <td className="num">{pct(totals.totalQty > 0 ? totals.sold / totals.totalQty : null)}</td>
@@ -134,13 +149,13 @@ function BatchStats({ storeId }: { storeId: string }) {
             </tr>
             <tr>
               <td className="sticky-col">{t('Trừ chi phí')}</td>
-              <td colSpan={6} />
+              <td colSpan={6 + productIds.length} />
               <td className="num">{money(-totals.expenses)}</td>
               <td colSpan={11 + productIds.length} />
             </tr>
             <tr className="net-row">
               <td className="sticky-col">{t('Lợi nhuận ròng tất cả các đợt')}</td>
-              <td colSpan={6} />
+              <td colSpan={6 + productIds.length} />
               <td className="num">{money(totals.netProfit)}</td>
               <td colSpan={11 + productIds.length} />
             </tr>

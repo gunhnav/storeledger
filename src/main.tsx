@@ -8,6 +8,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { I18nProvider } from './components/I18nProvider'
 import { ToastProvider } from './components/ToastProvider'
 import { ConfirmProvider } from './components/ConfirmProvider'
+import { UpdateWatcher } from './components/UpdateWatcher'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
               <ErrorBoundary>
                 <App />
               </ErrorBoundary>
+              <UpdateWatcher />
             </AuthProvider>
           </BrowserRouter>
         </ConfirmProvider>

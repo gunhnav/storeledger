@@ -77,6 +77,7 @@ web-nhap-lieu/
 ├── src/                        # Mã nguồn ứng dụng Frontend
 │   ├── main.tsx                # Điểm khởi động ứng dụng React
 │   ├── App.tsx                 # Thiết lập Router và Context Providers
+│   ├── globals.d.ts            # Khai báo __BUILD_ID__ do vite.config.ts gắn lúc build
 │   ├── index.css               # Toàn bộ CSS phong cách giao diện và layout
 │   ├── types/                  # Định nghĩa kiểu dữ liệu TypeScript (database, domain)
 │   ├── i18n/                   # Từ điển 5 ngôn ngữ (vi, en, ko, zh, ja)
@@ -84,8 +85,9 @@ web-nhap-lieu/
 │   │   ├── storefront.ts       # Logic giỏ hàng, bảng giá set, nhận diện vị món
 │   │   ├── emvQr.ts            # Tạo chuỗi thanh toán mã QR EMVCo chuẩn Napas
 │   │   ├── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
+│   │   ├── appVersion.ts       # So mã build đang chạy với /version.json trên server (phát hiện bản mới sau deploy)
 │   │   └── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
-│   ├── components/             # Các component tái sử dụng (Header, CartModal, Settings...)
+│   ├── components/             # Các component tái sử dụng (Header, CartModal, Settings, UpdateWatcher tự tải lại khi có bản mới...)
 │   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses...)
 │
 ├── supabase/                   # Cấu hình và mã nguồn Backend Supabase
