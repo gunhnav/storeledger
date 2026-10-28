@@ -1060,4 +1060,9 @@ export const en: Record<string, string> = {
   'Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.': 'Grant Super Admin to {value}? This user will have full access including permissions and security.',
   'Đã cấp quyền Super Admin cho {value}': 'Granted Super Admin to {value}',
   'Hạ xuống Admin': 'Downgrade to Admin',
+  'Chưa có đơn bán cho công ty trong kỳ này.': 'No company orders in this period.',
+  'Doanh thu công ty': 'Company revenue',
+  'Số hũ đã bán': 'Jars sold',
+  'Tổng giảm giá': 'Total discount',
+  'Lịch sử bán hàng công ty': 'Company sales history',
 }

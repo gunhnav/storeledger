@@ -1060,4 +1060,9 @@ export const ja: Record<string, string> = {
   'Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.': '{value} にスーパー管理者権限を付与しますか？権限設定やセキュリティを含むすべての最高権限が付与されます。',
   'Đã cấp quyền Super Admin cho {value}': '{value} にスーパー管理者権限を付与しました',
   'Hạ xuống Admin': '一般管理者に降格',
+  'Chưa có đơn bán cho công ty trong kỳ này.': 'この期間に会社向けの注文はありません。',
+  'Doanh thu công ty': '会社売上',
+  'Số hũ đã bán': '販売個数',
+  'Tổng giảm giá': '値引き合計',
+  'Lịch sử bán hàng công ty': '会社販売履歴',
 }

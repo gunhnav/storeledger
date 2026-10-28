@@ -1060,4 +1060,9 @@ export const zh: Record<string, string> = {
   'Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.': '授予 {value} 超级管理员权限？该用户将拥有最高权限，包括权限分配与系统安全。',
   'Đã cấp quyền Super Admin cho {value}': '已授予 {value} 超级管理员权限',
   'Hạ xuống Admin': '降级为管理员',
+  'Chưa có đơn bán cho công ty trong kỳ này.': '本期没有公司订单。',
+  'Doanh thu công ty': '公司营收',
+  'Số hũ đã bán': '已售罐数',
+  'Tổng giảm giá': '折扣合计',
+  'Lịch sử bán hàng công ty': '公司销售记录',
 }

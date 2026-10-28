@@ -83,7 +83,8 @@ web-nhap-lieu/
 │   ├── lib/                    # Thư viện xử lý logic thuần (tính toán, QR, storefront)
 │   │   ├── storefront.ts       # Logic giỏ hàng, bảng giá set, nhận diện vị món
 │   │   ├── emvQr.ts            # Tạo chuỗi thanh toán mã QR EMVCo chuẩn Napas
-│   │   └── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
+│   │   ├── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
+│   │   └── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
 │   ├── components/             # Các component tái sử dụng (Header, CartModal, Settings...)
 │   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses...)
 │

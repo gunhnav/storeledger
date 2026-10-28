@@ -18,6 +18,7 @@ import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { usesPartnerChannel, usesRevenueEntry } from '../lib/storeFeatures'
 import { ChannelRevenueBlock } from './ChannelRevenueBlock'
+import { CompanySalesHistory } from './CompanySalesHistory'
 import { RevenueReport } from './RevenueReport'
 import { OverviewExtras } from './OverviewExtras'
 import {
@@ -45,6 +46,7 @@ function Reports({ storeId }: { storeId: string }) {
   return (
     <>
       <ChannelRevenueBlock storeId={storeId} />
+      <CompanySalesHistory storeId={storeId} />
       <OverviewExtras storeId={storeId} />
       <BreakEvenBlock storeId={storeId} />
       <PnlBlock storeId={storeId} />

@@ -1060,4 +1060,9 @@ export const ko: Record<string, string> = {
   'Cấp quyền Super Admin cho {value}? Người này sẽ có toàn quyền cao nhất, bao gồm phân quyền và bảo mật.': '{value}에게 슈퍼 관리자 권한을 부여하시겠습니까? 권한 및 보안을 포함한 모든 최고 권한을 갖게 됩니다.',
   'Đã cấp quyền Super Admin cho {value}': '{value}에게 슈퍼 관리자 권한을 부여했습니다',
   'Hạ xuống Admin': '일반 관리자로 강등',
+  'Chưa có đơn bán cho công ty trong kỳ này.': '이 기간에 회사 판매 주문이 없습니다.',
+  'Doanh thu công ty': '회사 매출',
+  'Số hũ đã bán': '판매한 통 수',
+  'Tổng giảm giá': '총 할인',
+  'Lịch sử bán hàng công ty': '회사 판매 내역',
 }

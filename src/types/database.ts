@@ -114,6 +114,8 @@ export type Sale = {
   channel: SaleChannel
   commission_rate: number
   total_amount: number
+  // Số tiền thực giảm (20261022100000_sale_discount.sql); total_amount đã trừ phần này
+  discount_amount: number
   note: string | null
   created_by: string | null
   created_at: string
