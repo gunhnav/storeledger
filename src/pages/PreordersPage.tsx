@@ -5,7 +5,7 @@ import { useStore } from '../lib/store'
 import { useToast } from '../lib/toast'
 import { useConfirm } from '../lib/confirm'
 import { errorMessage, formatDate, formatVND } from '../lib/format'
-import { NEXT_STATUS, PREORDER_STATUSES, STATUS_LABEL, itemsToPrepare, summarizePreorders } from '../lib/preorders'
+import { isClosed, nextStatus, PREORDER_STATUSES, STATUS_LABEL, itemsToPrepare, summarizePreorders } from '../lib/preorders'
 import type { Preorder, PreorderStatus } from '../types/database'
 
 const time = (iso: string) => {
@@ -89,7 +89,7 @@ function Preorders({ storeId }: { storeId: string }) {
   if (!rows) return <p className="muted">{t('Đang tải…')}</p>
 
   const { counts, openTotal } = summarizePreorders(rows)
-  const shown = rows.filter((r) => (filter === 'all' ? true : filter === 'open' ? r.status !== 'delivered' && r.status !== 'cancelled' : r.status === filter))
+  const shown = rows.filter((r) => (filter === 'all' ? true : filter === 'open' ? !isClosed(r) : r.status === filter))
   const prepare = itemsToPrepare(rows)
 
   return (
@@ -145,7 +145,7 @@ function Preorders({ storeId }: { storeId: string }) {
       ) : (
         <div className="preorder-list">
           {shown.map((o) => {
-            const next = NEXT_STATUS[o.status]
+            const next = nextStatus(o)
             return (
               <article key={o.id} className={`card preorder preorder-${o.status}`}>
                 <div className="preorder-head">
@@ -166,15 +166,15 @@ function Preorders({ storeId }: { storeId: string }) {
                     </li>
                   ))}
                 </ul>
-                <div className="row">
-                  <span className="muted">{o.payment === 'transfer' ? t('Chuyển khoản') : t('Tiền mặt khi nhận')}</span>
+                <div className="preorder-actions">
+                  <span className="muted preorder-pay">{o.payment === 'transfer' ? t('Chuyển khoản') : t('Tiền mặt khi nhận')}</span>
                   {next && (
-                    <button type="button" className="primary" disabled={busy === o.id} onClick={() => setStatus(o, next)}>
+                    <button type="button" className={`primary preorder-next preorder-next-${next}`} disabled={busy === o.id} onClick={() => setStatus(o, next)}>
                       {o.status === 'new' ? t('Nhận đơn') : t('Chuyển sang: {status}', { status: t(STATUS_LABEL[next]) })}
                     </button>
                   )}
-                  {o.status !== 'cancelled' && o.status !== 'delivered' && (
-                    <button type="button" className="link danger" disabled={busy === o.id} onClick={() => cancelOrder(o)}>
+                  {!isClosed(o) && (
+                    <button type="button" className="preorder-cancel" disabled={busy === o.id} onClick={() => cancelOrder(o)}>
                       {t('Huỷ đơn')}
                     </button>
                   )}

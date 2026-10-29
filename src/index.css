@@ -5284,3 +5284,49 @@ input.overridden {
   color: var(--text-h);
   box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.4);
 }
+
+/* Đơn đặt trước: hàng nút thao tác */
+.preorder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.preorder-pay {
+  flex: 1 1 100%;
+}
+.preorder-next,
+.preorder-cancel {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.preorder-next-paid {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+.preorder-cancel {
+  background: color-mix(in srgb, #e5484d 16%, transparent);
+  color: #e5484d;
+  border: 1px solid color-mix(in srgb, #e5484d 45%, transparent);
+}
+.preorder-cancel:hover:not(:disabled) {
+  background: color-mix(in srgb, #e5484d 26%, transparent);
+}
+@media (min-width: 561px) {
+  .preorder-pay,
+  .preorder-next,
+  .preorder-cancel {
+    flex: 0 0 auto;
+  }
+}
+@media (max-width: 560px) {
+  .preorder-head {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
