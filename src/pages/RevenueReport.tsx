@@ -10,14 +10,14 @@ import { pctChange, previousRange, type Range } from '../lib/bundauReport'
 import { fetchAll } from '../lib/fetchAll'
 import { splitByLine } from '../lib/itemSales'
 import type { MonthlyItemSale } from '../types/database'
-import { REVENUE_CHANNELS, channelLabel, dayProfit, dayRevenue, filterDays, summarize, sumDays, type DayFilter, type DaySort, type RevenueChannel, type RevenueDay, type RevenueSummary } from '../lib/revenue'
+import { NON_POS_CHANNELS, REVENUE_CHANNELS, channelLabel, dayProfit, dayRevenue, filterDays, summarize, sumDays, type DayFilter, type DaySort, type RevenueChannel, type RevenueDay, type RevenueSummary } from '../lib/revenue'
 import { DatePicker } from '../components/DatePicker'
 
 type ItemLite = Pick<MonthlyItemSale, 'category' | 'net' | 'period_start' | 'period_end'>
 type Loaded = { key: string; current: RevenueSummary; previous: RevenueSummary; expensesByCategory: { category: string; amount: number }[]; items: ItemLite[] }
 
 // Màu mỗi kênh trên biểu đồ (chi phí dùng --chart-2, lãi dùng màu chữ)
-const CHANNEL_COLOR: Record<RevenueChannel, string> = { in_store: 'var(--chart-1)', shopeefood: 'var(--chart-3)', nem_cuon: 'var(--chart-4)' }
+const CHANNEL_COLOR: Record<RevenueChannel, string> = { in_store: 'var(--chart-1)', shopeefood: 'var(--chart-3)', nem_cuon: 'var(--chart-4)', dau_den: 'var(--chart-5)' }
 
 // Báo cáo tổng quan quán Bún đậu (chỉ admin): doanh thu nhập tay, hoa hồng đối tác, chi phí và lãi theo kỳ so với kỳ trước.
 export function RevenueReport({ storeId }: { storeId: string }) {
@@ -89,6 +89,7 @@ export function RevenueReport({ storeId }: { storeId: string }) {
   const { current: cur, previous: prev, expensesByCategory, items } = loaded
   const split = splitByLine(items, range.from, range.to)
   const pos = cur.byChannel.in_store + cur.byChannel.shopeefood
+  const nonPos = NON_POS_CHANNELS.reduce((s, c) => s + cur.byChannel[c], 0)
   const gap = pos - split.bunDau - split.bunBo
   const delta = (c: number, p: number) => {
     const change = pctChange(c, p)
@@ -108,6 +109,7 @@ export function RevenueReport({ storeId }: { storeId: string }) {
     in_store: d.byChannel.in_store,
     shopeefood: d.byChannel.shopeefood,
     nem_cuon: d.byChannel.nem_cuon,
+    dau_den: d.byChannel.dau_den,
     cost: d.expenses,
     profit: d.gross - d.commission - d.expenses,
   }))
@@ -147,6 +149,27 @@ export function RevenueReport({ storeId }: { storeId: string }) {
       </section>
 
       <section className="report-block">
+        <h2>{t('Doanh thu ngoài POS')}</h2>
+        <div className="stats">
+          {NON_POS_CHANNELS.map((c) => (
+            <div key={c} className="stat">
+              <div className="stat-label">
+                <span className="channel-dot" style={{ background: CHANNEL_COLOR[c] }} aria-hidden="true" />
+                {t(channelLabel(c))}
+              </div>
+              <div className="stat-value">{formatVND(cur.byChannel[c])}</div>
+              <div className="stat-sub">{cur.gross > 0 ? t('{pct}% doanh thu', { pct: Math.round((cur.byChannel[c] / cur.gross) * 100) }) : '—'}</div>
+            </div>
+          ))}
+          <div className="stat">
+            <div className="stat-label">{t('Tổng ngoài POS')}</div>
+            <div className="stat-value">{formatVND(nonPos)}</div>
+            <div className="stat-sub">{t('Không qua máy POS')}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="report-block">
         <h2>{t('Doanh thu theo dòng món')}</h2>
         {split.used.length === 0 ? (
           <p className="muted">{t('Chưa có báo cáo mặt hàng nằm trọn trong khoảng này nên chưa tách được Bún bò. Nhập báo cáo mặt hàng ở mục Nhập liệu → Nhập mặt hàng (nên nhập theo từng ngày để tách chính xác).')}</p>
@@ -162,11 +185,6 @@ export function RevenueReport({ storeId }: { storeId: string }) {
                 <div className="stat-label">{t('Bún bò')}</div>
                 <div className="stat-value">{formatVND(split.bunBo)}</div>
                 <div className="stat-sub">{split.bunBo + split.bunDau > 0 ? t('{pct}% doanh thu mặt hàng', { pct: Math.round((split.bunBo / (split.bunBo + split.bunDau)) * 100) }) : '—'}</div>
-              </div>
-              <div className="stat">
-                <div className="stat-label">{t('Bán nem cuốn')}</div>
-                <div className="stat-value">{formatVND(cur.byChannel.nem_cuon)}</div>
-                <div className="stat-sub">{t('Không qua máy POS')}</div>
               </div>
               {Math.abs(gap) > 1 && (
                 <div className="stat">

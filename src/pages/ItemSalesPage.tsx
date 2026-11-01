@@ -5,6 +5,7 @@ import { useI18n } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { errorMessage, formatDate, formatVND } from '../lib/format'
 import { fetchAll } from '../lib/fetchAll'
+import { NON_POS_CHANNELS } from '../lib/revenue'
 import { applyFilter, categoriesOf, groupByDay, groupItems, isDayRow, mergeByName, reconcile, totalsOf, visibleItems, type ItemGroup, type Mismatch } from '../lib/itemSales'
 import { filterItems } from '../lib/itemSales'
 import type { MonthlyItemSale } from '../types/database'
@@ -34,7 +35,7 @@ function ItemSales({ storeId }: { storeId: string }) {
     let cancelled = false
     Promise.all([
       fetchAll<MonthlyItemSale>((a, b) => supabase.from('monthly_item_sales').select('*').eq('store_id', storeId).order('period_start').order('item_code').range(a, b)),
-      fetchAll<{ revenue_date: string; amount: number }>((a, b) => supabase.from('daily_revenue').select('revenue_date, amount').eq('store_id', storeId).neq('channel', 'nem_cuon').order('revenue_date').order('channel').range(a, b)),
+      fetchAll<{ revenue_date: string; amount: number }>((a, b) => supabase.from('daily_revenue').select('revenue_date, amount').eq('store_id', storeId).not('channel', 'in', `(${NON_POS_CHANNELS.join(',')})`).order('revenue_date').order('channel').range(a, b)),
     ])
       .then(([rows, daily]) => {
         if (cancelled) return

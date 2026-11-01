@@ -142,8 +142,8 @@ export type DailyRevenue = {
   id: string
   store_id: string
   revenue_date: string
-  // nem_cuon: doanh thu bán nem cuốn riêng (không qua máy POS)
-  channel: 'in_store' | 'shopeefood' | 'nem_cuon'
+  // nem_cuon: doanh thu bán nem cuốn riêng; dau_den: bán dầu đen (dầu ăn đã qua sử dụng). Cả hai không qua máy POS
+  channel: 'in_store' | 'shopeefood' | 'nem_cuon' | 'dau_den'
   amount: number
   note: string | null
   created_by: string | null

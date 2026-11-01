@@ -35,6 +35,7 @@
   --chart-2: #eb6834;
   --chart-3: #1baf7a;
   --chart-4: #8a63d2;
+  --chart-5: #c9a227;
 
   font: 16px/1.5 'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, 'Noto Sans KR', 'Noto Sans SC', 'Noto Sans JP',
     'Malgun Gothic', 'Microsoft YaHei', 'Hiragino Sans', sans-serif;
@@ -76,6 +77,7 @@
     --chart-2: #d95926;
     --chart-3: #199e70;
   --chart-4: #9f7ae0;
+    --chart-5: #e0b84a;
   }
 }
 :root[data-theme='dark'] {
@@ -4188,6 +4190,15 @@ input.overridden {
   grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
   gap: 16px;
 }
+/* Khung bọc để hiệu ứng hiện dần không đè lên hiệu ứng nhấc thẻ khi rê chuột */
+.shop-card-wrap {
+  display: flex;
+  min-width: 0;
+}
+.shop-card-wrap > .shop-card {
+  flex: 1;
+  min-width: 0;
+}
 .shop-card {
   display: flex;
   flex-direction: column;
@@ -4360,6 +4371,7 @@ input.overridden {
   border: 2px solid var(--s-green);
   border-radius: 50%;
   background: transparent;
+  transition: background 0.2s ease;
 }
 .shop-dots span.on {
   background: var(--s-green);
@@ -4662,7 +4674,6 @@ input.overridden {
   padding: 16px;
   background: rgba(10, 24, 15, 0.55);
   backdrop-filter: blur(4px);
-  animation: shop-fade 0.18s ease-out;
 }
 .shop-modal {
   display: flex;
@@ -4676,18 +4687,6 @@ input.overridden {
   border-radius: 26px;
   background: #fffdf8;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-  animation: shop-pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
-}
-@keyframes shop-fade {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes shop-pop {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
 }
 .shop-modal > * {
   flex-shrink: 0;

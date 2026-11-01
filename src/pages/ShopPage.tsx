@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { AnimatePresence, m } from 'motion/react'
 import { supabase } from '../lib/supabase'
 import { ShopCartModal } from '../components/ShopCartModal'
+import { PopNumber, Reveal, ShopMotion } from '../components/ShopMotion'
+import { ONCE, SOFT_SPRING, SPRING, revealUp, stagger } from '../lib/shopMotion'
 import {
   SET_SIZES,
   addSet,
@@ -261,6 +264,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   )
 
   return (
+    <ShopMotion>
     <div className="shop" id="top">
       <header className="shop-header">
         <div className="shop-header-in">
@@ -288,7 +292,11 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             )}
             <button type="button" className="shop-cart-btn" aria-label={`Đơn hàng, ${count} món`} onClick={() => setOpen(true)}>
               {cartIcon}
-              {count > 0 && <span className="shop-cart-count">{count}</span>}
+              {count > 0 && (
+                <m.span key={count} className="shop-cart-count" initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={SPRING}>
+                  {count}
+                </m.span>
+              )}
             </button>
           </div>
         </div>
@@ -296,56 +304,65 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
 
       <section className="shop-hero">
         <div className="shop-hero-in">
-          <div className="shop-hero-copy">
-            <span className="shop-eyebrow">{store.name}</span>
-            <h1>
+          <m.div className="shop-hero-copy" variants={stagger(0.09, 0.05)} initial="hidden" animate="show">
+            <m.span className="shop-eyebrow" variants={revealUp}>{store.name}</m.span>
+            <m.h1 variants={revealUp}>
               Sữa chua dẻo,
               <em>dopamine dạng hũ.</em>
-            </h1>
-            <p>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi đặt hàng trực tiếp tiện lợi.'}</p>
-            <div className="shop-hero-cta">
+            </m.h1>
+            <m.p variants={revealUp}>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi đặt hàng trực tiếp tiện lợi.'}</m.p>
+            <m.div className="shop-hero-cta" variants={revealUp}>
               <a className="shop-cta" href="#chon-set">
                 Chọn set ngay
               </a>
               <a className="shop-cta shop-cta-ghost" href="#cach-dat">
                 Cách đặt hàng
               </a>
-            </div>
-          </div>
-          <img className="shop-hero-art" src="/shop/hero.svg" alt="Chú hũ sữa chua Hogi cùng các vị phô mai, matcha, ca cao, nếp cẩm" width={640} height={420} />
+            </m.div>
+          </m.div>
+          <m.img
+            className="shop-hero-art"
+            src="/shop/hero.svg"
+            alt="Chú hũ sữa chua Hogi cùng các vị phô mai, matcha, ca cao, nếp cẩm"
+            width={640}
+            height={420}
+            initial={{ opacity: 0, scale: 0.92, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ ...SOFT_SPRING, delay: 0.15 }}
+          />
         </div>
       </section>
 
-      <ul className="shop-points">
-        <li>
+      <m.ul className="shop-points" variants={stagger(0.1)} initial="hidden" whileInView="show" viewport={ONCE}>
+        <m.li variants={revealUp}>
           <span aria-hidden="true">🥣</span>
           <div>
             <strong>Set 4 hoặc 6 hũ</strong>
             <small>Đặt theo set, nhiều set cũng được</small>
           </div>
-        </li>
-        <li>
+        </m.li>
+        <m.li variants={revealUp}>
           <span aria-hidden="true">🎨</span>
           <div>
             <strong>Tự chọn vị</strong>
             <small>Mix đa dạng vị trong một set</small>
           </div>
-        </li>
-        <li>
+        </m.li>
+        <m.li variants={revealUp}>
           <span aria-hidden="true">⚡</span>
           <div>
             <strong>Tự động nhận đơn</strong>
             <small>Chỉ cần đặt và thanh toán, nhắn hangout khi cần hỗ trợ</small>
           </div>
-        </li>
-      </ul>
+        </m.li>
+      </m.ul>
 
       <main id="chon-set" className="shop-menu">
-        <div className="shop-menu-head">
+        <Reveal className="shop-menu-head">
           <p className="shop-kicker">Thực đơn theo set</p>
           <h2>Tự soạn set của bạn</h2>
           <p className="shop-sub">Chọn cỡ set, rồi chọn số hũ cho từng vị đến khi đủ.</p>
-        </div>
+        </Reveal>
 
         {items.length === 0 ? (
           <p className="shop-state">Thực đơn đang được cập nhật.</p>
@@ -354,9 +371,9 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             {lines.length > 1 && (
               <div className="shop-tabs" role="tablist" aria-label="Loại món">
                 {lines.map((l) => (
-                  <button key={l} type="button" role="tab" aria-selected={activeLine === l} className={activeLine === l ? 'active' : undefined} onClick={() => chooseLine(l)}>
+                  <m.button key={l} type="button" role="tab" aria-selected={activeLine === l} className={activeLine === l ? 'active' : undefined} whileTap={{ scale: 0.95 }} transition={SPRING} onClick={() => chooseLine(l)}>
                     {l}
-                  </button>
+                  </m.button>
                 ))}
               </div>
             )}
@@ -368,7 +385,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               {SET_SIZES.map((s) => {
                 const h = sizeHints[s] ?? []
                 return (
-                  <button key={s} type="button" role="radio" aria-checked={size === s} className={`shop-size${size === s ? ' active' : ''}`} onClick={() => chooseSize(s)}>
+                  <m.button key={s} type="button" role="radio" aria-checked={size === s} className={`shop-size${size === s ? ' active' : ''}`} whileTap={{ scale: 0.97 }} transition={SPRING} onClick={() => chooseSize(s)}>
                     <strong>Set {s} hũ</strong>
                     {h.length === 0 ? (
                       <span>Giá cộng theo từng hũ</span>
@@ -380,13 +397,13 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                         </span>
                       ))
                     )}
-                  </button>
+                  </m.button>
                 )
               })}
             </div>
             )}
 
-            <div className="shop-grid">
+            <m.div key={activeLine} className="shop-grid" variants={stagger(0.05)} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.05 }}>
               {lineItems.map((item) => {
                 const [c1, c2] = flavorColors(item.name)
                 const image = flavorImage(item.name)
@@ -395,10 +412,17 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                 const n = single ? singleQty(cart, item.id) : (mix[item.id] ?? 0)
                 const ok = single ? item.price !== null : selectable(item, size, store)
                 return (
-                  <article key={item.id} className={`shop-card${n > 0 ? ' is-picked' : ''}${ok ? '' : ' is-out'}`}>
+                  <m.div key={item.id} className="shop-card-wrap" variants={revealUp}>
+                  <article className={`shop-card${n > 0 ? ' is-picked' : ''}${ok ? '' : ' is-out'}`}>
                     <div className="shop-art" style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }} aria-hidden="true">
                       {image ? <img src={image} alt="" loading="lazy" width={520} height={430} style={{ objectPosition: flavorPosition(item.name) }} /> : <span>{flavorEmoji(item.name)}</span>}
-                      {n > 0 && <span className="shop-picked">{n}</span>}
+                      <AnimatePresence>
+                        {n > 0 && (
+                          <m.span key="picked" className="shop-picked" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={SPRING}>
+                            {n}
+                          </m.span>
+                        )}
+                      </AnimatePresence>
                     </div>
                     <div className="shop-body">
                       <div className="shop-title">
@@ -413,39 +437,40 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                       )}
                       {ok && single ? (
                         <div className="shop-qty" role="group" aria-label={`Số lượng ${item.name}`}>
-                          <button type="button" aria-label={`Bớt ${item.name}`} disabled={n === 0} onClick={() => setCart((c) => setSingleQty(c, item, n - 1))}>
+                          <m.button type="button" aria-label={`Bớt ${item.name}`} disabled={n === 0} whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => setCart((c) => setSingleQty(c, item, n - 1))}>
                             −
-                          </button>
-                          <span>{n}</span>
-                          <button type="button" aria-label={`Thêm ${item.name}`} onClick={() => setCart((c) => setSingleQty(c, item, n + 1))}>
+                          </m.button>
+                          <PopNumber value={n} />
+                          <m.button type="button" aria-label={`Thêm ${item.name}`} whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => setCart((c) => setSingleQty(c, item, n + 1))}>
                             +
-                          </button>
+                          </m.button>
                         </div>
                       ) : ok ? (
                         <div className="shop-qty" role="group" aria-label={`Số hũ ${item.name}`}>
-                          <button type="button" aria-label={`Bớt ${item.name}`} disabled={n === 0} onClick={() => setMix((m) => changeMix(m, item.id, -1, size))}>
+                          <m.button type="button" aria-label={`Bớt ${item.name}`} disabled={n === 0} whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => setMix((mx) => changeMix(mx, item.id, -1, size))}>
                             −
-                          </button>
-                          <span>{n}</span>
-                          <button type="button" aria-label={`Thêm ${item.name}`} disabled={picked >= size} onClick={() => setMix((m) => changeMix(m, item.id, 1, size))}>
+                          </m.button>
+                          <PopNumber value={n} />
+                          <m.button type="button" aria-label={`Thêm ${item.name}`} disabled={picked >= size} whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => setMix((mx) => changeMix(mx, item.id, 1, size))}>
                             +
-                          </button>
+                          </m.button>
                         </div>
                       ) : (
                         <p className="shop-note">Chưa có giá</p>
                       )}
                     </div>
                   </article>
+                  </m.div>
                 )
               })}
-            </div>
+            </m.div>
 
             {!singleLine && (
             <div className={`shop-builder${count > 0 ? ' has-cartbar' : ''}`} aria-live="polite">
               <div className="shop-builder-info">
                 <div className={`shop-dots shop-dots-${size}`} aria-hidden="true">
                   {Array.from({ length: size }, (_, i) => (
-                    <span key={i} className={i < picked ? 'on' : undefined} />
+                    <m.span key={i} className={i < picked ? 'on' : undefined} animate={{ scale: i < picked ? 1 : 0.85 }} transition={SPRING} />
                   ))}
                 </div>
                 <div>
@@ -457,17 +482,17 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
               </div>
               <div className="shop-builder-actions">
                 <div className="shop-qty" role="group" aria-label="Số set giống nhau">
-                  <button type="button" aria-label="Giảm số set" disabled={copies <= 1} onClick={() => setCopies((c) => Math.max(1, c - 1))}>
+                  <m.button type="button" aria-label="Giảm số set" disabled={copies <= 1} whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => setCopies((c) => Math.max(1, c - 1))}>
                     −
-                  </button>
-                  <span>{copies}</span>
-                  <button type="button" aria-label="Tăng số set" onClick={() => setCopies((c) => Math.min(99, c + 1))}>
+                  </m.button>
+                  <PopNumber value={copies} />
+                  <m.button type="button" aria-label="Tăng số set" whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => setCopies((c) => Math.min(99, c + 1))}>
                     +
-                  </button>
+                  </m.button>
                 </div>
-                <button type="button" className="shop-add" disabled={unitPrice === null} onClick={addToCart}>
+                <m.button type="button" className="shop-add" disabled={unitPrice === null} whileTap={unitPrice === null ? undefined : { scale: 0.97 }} transition={SPRING} onClick={addToCart}>
                   {unitPrice === null ? `Chọn đủ ${size} hũ` : `Thêm ${copies} set · ${vnd(unitPrice * copies)}`}
-                </button>
+                </m.button>
               </div>
             </div>
             )}
@@ -477,25 +502,27 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
 
       <section id="cach-dat" className="shop-steps">
         <div className="shop-steps-in">
-          <p className="shop-kicker">Đơn giản trong 3 bước</p>
-          <h2>Cách đặt hàng</h2>
-          <ol>
-            <li>
+          <Reveal>
+            <p className="shop-kicker">Đơn giản trong 3 bước</p>
+            <h2>Cách đặt hàng</h2>
+          </Reveal>
+          <m.ol variants={stagger(0.12)} initial="hidden" whileInView="show" viewport={ONCE}>
+            <m.li variants={revealUp}>
               <span className="shop-step-no">1</span>
               <strong>Chọn cỡ set</strong>
               <p>Set 4 hũ hoặc set 6 hũ, tuỳ nhu cầu của bạn.</p>
-            </li>
-            <li>
+            </m.li>
+            <m.li variants={revealUp}>
               <span className="shop-step-no">2</span>
               <strong>Chọn vị cho set</strong>
               <p>Bấm + ở từng vị đến khi đủ số hũ rồi "Thêm set". Muốn set khác thì soạn tiếp.</p>
-            </li>
-            <li>
+            </m.li>
+            <m.li variants={revealUp}>
               <span className="shop-step-no">3</span>
               <strong>Đặt hàng & Nhận hàng</strong>
               <p>Điền domain và tầng nhận hàng. Quán sẽ tự động nhận trạng thái của đơn khi bạn đặt hàng và chuyển khoản. Nếu cần tư vấn gì thêm, bạn có thể bấm "Nhắn Hangout".</p>
-            </li>
-          </ol>
+            </m.li>
+          </m.ol>
         </div>
       </section>
 
@@ -531,14 +558,26 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
         </div>
       </footer>
 
-      {count > 0 && !open && (
-        <button type="button" className="shop-cartbar" onClick={() => setOpen(true)}>
-          <span>
-            Đơn đặt trước · {summary}
-          </span>
-          <strong>{vnd(total)} · Xem đơn</strong>
-        </button>
-      )}
+      <AnimatePresence>
+        {count > 0 && !open && (
+          <m.button
+            key="cartbar"
+            type="button"
+            className="shop-cartbar"
+            initial={{ y: 90, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 90, opacity: 0 }}
+            whileTap={{ scale: 0.98 }}
+            transition={SOFT_SPRING}
+            onClick={() => setOpen(true)}
+          >
+            <span>
+              Đơn đặt trước · {summary}
+            </span>
+            <strong>{vnd(total)} · Xem đơn</strong>
+          </m.button>
+        )}
+      </AnimatePresence>
 
       <ShopCartModal
         open={open}
@@ -551,5 +590,6 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
         onPlaced={() => setCart([])}
       />
     </div>
+    </ShopMotion>
   )
 }

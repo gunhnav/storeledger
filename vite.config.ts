@@ -22,7 +22,8 @@ export default defineConfig({
         // Tách thư viện ra chunk riêng: trình duyệt cache được lâu, code app đổi không làm tải lại thư viện
         codeSplitting: {
           groups: [
-            { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/, priority: 2 },
+            { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/, priority: 4 },
+            { name: 'motion', test: /node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/, priority: 3 },
             { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/, priority: 2 },
             { name: 'vendor', test: /node_modules[\\/]/, priority: 1 },
           ],

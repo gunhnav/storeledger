@@ -86,13 +86,14 @@ web-nhap-lieu/
 │   │   ├── emvQr.ts            # Tạo chuỗi thanh toán mã QR EMVCo chuẩn Napas
 │   │   ├── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
 │   │   ├── appVersion.ts       # So mã build đang chạy với /version.json trên server (phát hiện bản mới sau deploy)
+│   │   ├── shopMotion.ts       # Kiểu chuyển động dùng chung (lò xo, hiện dần, stagger) cho trang đặt hàng công khai, dùng thư viện motion
 │   │   └── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
-│   ├── components/             # Các component tái sử dụng (Header, CartModal, Settings, UpdateWatcher tự tải lại khi có bản mới...)
+│   ├── components/             # Các component tái sử dụng (Header, CartModal, ShopMotion (khung + Reveal + PopNumber hiệu ứng trang cửa hàng), Settings, UpdateWatcher tự tải lại khi có bản mới...)
 │   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses...)
 │
 ├── supabase/                   # Cấu hình và mã nguồn Backend Supabase
 │   ├── config.toml             # Cấu hình dự án Supabase cục bộ
-│   ├── migrations/             # Các file migration SQL (gồm 20261025250000_enable_vault.sql kích hoạt Supabase Vault)
+│   ├── migrations/             # Các file migration SQL (gồm 20261025250000_enable_vault.sql kích hoạt Supabase Vault, 20261101090000_revenue_dau_den.sql thêm kênh doanh thu Bán dầu đen)
 │   └── functions/              # Edge Functions chạy trên nền tảng Deno
 │       ├── admin-users/        # Quản lý tài khoản nhân viên
 │       └── chat-assistant/     # Trợ lý AI phân tích số liệu bán hàng

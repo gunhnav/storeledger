@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AnimatePresence, m } from 'motion/react'
 import { supabase } from '../lib/supabase'
+import { PopNumber } from './ShopMotion'
+import { SOFT_SPRING, SPRING, revealUp, stagger } from '../lib/shopMotion'
 import { bankName } from '../lib/banks'
 import { buildPaymentQr, describePayload } from '../lib/emvQr'
 import { downloadInvoice } from '../lib/invoiceImage'
@@ -162,13 +165,24 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
     }
   }
 
-  if (!open) return null
-
   const err = (k: 'name' | 'domain' | 'floor') => (tried && issues[k] ? <small className="shop-error">{issues[k]}</small> : null)
 
+  // Hộp thoại mở / đóng có hiệu ứng (AnimatePresence giữ phần tử lại cho đến khi chạy xong hiệu ứng đóng)
   return (
-    <div className="shop-modal-backdrop" onClick={close}>
-      <div className="shop-modal" role="dialog" aria-modal="true" aria-label="Đơn đặt trước của bạn" onClick={(e) => e.stopPropagation()}>
+    <AnimatePresence>
+      {open && (
+    <m.div key="shop-modal" className="shop-modal-backdrop" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+      <m.div
+        className="shop-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Đơn đặt trước của bạn"
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, y: 28, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.97 }}
+        transition={SOFT_SPRING}
+      >
         <div className="shop-modal-head">
           <h3>{placed ? 'Đặt hàng thành công 🎉' : 'Đơn đặt trước của bạn 🥣'}</h3>
           <button type="button" aria-label="Đóng" onClick={close}>
@@ -178,14 +192,14 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
 
         {placed ? (
           <>
-            <div className="shop-success" role="status">
+            <m.div className="shop-success" role="status" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}>
               <strong>Quán đã nhận đơn {placed.code}</strong>
               <p>
                 {payByTransfer
                   ? 'Bạn quét mã QR bên dưới để chuyển khoản ngay, số tiền và nội dung đã có sẵn trong mã.'
                   : 'Bạn thanh toán sau khi nhận hàng nhé.'}
               </p>
-            </div>
+            </m.div>
 
             <ul className="shop-lines shop-lines-done">
               {placed.lines.map((l, i) => (
@@ -272,11 +286,11 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
           <p className="shop-state">Chưa có món nào trong đơn. Chọn set hoặc món lẻ rồi quay lại đây nhé!</p>
         ) : (
           <>
-            <ul className="shop-lines">
+            <m.ul className="shop-lines" variants={stagger(0.05, 0.08)} initial="hidden" animate="show">
               {cart.map((l) => {
                 const info = lineTitle(l, items)
                 return (
-                  <li key={l.key}>
+                  <m.li key={l.key} variants={revealUp}>
                     <div className="shop-line-info">
                       <strong>{info.title}</strong>
                       <small>{info.detail}</small>
@@ -285,7 +299,7 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
                       </small>
                     </div>
                     <div className="shop-qty">
-                      <button type="button" aria-label={l.qty <= 1 ? 'Xoá' : 'Giảm'} onClick={() => onSetLineQty(l.key, l.qty - 1)}>
+                      <m.button type="button" aria-label={l.qty <= 1 ? 'Xoá' : 'Giảm'} whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => onSetLineQty(l.key, l.qty - 1)}>
                         {l.qty <= 1 ? (
                           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5" />
@@ -293,16 +307,16 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
                         ) : (
                           '−'
                         )}
-                      </button>
-                      <span>{l.qty}</span>
-                      <button type="button" aria-label="Tăng" onClick={() => onSetLineQty(l.key, l.qty + 1)}>
+                      </m.button>
+                      <PopNumber value={l.qty} />
+                      <m.button type="button" aria-label="Tăng" whileTap={{ scale: 0.85 }} transition={SPRING} onClick={() => onSetLineQty(l.key, l.qty + 1)}>
                         +
-                      </button>
+                      </m.button>
                     </div>
-                  </li>
+                  </m.li>
                 )
               })}
-            </ul>
+            </m.ul>
 
             <div className="shop-total">
               <span>Tổng tiền</span>
@@ -359,7 +373,9 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
             <small className="shop-hint">Bấm "Đặt hàng" là quán nhận được đơn ngay, không cần nhắn thêm.</small>
           </>
         )}
-      </div>
-    </div>
+      </m.div>
+    </m.div>
+      )}
+    </AnimatePresence>
   )
 }

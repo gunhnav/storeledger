@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
+import { NON_POS_CHANNELS } from '../lib/revenue'
 import { errorMessage, formatDate } from '../lib/format'
 import { fetchAll } from '../lib/fetchAll'
 import { readSheet } from '../lib/readSheet'
@@ -44,7 +45,7 @@ export function ImportItems({ storeId, onDone }: { storeId: string; onDone: () =
       const { data, error: e } = await supabase.from('monthly_item_sales').select('*').eq('store_id', storeId).eq('period_start', parsed.periodStart).limit(5000)
       if (e) throw e
       const daily = await fetchAll<{ revenue_date: string; amount: number }>((a, b) =>
-        supabase.from('daily_revenue').select('revenue_date, amount').eq('store_id', storeId).neq('channel', 'nem_cuon').gte('revenue_date', parsed.periodStart).lte('revenue_date', parsed.periodEnd).order('revenue_date').order('channel').range(a, b),
+        supabase.from('daily_revenue').select('revenue_date, amount').eq('store_id', storeId).not('channel', 'in', `(${NON_POS_CHANNELS.join(',')})`).gte('revenue_date', parsed.periodStart).lte('revenue_date', parsed.periodEnd).order('revenue_date').order('channel').range(a, b),
       )
       const revenue = new Map<string, number>()
       for (const d of daily) revenue.set(d.revenue_date, (revenue.get(d.revenue_date) ?? 0) + Number(d.amount))

@@ -2,9 +2,13 @@
 import type { DailyRevenue } from '../types/database'
 
 export type RevenueChannel = DailyRevenue['channel']
-export const REVENUE_CHANNELS: RevenueChannel[] = ['in_store', 'shopeefood', 'nem_cuon']
+export const REVENUE_CHANNELS: RevenueChannel[] = ['in_store', 'shopeefood', 'nem_cuon', 'dau_den']
+// Kênh nhập tay không đi qua máy POS: không so với hoá đơn / báo cáo mặt hàng POS
+export const NON_POS_CHANNELS: RevenueChannel[] = ['nem_cuon', 'dau_den']
+const emptyByChannel = (): Record<RevenueChannel, number> => ({ in_store: 0, shopeefood: 0, nem_cuon: 0, dau_den: 0 })
 
-export const channelLabel = (channel: RevenueChannel) => (channel === 'shopeefood' ? 'Đối tác (app)' : channel === 'nem_cuon' ? 'Bán nem cuốn' : 'Quán')
+const CHANNEL_LABELS: Record<RevenueChannel, string> = { in_store: 'Quán', shopeefood: 'Đối tác (app)', nem_cuon: 'Bán nem cuốn', dau_den: 'Bán dầu đen' }
+export const channelLabel = (channel: RevenueChannel) => CHANNEL_LABELS[channel]
 
 // Hoa hồng chỉ tính cho kênh đối tác, theo tỷ lệ mặc định của cửa hàng (0,25 = 25%)
 export const commissionOf = (amount: number, channel: RevenueChannel, rate: number) =>
@@ -31,10 +35,10 @@ export function summarize(
   const days = new Map<string, RevenueDay>()
   const day = (date: string) => {
     let d = days.get(date)
-    if (!d) days.set(date, (d = { date, gross: 0, commission: 0, expenses: 0, byChannel: { in_store: 0, shopeefood: 0, nem_cuon: 0 } }))
+    if (!d) days.set(date, (d = { date, gross: 0, commission: 0, expenses: 0, byChannel: emptyByChannel() }))
     return d
   }
-  const byChannel: Record<RevenueChannel, number> = { in_store: 0, shopeefood: 0, nem_cuon: 0 }
+  const byChannel = emptyByChannel()
   for (const r of revenue) {
     const amount = Number(r.amount)
     const d = day(r.revenue_date)
@@ -80,8 +84,13 @@ export function sumDays(days: RevenueDay[]): Omit<RevenueDay, 'date'> {
       gross: t.gross + d.gross,
       commission: t.commission + d.commission,
       expenses: t.expenses + d.expenses,
-      byChannel: { in_store: t.byChannel.in_store + d.byChannel.in_store, shopeefood: t.byChannel.shopeefood + d.byChannel.shopeefood, nem_cuon: t.byChannel.nem_cuon + d.byChannel.nem_cuon },
+      byChannel: {
+        in_store: t.byChannel.in_store + d.byChannel.in_store,
+        shopeefood: t.byChannel.shopeefood + d.byChannel.shopeefood,
+        nem_cuon: t.byChannel.nem_cuon + d.byChannel.nem_cuon,
+        dau_den: t.byChannel.dau_den + d.byChannel.dau_den,
+      },
     }),
-    { gross: 0, commission: 0, expenses: 0, byChannel: { in_store: 0, shopeefood: 0, nem_cuon: 0 } },
+    { gross: 0, commission: 0, expenses: 0, byChannel: emptyByChannel() },
   )
 }
