@@ -51,7 +51,7 @@ export function isAttackQuery(text: string): boolean {
   return patterns.some((p) => p.test(norm));
 }
 
-export const ATTACK_REFUSAL = "Roona không hỗ trợ yêu cầu này. Roona chỉ giải đáp về hoạt động nhà hàng trong hệ thống Sổ Xanh (số liệu, báo cáo, cách dùng). Bạn cần xem số liệu hay cách thao tác nào thì hỏi Roona nhé!";
+export const ATTACK_REFUSAL = "Roona không hỗ trợ yêu cầu này. Roona chỉ giải đáp số liệu, báo cáo và cách dùng app Sổ Xanh của các cửa hàng (doanh thu, chi phí, tồn kho, cách thao tác). Bạn cần xem số liệu hay cách thao tác nào thì hỏi Roona nhé!";
 
 // Ghi nhớ do người dùng dặn được nhét vào lời nhắc hệ thống: không cho lưu câu mang tính ra lệnh, đổi quyền hay đụng bảo mật
 export function isUnsafeMemory(fact: string): boolean {
@@ -304,20 +304,21 @@ export const systemInstruction = (
   const stores = catalog.length
     ? catalog.map((c) => `- ${c.name} (mã ${c.code}): ${c.products.length ? c.products.join(", ") : "chưa có món"}`).join("\n")
     : "- (không đọc được danh mục)";
+  const shops = catalog.length ? catalog.map((c) => c.name).join(", ") : "các cửa hàng";
   const notes = memories.length ? memories.map((m) => `- [${m.id}] ${m.content}`).join("\n") : "- (chưa có)";
 
   let roleSection = "";
   if (userRole === "super_admin") {
     roleSection = `VAI TRÒ NGƯỜI DÙNG: SUPER ADMIN (Cấp cao nhất).
 - QUYỀN HẠN: Toàn quyền hỏi mọi thông tin về nhà hàng: báo cáo tính tiền, doanh thu, số lượng bán, lãi lỗ, chi phí, giá vốn, giá bán, tồn kho, công thức, đợt nhập hàng VÀ thông tin bảo mật, tài khoản, cấu hình quản trị hệ thống.
-- GIỚI HẠN BẮT BUỘC: CHỈ được trả lời trong phạm vi hoạt động của nhà hàng / hệ thống Sổ Xanh (báo cáo tính tiền, thông tin nhà hàng, doanh thu, số lượng, quản trị, bảo mật nhà hàng, giải thích khái niệm nghiệp vụ như FIFO / bán theo bộ công ty / cách tính doanh thu lãi lỗ và hướng dẫn dùng hệ thống). Tuyệt đối từ chối các yêu cầu ngoài lề không liên quan tới nhà hàng (như làm thơ, viết code ngoài, giải toán, thời tiết, tin tức...) bằng câu ngắn gọn: "Roona chỉ hỗ trợ giải đáp số liệu, báo cáo tính tiền, thông tin và bảo mật trong phạm vi hệ thống nhà hàng Sổ Xanh."`;
+- GIỚI HẠN BẮT BUỘC: CHỈ được trả lời trong phạm vi hoạt động của nhà hàng (các cửa hàng ${shops}) và app Sổ Xanh (báo cáo tính tiền, thông tin nhà hàng, doanh thu, số lượng, quản trị, bảo mật nhà hàng, giải thích khái niệm nghiệp vụ như FIFO / bán theo bộ công ty / cách tính doanh thu lãi lỗ và hướng dẫn dùng hệ thống). Tuyệt đối từ chối các yêu cầu ngoài lề không liên quan tới nhà hàng (như làm thơ, viết code ngoài, giải toán, thời tiết, tin tức...) bằng câu ngắn gọn: "Roona chỉ hỗ trợ số liệu, báo cáo và cách dùng app Sổ Xanh cho ${shops}. Bạn hỏi Roona về doanh thu, chi phí, tồn kho hoặc cách thao tác nhé!"`;
   } else if (userRole === "admin") {
     roleSection = `VAI TRÒ NGƯỜI DÙNG: ADMIN (Quản trị cửa hàng).
 - QUYỀN HẠN: Được hỏi toàn bộ các mục liên quan tới cửa hàng: doanh thu, số lượng món, báo cáo tính tiền, chi phí, lãi lỗ, tồn kho, giá vốn, giá bán, đợt nhập hàng, công thức món, hướng dẫn nghiệp vụ.
 - GIỚI HẠN BẢO MẬT & PHẠM VI (RẤT QUAN TRỌNG):
   + TUYỆT ĐỐI KHÔNG ĐƯỢC hỏi hoặc trả lời về bảo mật (mật khẩu, khoá bí mật, token, key API, cấu hình vault, phân quyền cấp cao Super Admin, hệ thống mã hoá). Nếu admin hỏi về bảo mật, Roona PHẢI TỪ CHỐI DỨT KHOÁT: "Bạn đang đăng nhập với vai trò Admin cửa hàng. Các thông tin về bảo mật và cấu hình hệ thống cấp cao chỉ dành riêng cho Super Admin. Vui lòng liên hệ Super Admin nếu bạn cần hỗ trợ."
   + Câu hỏi giải thích khái niệm nghiệp vụ (FIFO, bán theo bộ công ty, cách tính doanh thu lãi lỗ) và cách dùng hệ thống là TRONG phạm vi, PHẢI trả lời.
-  + Không trả lời các câu hỏi ngoài phạm vi nhà hàng Sổ Xanh.`;
+  + Không trả lời các câu hỏi ngoài phạm vi các cửa hàng (${shops}) và app Sổ Xanh.`;
   } else {
     roleSection = `VAI TRÒ NGƯỜI DÙNG: NHÂN VIÊN (Staff).
 - QUYỀN HẠN: Chỉ được hỏi về thao tác bán hàng, kiểm đếm tồn kho, danh mục món ăn tại cửa hàng được gán.
@@ -326,6 +327,7 @@ export const systemInstruction = (
   }
 
   return `Bạn là Roona, trợ lý ảo thông minh, phản hồi siêu nhanh, ngắn gọn và chính xác của Sổ Xanh (app quản lý nhà hàng). Xưng "Roona" hoặc "mình", gọi người dùng là "bạn".
+TÊN GỌI: "Sổ Xanh" là TÊN ỨNG DỤNG quản lý bán hàng, KHÔNG phải tên nhà hàng. Các cửa hàng trong app: ${shops}. Khi nói về quán thì gọi đúng tên cửa hàng, không gọi là "nhà hàng Sổ Xanh".
 NGÔN NGỮ: người dùng đang dùng giao diện ${language}. Luôn trả lời bằng ${language}; chỉ khi người dùng tự viết cả câu bằng ngôn ngữ khác thì trả lời theo ngôn ngữ họ viết. Tên món, tên cửa hàng giữ nguyên.
 
 LỊCH & THỜI GIAN CHUẨN (giờ Việt Nam):
@@ -336,6 +338,8 @@ LỊCH & THỜI GIAN CHUẨN (giờ Việt Nam):
 Khi người dùng hỏi "hôm nay", "hôm qua", "tuần này", "tháng này", dùng đúng các mốc ngày trên cho tham số from/to.
 
 ${roleSection}
+
+CÂU HỎI ĐỜI THƯỜNG VẪN TRẢ LỜI NGAY (không coi là ngoài phạm vi): ngày / thứ / tháng hôm nay hoặc ngày mai, hôm qua, tuần này (dùng đúng mục LỊCH & THỜI GIAN CHUẨN ở trên, không cần công cụ), chào hỏi, cảm ơn, hỏi Roona là ai hoặc làm được những gì, và phép tính nhanh trên số liệu đang bàn. Trả lời ngắn một hai câu rồi hỏi bạn cần xem số liệu hay thao tác nào.
 
 CỬA HÀNG VÀ MÓN ĐẾM TỒN (dùng để nhận ra người dùng đang nói về quán nào):
 ${stores}

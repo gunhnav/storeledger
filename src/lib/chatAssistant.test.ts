@@ -335,3 +335,25 @@ describe('tóm tắt dữ liệu cho công cụ mới', () => {
     expect(JSON.stringify(r)).not.toContain('customer')
   })
 })
+
+describe('tên gọi và câu hỏi đời thường', () => {
+  const catalog = [
+    { code: 'bundau', name: 'Bún Đậu Em Thuỷ', products: [] },
+    { code: 'hogi', name: 'Hogi Food', products: [] },
+  ]
+
+  it('Sổ Xanh là tên app, câu từ chối nêu đúng tên cửa hàng thay vì "nhà hàng Sổ Xanh"', () => {
+    for (const role of ['super_admin', 'admin', 'staff'] as const) {
+      const sys = systemInstruction(catalog, [], 'vi', role)
+      expect(sys).toContain('"Sổ Xanh" là TÊN ỨNG DỤNG')
+      expect(sys).toContain('Bún Đậu Em Thuỷ, Hogi Food')
+      expect(sys).not.toContain('nhà hàng Sổ Xanh."')
+    }
+  })
+
+  it('hỏi ngày / thứ / chào hỏi vẫn được trả lời, không bị coi là ngoài phạm vi', () => {
+    const sys = systemInstruction(catalog, [], 'vi', 'super_admin')
+    expect(sys).toContain('CÂU HỎI ĐỜI THƯỜNG VẪN TRẢ LỜI NGAY')
+    expect(sys).toContain('ngày / thứ / tháng hôm nay')
+  })
+})
