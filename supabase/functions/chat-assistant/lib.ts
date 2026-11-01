@@ -61,6 +61,31 @@ export function pickStore<T extends { code: string; name: string }>(rows: T[], s
 
 export const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+// Quán nhập doanh thu tay theo ngày + kênh (bảng daily_revenue, vd Bún đậu): không có đơn bán / giá vốn FIFO.
+// Giống báo cáo Doanh thu trong app: hoa hồng chỉ tính cho kênh đối tác (làm tròn từng dòng), lãi ròng = doanh thu - hoa hồng - chi phí.
+export const REVENUE_CHANNEL_LABELS: Record<string, string> = {
+  in_store: "Quán (hoá đơn POS)",
+  shopeefood: "Đối tác (app)",
+  nem_cuon: "Bán nem cuốn",
+  dau_den: "Bán dầu đen",
+};
+export type ManualRevenueRow = { channel: string; amount: number | string };
+
+export function manualRevenuePnl(revenue: ManualRevenueRow[], expenses: number, commissionRate: number) {
+  const byChannel: Record<string, number> = {};
+  let gross = 0;
+  let commission = 0;
+  for (const r of revenue) {
+    const amount = Number(r.amount);
+    const label = REVENUE_CHANNEL_LABELS[r.channel] ?? r.channel;
+    byChannel[label] = (byChannel[label] ?? 0) + amount;
+    gross += amount;
+    if (r.channel === "shopeefood") commission += Math.round(amount * commissionRate);
+  }
+  const net = gross - commission;
+  return { gross_revenue: gross, commission, net_revenue: net, expenses, net_profit: net - expenses, by_channel: byChannel };
+}
+
 export function validRange(from: unknown, to: unknown): { from: string; to: string } | null {
   const f = String(from ?? "");
   const t = String(to ?? "");

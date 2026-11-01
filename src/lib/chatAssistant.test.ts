@@ -9,6 +9,7 @@ import {
   sanitizeText,
   SUPER_ADMIN_EMAIL,
   systemInstruction,
+  manualRevenuePnl,
   validRange,
 } from '../../supabase/functions/chat-assistant/lib'
 
@@ -199,5 +200,29 @@ describe('system instruction theo vai trò người dùng và tối ưu tốc đ
     expect(sys).toContain('LỊCH & THỜI GIAN CHUẨN (giờ Việt Nam):')
     expect(sys).toContain('Tuần này: từ')
     expect(sys).toContain('Tháng này: từ')
+  })
+})
+
+describe('lãi lỗ quán nhập doanh thu tay theo ngày (Bún đậu)', () => {
+  it('cộng mọi kênh, hoa hồng chỉ tính kênh đối tác, trừ chi phí', () => {
+    const r = manualRevenuePnl(
+      [
+        { channel: 'in_store', amount: '118613000' },
+        { channel: 'shopeefood', amount: 1329990 },
+        { channel: 'nem_cuon', amount: 9828000 },
+        { channel: 'dau_den', amount: 1950000 },
+      ],
+      67864200,
+      0.25,
+    )
+    expect(r.gross_revenue).toBe(131720990)
+    expect(r.commission).toBe(332498)
+    expect(r.net_revenue).toBe(131388492)
+    expect(r.net_profit).toBe(63524292)
+    expect(r.by_channel['Bán dầu đen']).toBe(1950000)
+  })
+
+  it('không có doanh thu thì lãi ròng bằng âm chi phí', () => {
+    expect(manualRevenuePnl([], 1000, 0.25).net_profit).toBe(-1000)
   })
 })

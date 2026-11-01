@@ -5,6 +5,7 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 import {
   historyContents,
   isSecurityQuery,
+  manualRevenuePnl,
   normalizeText,
   parseJwtPayload,
   pickStore,
@@ -253,6 +254,19 @@ async function runTool(authHeader: string, catalog: Catalog, name: string, args:
       return { store: store.name, from, to, total: items.reduce((s, i) => s + i.total, 0), items: items.length <= 60 ? items : items.slice(-60), count: items.length };
     }
     if (name === "get_profit_loss") {
+      // Quán nhập doanh thu tay theo ngày (Bún đậu): doanh thu nằm ở daily_revenue, không có đơn bán nên get_pnl luôn ra 0
+      const manual = (await rest(authHeader, `daily_revenue?select=channel,amount&store_id=eq.${store.id}&revenue_date=gte.${from}&revenue_date=lte.${to}&limit=5000`)) as { channel: string; amount: number }[];
+      if (manual.length > 0) {
+        const exp = (await rest(authHeader, `expenses?select=amount&store_id=eq.${store.id}&expense_date=gte.${from}&expense_date=lte.${to}&limit=5000`)) as { amount: number }[];
+        const st = (await rest(authHeader, `stores?select=default_commission_rate&id=eq.${store.id}`)) as { default_commission_rate: number }[];
+        const totals = manualRevenuePnl(manual, exp.reduce((s, r) => s + Number(r.amount), 0), Number(st[0]?.default_commission_rate ?? 0));
+        return {
+          store: store.name, from, to, totals,
+          margin_pct: totals.net_revenue > 0 ? Math.round((totals.net_profit / totals.net_revenue) * 1000) / 10 : null,
+          formulas: "doanh thu = tổng các kênh nhập theo ngày (Quán hoá đơn POS + Đối tác app + Bán nem cuốn + Bán dầu đen); thực thu = doanh thu - hoa hồng đối tác; lãi ròng = thực thu - chi phí",
+          note: "Quán này nhập doanh thu theo ngày, không có giá vốn FIFO. Chi phí gồm mọi khoản chi (nguyên liệu, tiền nhà, lương...). by_channel là doanh thu từng nguồn. Đơn vị VND.",
+        };
+      }
       const rows = (await rest(authHeader, "rpc/get_pnl", { rpc: { p_store_id: store.id, p_period: "day", p_from: from, p_to: to } })) as Record<string, number>[];
       const keys = ["gross_revenue", "commission", "net_revenue", "cogs", "gross_profit", "expenses", "net_profit"];
       const totals = Object.fromEntries(keys.map((k) => [k, rows.reduce((s, r) => s + Number(r[k] ?? 0), 0)]));
