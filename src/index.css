@@ -894,6 +894,23 @@ tr.inactive td {
   line-height: 1.4;
   color: var(--muted);
 }
+.stat-breakdown {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.stat-breakdown li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.stat-breakdown strong {
+  color: var(--text-h);
+  font-weight: 600;
+}
 .negative,
 .stat-value.negative {
   color: var(--danger);

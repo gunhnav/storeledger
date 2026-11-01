@@ -16,6 +16,9 @@ import { DatePicker } from '../components/DatePicker'
 type ItemLite = Pick<MonthlyItemSale, 'category' | 'net' | 'period_start' | 'period_end'>
 type Loaded = { key: string; current: RevenueSummary; previous: RevenueSummary; expensesByCategory: { category: string; amount: number }[]; items: ItemLite[] }
 
+// Kênh tính từ hoá đơn POS (hai kênh còn lại gom vào ô "Doanh thu khác")
+const POS_CHANNELS = REVENUE_CHANNELS.filter((c) => !NON_POS_CHANNELS.includes(c))
+
 // Màu mỗi kênh trên biểu đồ (chi phí dùng --chart-2, lãi dùng màu chữ)
 const CHANNEL_COLOR: Record<RevenueChannel, string> = { in_store: 'var(--chart-1)', shopeefood: 'var(--chart-3)', nem_cuon: 'var(--chart-4)', dau_den: 'var(--chart-5)' }
 
@@ -132,7 +135,7 @@ export function RevenueReport({ storeId }: { storeId: string }) {
       <section className="report-block">
         <h2>{t('Doanh thu theo kênh')}</h2>
         <div className="stats">
-          {REVENUE_CHANNELS.map((c) => (
+          {POS_CHANNELS.map((c) => (
             <div key={c} className="stat">
               <div className="stat-label">
                 <span className="channel-dot" style={{ background: CHANNEL_COLOR[c] }} aria-hidden="true" />
@@ -145,26 +148,24 @@ export function RevenueReport({ storeId }: { storeId: string }) {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="report-block">
-        <h2>{t('Doanh thu ngoài POS')}</h2>
-        <div className="stats">
-          {NON_POS_CHANNELS.map((c) => (
-            <div key={c} className="stat">
-              <div className="stat-label">
-                <span className="channel-dot" style={{ background: CHANNEL_COLOR[c] }} aria-hidden="true" />
-                {t(channelLabel(c))}
-              </div>
-              <div className="stat-value">{formatVND(cur.byChannel[c])}</div>
-              <div className="stat-sub">{cur.gross > 0 ? t('{pct}% doanh thu', { pct: Math.round((cur.byChannel[c] / cur.gross) * 100) }) : '—'}</div>
-            </div>
-          ))}
+          {/* Doanh thu khác (không qua máy POS): một ô tổng, bên trong chia theo từng nguồn */}
           <div className="stat">
-            <div className="stat-label">{t('Tổng ngoài POS')}</div>
+            <div className="stat-label">{t('Doanh thu khác')}</div>
             <div className="stat-value">{formatVND(nonPos)}</div>
-            <div className="stat-sub">{t('Không qua máy POS')}</div>
+            <div className="stat-sub">
+              {cur.gross > 0 ? `${t('{pct}% doanh thu', { pct: Math.round((nonPos / cur.gross) * 100) })} · ${t('Không qua máy POS')}` : '—'}
+              <ul className="stat-breakdown">
+                {NON_POS_CHANNELS.map((c) => (
+                  <li key={c}>
+                    <span>
+                      <span className="channel-dot" style={{ background: CHANNEL_COLOR[c] }} aria-hidden="true" />
+                      {t(channelLabel(c))}
+                    </span>
+                    <strong>{formatVND(cur.byChannel[c])}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>

@@ -184,6 +184,16 @@ describe('system instruction theo vai trò người dùng và tối ưu tốc đ
     expect(sys).toContain('TUYỆT ĐỐI KHÔNG gọi thêm công cụ khác để kiểm tra lại')
   })
 
+  it('mọi vai trò đều được giải thích khái niệm FIFO / bán theo bộ công ty, không bị coi là ngoài phạm vi', () => {
+    for (const role of ['super_admin', 'admin', 'staff'] as const) {
+      const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', role)
+      expect(sys).toContain('KIẾN THỨC NGHIỆP VỤ')
+      expect(sys).toContain('FIFO (nhập trước xuất trước)')
+      expect(sys).toContain('Bán theo bộ công ty')
+      expect(sys).toContain('giải thích khái niệm nghiệp vụ')
+    }
+  })
+
   it('cung cấp mốc ngày chuẩn theo giờ Việt Nam cho tuần này, tháng này', () => {
     const sys = systemInstruction(dummyCatalog, dummyMemories, 'vi', 'admin')
     expect(sys).toContain('LỊCH & THỜI GIAN CHUẨN (giờ Việt Nam):')
