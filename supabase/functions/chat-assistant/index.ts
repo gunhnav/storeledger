@@ -1,6 +1,6 @@
 // Trợ lý ảo Roona giải đáp nghiệp vụ (Web Nhập Liệu)
 // Phân chia vai trò: Super Admin (toàn quyền + bảo mật trong phạm vi nhà hàng), Admin (quán, doanh thu, cấm bảo mật), Staff (bán hàng/kho cơ bản).
-// Tối ưu tốc độ phản hồi cực nhanh (thinkingBudget: 0, caching, flash-lite models, early guard).
+// Ưu tiên Gemini 3.8 Flash với suy nghĩ ngắn (thinkingLevel low) để trả lời hợp lý, có caching và chặn sớm câu hỏi nhạy cảm.
 import "@supabase/functions-js/edge-runtime.d.ts";
 import {
   ATTACK_REFUSAL,
@@ -32,17 +32,18 @@ const CORS_HEADERS = {
 };
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
-// Model ưu tiên: flash-lite phản hồi nhanh nhất (sub-second), sau đó tới flash
+// Model ưu tiên: Gemini 3.8 Flash (trả lời hợp lý nhất, có suy nghĩ ngắn), dự phòng 3.8 Flash-Lite.
+// Bỏ model đời cũ (2.0 / 1.5) để không tốn lượt gọi vào model đã ngừng. Ghi đè được bằng secret GEMINI_MODELS.
 const PREFERRED_MODELS = (
   Deno.env.get("GEMINI_MODELS") ??
-  "gemini-3.8-flash-lite,gemini-3.8-flash,gemini-2.0-flash,gemini-1.5-flash"
+  "gemini-3.8-flash,gemini-3.8-flash-lite"
 )
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
 
 const ATTEMPT_TIMEOUT_MS = 12000;
-const HEDGE_MS = 2000;
+const HEDGE_MS = 5000;
 const TOTAL_BUDGET_MS = 20000;
 const MAX_QUESTION_CHARS = 2000;
 
@@ -449,7 +450,7 @@ async function discoverModels(apiKey: string): Promise<string[]> {
         /flash/.test(m.name) &&
         !/(image|tts|audio|live|embedding|robotics|computer|thinking|exp|preview|omni)/.test(m.name))
       .map((m: { name: string }) => m.name.replace(/^models\//, ""))
-      .sort((a: string, b: string) => Number(!/lite/.test(a)) - Number(!/lite/.test(b)) || b.localeCompare(a));
+      .sort((a: string, b: string) => Number(/lite/.test(a)) - Number(/lite/.test(b)) || b.localeCompare(a));
     modelCache = { at: Date.now(), names };
     return names;
   } catch {
@@ -457,9 +458,9 @@ async function discoverModels(apiKey: string): Promise<string[]> {
   }
 }
 
-// Chat nghiệp vụ: ưu tiên tối đa phản hồi nhanh.
-// Thử tắt suy nghĩ: thinkingLevel "minimal" (Gemini 3) -> thinkingBudget 0 (Gemini 2.5) -> không gửi tham số.
-const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingLevel: "minimal" }, { thinkingBudget: 0 }, null];
+// Suy nghĩ ngắn để trả lời hợp lý mà vẫn nhanh: thinkingLevel "low" (Gemini 3) -> ngân sách nhỏ 512 token (Gemini 2.5)
+// -> không gửi tham số nếu model không nhận cả hai.
+const THINKING_MODES: (Record<string, unknown> | null)[] = [{ thinkingLevel: "low" }, { thinkingBudget: 512 }, null];
 let thinkingMode = 0;
 const deadModels = new Set<string>();
 const cooldownUntil = new Map<string, number>();
@@ -491,7 +492,7 @@ async function callModel(
         ...(tools ? { tools } : {}),
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 700,
+          maxOutputTokens: 1500,
           ...(THINKING_MODES[mode] ? { thinkingConfig: THINKING_MODES[mode] } : {}),
         },
       }),
@@ -684,6 +685,7 @@ export default {
         const calls = won.content.parts.filter((p) => p.functionCall);
         if (calls.length === 0) {
           const text = won.content.parts.map((p) => p.text ?? "").join("").trim();
+          console.log(`[chat-assistant] ${elapsed()}ms ${user.role} · ${trace.join(" · ")}`);
           return reply({ answer: sanitizeText(text), model: won.model, durationMs: elapsed(), trace: trace.join(" · ") });
         }
         contents.push(won.content);
