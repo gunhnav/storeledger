@@ -3,13 +3,19 @@
 // Tối ưu tốc độ phản hồi cực nhanh (thinkingBudget: 0, caching, flash-lite models, early guard).
 import "@supabase/functions-js/edge-runtime.d.ts";
 import {
+  ATTACK_REFUSAL,
   historyContents,
+  isAttackQuery,
   isSecurityQuery,
+  isUnsafeMemory,
   manualRevenuePnl,
   normalizeText,
   parseJwtPayload,
   pickStore,
   sanitizeText,
+  summarizeItemSales,
+  summarizePreorderRows,
+  summarizeRevenueDays,
   SUPER_ADMIN_EMAIL,
   systemInstruction,
   validRange,
@@ -58,6 +64,21 @@ const BASE_TOOLS = [
   {
     name: "get_profit_loss",
     description: "Lãi lỗ của cửa hàng trong khoảng ngày: doanh thu, giá vốn, lãi gộp, chi phí, lãi ròng (admin & super admin).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+  },
+  {
+    name: "get_revenue",
+    description: "Doanh thu từng ngày theo kênh (Quán hoá đơn POS, Đối tác app, Bán nem cuốn, Bán dầu đen) của quán nhập doanh thu tay như Bún đậu: tổng, theo kênh, ngày cao nhất / thấp nhất, trung bình mỗi ngày (admin & super admin).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
+  },
+  {
+    name: "get_item_sales",
+    description: "Báo cáo mặt hàng POS của một tháng (Bún đậu): món bán chạy theo doanh thu và số phần, doanh thu theo nhóm món (admin & super admin).",
+    parameters: { type: "OBJECT", properties: { store: STORE_ARG, month: { type: "STRING", description: "Tháng cần xem, định dạng YYYY-MM" } }, required: ["store", "month"] },
+  },
+  {
+    name: "get_preorders",
+    description: "Đơn đặt trước từ trang khách công khai trong khoảng ngày: số đơn theo trạng thái, đơn đang chờ xử lý, tổng tiền, các đơn gần nhất (admin & super admin).",
     parameters: { type: "OBJECT", properties: { store: STORE_ARG, ...DATE_ARGS }, required: ["store", "from", "to"] },
   },
   {
@@ -179,6 +200,7 @@ async function runTool(authHeader: string, catalog: Catalog, name: string, args:
     if (name === "remember") {
       const fact = String(args.fact ?? "").trim().slice(0, 300);
       if (!fact) throw new Error("Ghi nhớ trống");
+      if (isUnsafeMemory(fact)) return { saved: false, error: "Roona không lưu ghi nhớ này (liên quan quy tắc, quyền hạn hoặc bảo mật)." };
       const rows = (await rest(authHeader, "assistant_memories", { rpc: { content: fact } })) as Memory[];
       ctxCache.delete(authHeader);
       return { saved: true, id: rows?.[0]?.id, fact };
@@ -227,6 +249,14 @@ async function runTool(authHeader: string, catalog: Catalog, name: string, args:
     }
     if (name === "get_break_even") {
       return { store: store.name, data: await rest(authHeader, "rpc/get_break_even", { rpc: { p_store_id: store.id } }) };
+    }
+    if (name === "get_item_sales") {
+      const month = String(args.month ?? "");
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error("Tháng không hợp lệ (cần YYYY-MM).");
+      const rows = (await rest(authHeader, `monthly_item_sales?select=item_name,category,qty,net,period_start,period_end&store_id=eq.${store.id}&month=eq.${month}-01&limit=2000`)) as { item_name: string; category: string | null; qty: number; net: number; period_end: string }[];
+      if (rows.length === 0) return { store: store.name, month, note: "Chưa nhập báo cáo mặt hàng cho tháng này (Nhập liệu -> Nhập mặt hàng)." };
+      const ends = [...new Set(rows.map((r) => r.period_end))].sort();
+      return { store: store.name, month, data_until: ends[ends.length - 1], ...summarizeItemSales(rows), note: "Doanh thu sau giảm giá từ báo cáo mặt hàng POS; một món nhiều mã đã gộp theo tên. Đơn vị VND." };
     }
     const range = validRange(args.from, args.to);
     if (!range) throw new Error("Khoảng ngày không hợp lệ (cần YYYY-MM-DD, từ <= đến).");
@@ -281,6 +311,15 @@ async function runTool(authHeader: string, catalog: Catalog, name: string, args:
         note: "expenses KHÔNG gồm tiền nhập hàng (đã vào giá vốn khi bán, hàng chưa bán nằm trong tồn kho nên chưa tính vào lãi). stock_purchases_in_period là tiền nhập hàng trong kỳ để tham khảo, KHÔNG trừ thêm vào lãi ròng. Đơn vị VND.",
         daily: rows.length <= 40 ? rows : undefined,
       };
+    }
+    if (name === "get_revenue") {
+      const rows = (await rest(authHeader, `daily_revenue?select=revenue_date,channel,amount&store_id=eq.${store.id}&revenue_date=gte.${from}&revenue_date=lte.${to}&order=revenue_date&limit=5000`)) as { revenue_date: string; channel: string; amount: number }[];
+      if (rows.length === 0) return { store: store.name, from, to, note: "Chưa có doanh thu nhập theo ngày trong khoảng này (quán theo dõi bán hàng bằng đơn thì dùng get_best_sellers / get_profit_loss)." };
+      return { store: store.name, from, to, ...summarizeRevenueDays(rows), note: "Đơn vị VND. Doanh thu chưa trừ hoa hồng đối tác." };
+    }
+    if (name === "get_preorders") {
+      const rows = (await rest(authHeader, `preorders?select=code,status,payment,total,floor,created_at&store_id=eq.${store.id}&created_at=gte.${from}T00:00:00%2B07:00&created_at=lte.${to}T23:59:59%2B07:00&order=created_at.desc&limit=500`)) as { code: string; status: string; payment: string; total: number; floor: string; created_at: string }[];
+      return { store: store.name, from, to, ...summarizePreorderRows(rows), note: "Đơn đặt trước không tính vào bán hàng / kho / báo cáo. Không có tên khách. Đơn chờ xử lý = chưa đi hết luồng trạng thái." };
     }
     if (name === "get_expenses") {
       const rows = (await rest(authHeader, `expenses?select=category,amount,expense_date&store_id=eq.${store.id}&expense_date=gte.${from}&expense_date=lte.${to}&limit=3000`)) as { category: string; amount: number }[];
@@ -452,7 +491,7 @@ async function callModel(
         ...(tools ? { tools } : {}),
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 400,
+          maxOutputTokens: 700,
           ...(THINKING_MODES[mode] ? { thinkingConfig: THINKING_MODES[mode] } : {}),
         },
       }),
@@ -607,6 +646,9 @@ export default {
       // BẢO VỆ PHÂN QUYỀN CHẶT CHẼ & TỐI ƯU SIÊU TỐC:
       // Admin hoặc Staff hỏi bảo mật -> Trả lời dứt khoát ngay (0ms roundtrip)
       // =========================================================================
+      if (isAttackQuery(question)) {
+        return reply({ answer: ATTACK_REFUSAL, durationMs: elapsed(), trace: "chặn yêu cầu nhạy cảm 0.0s" });
+      }
       if (user.role !== "super_admin" && isSecurityQuery(question)) {
         const refusal =
           user.role === "admin"
