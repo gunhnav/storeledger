@@ -1070,4 +1070,15 @@ export const zh: Record<string, string> = {
   'Có phiên bản mới của ứng dụng.': '应用有新版本。',
   'Tải lại': '重新加载',
   'Nhập: {name}': '进货：{name}',
+  // Lịch tháng bán hàng
+  'Cả tháng: {count} hũ': '整月：{count} 罐',
+  '{count} hũ': '{count} 罐',
+  'Bấm vào một ngày để xem chi tiết Quán và Công ty.': '点击某一天查看门店和公司明细。',
+  'Ngày {date}': '{date}',
+  'Không có đơn bán trong ngày này.': '当天没有销售。',
+  '{sets} set · {count} hũ': '{sets} 套 · {count} 罐',
+  '{count} set': '{count} 套',
+  'Lịch tháng': '月历',
+  'Bảng chi tiết': '详细表格',
+  'Kiểu xem': '查看方式',
 }

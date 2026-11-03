@@ -5346,3 +5346,148 @@ input.overridden {
     gap: 4px;
   }
 }
+
+/* Lịch tháng bán hàng (Nhật ký ngày → Lịch tháng) */
+.log-view {
+  margin-bottom: 12px;
+}
+.cal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cal-head h2 {
+  margin: 0;
+  min-width: 10ch;
+  text-align: center;
+  text-transform: capitalize;
+}
+.cal-head button {
+  min-width: 40px;
+}
+.cal-month-total {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.cal-weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 4px 0;
+}
+.cal-weekday.sunday {
+  color: var(--orange);
+}
+.cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 92px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.cal-cell.empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+.cal-cell.future {
+  opacity: 0.55;
+}
+.cal-cell.today {
+  border-color: var(--accent);
+}
+.cal-cell.selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.cal-date {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-h);
+}
+.cal-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.cal-items li,
+.cal-item-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+.cal-items li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-total {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: right;
+}
+.cal-detail {
+  margin-top: 12px;
+  scroll-margin-bottom: 16px;
+}
+.cal-detail h3 {
+  margin: 0 0 8px;
+}
+.cal-detail h4 {
+  margin: 0 0 6px;
+}
+.cal-detail-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.cal-item-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  max-width: 280px;
+}
+.cal-orders {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+.cal-orders li {
+  margin-bottom: 6px;
+}
+@media (max-width: 520px) {
+  .cal-grid {
+    gap: 2px;
+  }
+  .cal-cell {
+    min-height: 56px;
+    padding: 4px 3px;
+  }
+  .cal-items {
+    display: none;
+  }
+  .cal-total {
+    font-size: 11px;
+    text-align: center;
+  }
+}

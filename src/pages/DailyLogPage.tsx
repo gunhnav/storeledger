@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { DatePicker } from '../components/DatePicker'
+import { DailyCalendar } from './DailyCalendar'
 import { supabase } from '../lib/supabase'
 import { LANGUAGES, useI18n, type Translate } from '../lib/i18n'
 import { useStore } from '../lib/store'
@@ -36,10 +37,40 @@ function dayMonth(iso: string): string {
 
 const sum = (values: number[]) => values.reduce((a, b) => a + b, 0)
 
+const VIEWS = [
+  { value: 'calendar', label: 'Lịch tháng' },
+  { value: 'table', label: 'Bảng chi tiết' },
+] as const
+
 export function DailyLogPage() {
   const { current } = useStore()
+  const { t } = useI18n()
+  const [view, setView] = useState<'calendar' | 'table'>('calendar')
+  if (!current) return null
   // Đổi cửa hàng thì dựng lại để tải lại dữ liệu
-  return current ? <DailyLog key={current.id} storeId={current.id} storeName={current.name} partner={usesPartnerChannel(current.code)} /> : null
+  return (
+    <>
+      <div className="segmented log-view" role="radiogroup" aria-label={t('Kiểu xem')}>
+        {VIEWS.map((v) => (
+          <button
+            key={v.value}
+            type="button"
+            role="radio"
+            aria-checked={view === v.value}
+            className={view === v.value ? 'active' : undefined}
+            onClick={() => setView(v.value)}
+          >
+            {t(v.label)}
+          </button>
+        ))}
+      </div>
+      {view === 'calendar' ? (
+        <DailyCalendar key={current.id} storeId={current.id} />
+      ) : (
+        <DailyLog key={current.id} storeId={current.id} storeName={current.name} partner={usesPartnerChannel(current.code)} />
+      )}
+    </>
+  )
 }
 
 // Chỉ admin (route bọc RequireAdmin, hàm DB cũng chặn)

@@ -87,7 +87,8 @@ web-nhap-lieu/
 │   │   ├── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
 │   │   ├── appVersion.ts       # So mã build đang chạy với /version.json trên server (phát hiện bản mới sau deploy)
 │   │   ├── shopMotion.ts       # Kiểu chuyển động dùng chung (lò xo, hiện dần, stagger) cho trang đặt hàng công khai, dùng thư viện motion
-│   │   └── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
+│   │   ├── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
+│   │   └── dailyCalendar.ts    # Gom đơn bán theo ngày (Quán / Công ty, số set đọc từ ghi chú) + lưới lịch tháng cho pages/DailyCalendar.tsx (Nhật ký ngày → Lịch tháng)
 │   ├── components/             # Các component tái sử dụng (Header, CartModal, ShopMotion (khung + Reveal + PopNumber hiệu ứng trang cửa hàng), Settings, UpdateWatcher tự tải lại khi có bản mới...)
 │   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses...)
 │

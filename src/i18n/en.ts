@@ -1070,4 +1070,15 @@ export const en: Record<string, string> = {
   'Có phiên bản mới của ứng dụng.': 'New version of the app is available.',
   'Tải lại': 'Reload',
   'Nhập: {name}': 'Purchased: {name}',
+  // Lịch tháng bán hàng
+  'Cả tháng: {count} hũ': 'Whole month: {count} jars',
+  '{count} hũ': '{count} jars',
+  'Bấm vào một ngày để xem chi tiết Quán và Công ty.': 'Tap a day to see Shop and Company details.',
+  'Ngày {date}': 'Day {date}',
+  'Không có đơn bán trong ngày này.': 'No sales on this day.',
+  '{sets} set · {count} hũ': '{sets} sets · {count} jars',
+  '{count} set': '{count} sets',
+  'Lịch tháng': 'Month calendar',
+  'Bảng chi tiết': 'Detailed table',
+  'Kiểu xem': 'View',
 }

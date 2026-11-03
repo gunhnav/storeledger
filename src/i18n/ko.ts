@@ -1070,4 +1070,15 @@ export const ko: Record<string, string> = {
   'Có phiên bản mới của ứng dụng.': '앱의 새 버전이 있습니다.',
   'Tải lại': '새로고침',
   'Nhập: {name}': '입고: {name}',
+  // Lịch tháng bán hàng
+  'Cả tháng: {count} hũ': '한 달 합계: {count}개',
+  '{count} hũ': '{count}개',
+  'Bấm vào một ngày để xem chi tiết Quán và Công ty.': '날짜를 눌러 매장·회사 상세를 확인하세요.',
+  'Ngày {date}': '{date}',
+  'Không có đơn bán trong ngày này.': '이 날은 판매가 없습니다.',
+  '{sets} set · {count} hũ': '{sets}세트 · {count}개',
+  '{count} set': '{count}세트',
+  'Lịch tháng': '월간 달력',
+  'Bảng chi tiết': '상세 표',
+  'Kiểu xem': '보기 방식',
 }

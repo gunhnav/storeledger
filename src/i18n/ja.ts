@@ -1070,4 +1070,15 @@ export const ja: Record<string, string> = {
   'Có phiên bản mới của ứng dụng.': 'アプリの新しいバージョンがあります。',
   'Tải lại': '再読み込み',
   'Nhập: {name}': '入荷：{name}',
+  // Lịch tháng bán hàng
+  'Cả tháng: {count} hũ': '今月合計：{count}個',
+  '{count} hũ': '{count}個',
+  'Bấm vào một ngày để xem chi tiết Quán và Công ty.': '日付をタップすると店舗と会社の内訳が見られます。',
+  'Ngày {date}': '{date}',
+  'Không có đơn bán trong ngày này.': 'この日の販売はありません。',
+  '{sets} set · {count} hũ': '{sets}セット · {count}個',
+  '{count} set': '{count}セット',
+  'Lịch tháng': '月カレンダー',
+  'Bảng chi tiết': '詳細表',
+  'Kiểu xem': '表示',
 }
