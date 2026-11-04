@@ -145,10 +145,15 @@ export function dailyResults(input: AnalyticsInput, fifo: FifoResult, from: stri
   const purchased: Record<string, number> = {}
   const moved: Record<string, number> = {}
   const sold: Record<string, number> = {}
+  // Hàng huỷ ở nhà / ở quán
+  const disposedHome: Record<string, number> = {}
+  const disposedShop: Record<string, number> = {}
   for (const p of stockProducts) {
     purchased[p.id] = 0
     moved[p.id] = 0
     sold[p.id] = 0
+    disposedHome[p.id] = 0
+    disposedShop[p.id] = 0
   }
 
   const results: DailyResult[] = []
@@ -156,6 +161,11 @@ export function dailyResults(input: AnalyticsInput, fifo: FifoResult, from: stri
     for (const b of input.batchLines) if (b.date === day && b.productId in purchased) purchased[b.productId] += b.qty
     for (const t of input.transfers) if (t.date === day && t.productId in moved) moved[t.productId] += t.destination === 'home' ? -t.qty : t.qty
     for (const s of input.sales) if (s.date === day && s.productId in sold) sold[s.productId] += s.qty
+    for (const d of input.disposals ?? []) {
+      if (d.date !== day || !(d.productId in sold)) continue
+      if (d.location === 'home') disposedHome[d.productId] += d.qty
+      else if (d.location === 'shop') disposedShop[d.productId] += d.qty
+    }
 
     const revenue = revenueByDay.get(day) ?? 0
     const cogs = cogsByDay.get(day) ?? 0
@@ -169,8 +179,8 @@ export function dailyResults(input: AnalyticsInput, fifo: FifoResult, from: stri
     const shopStock: Record<string, number> = {}
     const homeStock: Record<string, number> = {}
     for (const p of stockProducts) {
-      shopStock[p.id] = moved[p.id] - sold[p.id]
-      homeStock[p.id] = purchased[p.id] - moved[p.id]
+      shopStock[p.id] = moved[p.id] - sold[p.id] - disposedShop[p.id]
+      homeStock[p.id] = purchased[p.id] - moved[p.id] - disposedHome[p.id]
     }
     results.push({
       day,

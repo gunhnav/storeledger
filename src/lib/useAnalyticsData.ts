@@ -25,6 +25,14 @@ type SaleRow = {
   }[]
 }
 
+type DisposalRow = {
+  product_id: string
+  quantity: number
+  disposal_date: string
+  location: 'home' | 'shop' | 'company'
+  stock_disposal_lines: { batch_id: string; quantity: number; unit_cost: number }[]
+}
+
 // Dữ liệu thô của một cửa hàng cho các báo cáo phân tích (chỉ admin đọc được qua RLS)
 export function useAnalyticsData(storeId: string) {
   const [state, setState] = useState<{ storeId: string; data: AnalyticsData | null; error: string | null } | null>(null)
@@ -32,9 +40,9 @@ export function useAnalyticsData(storeId: string) {
   useEffect(() => {
     let cancelled = false
     const load = async () => {
-      const [products, purchases, batches, transfers, sales, expenses] = await Promise.all([
+      const [products, purchases, batches, transfers, sales, expenses, disposals] = await Promise.all([
         supabase.from('products').select('*').eq('store_id', storeId),
-        supabase.from('purchases').select('id, purchase_date, note').eq('store_id', storeId).order('purchase_date').order('created_at'),
+        supabase.from('purchases').select('id, purchase_date, note, paid_on').eq('store_id', storeId).order('purchase_date').order('created_at'),
         supabase.from('stock_batches').select('id, purchase_id, product_id, received_date, initial_qty, unit_cost').eq('store_id', storeId),
         supabase.from('stock_transfers').select('product_id, quantity, transfer_date, destination').eq('store_id', storeId),
         supabase
@@ -43,8 +51,13 @@ export function useAnalyticsData(storeId: string) {
           .eq('store_id', storeId),
         // Khoản chi sinh từ nhập kho đã nằm trong giá vốn / vốn nhập nên bỏ qua
         supabase.from('expenses').select('expense_date, amount').eq('store_id', storeId).is('purchase_id', null),
+        // Hàng huỷ (không đủ chất lượng bán) và phần lấy từ từng lô
+        supabase
+          .from('stock_disposals')
+          .select('product_id, quantity, disposal_date, location, stock_disposal_lines(batch_id, quantity, unit_cost)')
+          .eq('store_id', storeId),
       ])
-      const firstError = [products, purchases, batches, transfers, sales, expenses].find((r) => r.error)?.error
+      const firstError = [products, purchases, batches, transfers, sales, expenses, disposals].find((r) => r.error)?.error
       if (firstError) throw firstError
 
       const productIds = (products.data ?? []).map((p) => p.id)
@@ -56,6 +69,7 @@ export function useAnalyticsData(storeId: string) {
 
       const batchPurchase = new Map((batches.data ?? []).map((b) => [b.id, b.purchase_id]))
       const saleRows = (sales.data ?? []) as unknown as SaleRow[]
+      const disposalRows = (disposals.data ?? []) as unknown as DisposalRow[]
       const input: AnalyticsInput = {
         products: (products.data ?? []).map((p) => ({
           id: p.id,
@@ -63,7 +77,7 @@ export function useAnalyticsData(storeId: string) {
           threshold: p.low_stock_threshold,
           tracksStock: p.tracks_stock,
         })),
-        purchases: (purchases.data ?? []).map((p) => ({ id: p.id, date: p.purchase_date, note: p.note })),
+        purchases: (purchases.data ?? []).map((p) => ({ id: p.id, date: p.purchase_date, note: p.note, paidOn: p.paid_on })),
         batchLines: (batches.data ?? []).map((b) => ({
           id: b.id,
           purchaseId: b.purchase_id,
@@ -86,6 +100,13 @@ export function useAnalyticsData(storeId: string) {
         transfers: (transfers.data ?? []).map((t) => ({ date: t.transfer_date, productId: t.product_id, qty: t.quantity, destination: t.destination })),
         expenses: (expenses.data ?? []).map((e) => ({ date: e.expense_date, amount: e.amount })),
         prices: (prices.data ?? []).map((p) => ({ productId: p.product_id, effectiveFrom: p.effective_from, salePrice: p.sale_price })),
+        disposals: disposalRows.map((d) => ({
+          date: d.disposal_date,
+          productId: d.product_id,
+          qty: d.quantity,
+          location: d.location,
+          lines: d.stock_disposal_lines.map((l) => ({ batchLineId: l.batch_id, qty: l.quantity, unitCost: Number(l.unit_cost) })),
+        })),
       }
 
       // Doanh thu của phần lấy từ lô = số lượng × đơn giá chụp × (1 − hoa hồng); giá vốn từ chính cost line

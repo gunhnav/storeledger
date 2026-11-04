@@ -53,9 +53,12 @@ export function stockRows(input: AnalyticsInput): StockRow[] {
       const moved = sum(transfers.map(signed))
       const movedShop = sum(transfers.filter((t) => !isCompany(t)).map(signed))
       const sold = sum(sales.filter((s) => !isCompany(s)).map((s) => s.qty))
-      const company = moved - movedShop - sum(sales.filter(isCompany).map((s) => s.qty))
-      const home = purchased - moved
-      const shop = movedShop - sold
+      // Hàng huỷ (không đủ chất lượng bán) trừ khỏi tồn ở đúng nơi để
+      const disposed = (location: string) =>
+        sum((input.disposals ?? []).filter((d) => d.productId === p.id && d.location === location).map((d) => d.qty))
+      const company = moved - movedShop - sum(sales.filter(isCompany).map((s) => s.qty)) - disposed('company')
+      const home = purchased - moved - disposed('home')
+      const shop = movedShop - sold - disposed('shop')
       // Mang ra nhiều hơn đã nhập: số liệu vô lý cho cả hai phía
       const movedTooMuch = moved > purchased
       return {

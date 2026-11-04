@@ -77,8 +77,31 @@ export type Purchase = {
   store_id: string
   purchase_date: string
   note: string | null
+  // Ngày đã thanh toán đợt nhập; null = chưa thanh toán (20261104090000_stock_disposals_purchase_payment.sql)
+  paid_on: string | null
   created_by: string | null
   created_at: string
+}
+
+// Hàng huỷ vì không đủ chất lượng bán (20261104090000_stock_disposals_purchase_payment.sql)
+export type DisposalLocation = 'home' | 'shop' | 'company'
+export type StockDisposal = {
+  id: string
+  store_id: string
+  product_id: string
+  disposal_date: string
+  location: DisposalLocation
+  quantity: number
+  reason: string | null
+  created_by: string | null
+  created_at: string
+}
+export type StockDisposalLine = {
+  id: string
+  disposal_id: string
+  batch_id: string
+  quantity: number
+  unit_cost: number
 }
 
 export type StockBatch = {
@@ -618,6 +641,15 @@ export type Database = {
         { foreignKeyName: 'stock_transfers_product_id_fkey'; columns: ['product_id']; isOneToOne: false; referencedRelation: 'products'; referencedColumns: ['id'] },
         { foreignKeyName: 'stock_transfers_created_by_fkey'; columns: ['created_by']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
       ]>
+      // Ghi / xoá qua create_stock_disposal, delete_stock_disposal
+      stock_disposals: ReadOnlyTable<StockDisposal, [
+        { foreignKeyName: 'stock_disposals_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
+        { foreignKeyName: 'stock_disposals_product_id_fkey'; columns: ['product_id']; isOneToOne: false; referencedRelation: 'products'; referencedColumns: ['id'] },
+      ]>
+      stock_disposal_lines: ReadOnlyTable<StockDisposalLine, [
+        { foreignKeyName: 'stock_disposal_lines_disposal_id_fkey'; columns: ['disposal_id']; isOneToOne: false; referencedRelation: 'stock_disposals'; referencedColumns: ['id'] },
+        { foreignKeyName: 'stock_disposal_lines_batch_id_fkey'; columns: ['batch_id']; isOneToOne: false; referencedRelation: 'stock_batches'; referencedColumns: ['id'] },
+      ]>
       sales: ReadOnlyTable<Sale, [
         { foreignKeyName: 'sales_store_id_fkey'; columns: ['store_id']; isOneToOne: false; referencedRelation: 'stores'; referencedColumns: ['id'] },
         { foreignKeyName: 'sales_created_by_fkey'; columns: ['created_by']; isOneToOne: false; referencedRelation: 'profiles'; referencedColumns: ['id'] },
@@ -724,6 +756,20 @@ export type Database = {
         Args: { p_store_id: string; p_product_id: string; p_quantity: number; p_transfer_date: string | null; p_note: string | null }
         Returns: string
       }
+      // supabase/migrations/20261104090000_stock_disposals_purchase_payment.sql
+      create_stock_disposal: {
+        Args: {
+          p_store_id: string
+          p_product_id: string
+          p_location: DisposalLocation
+          p_quantity: number
+          p_disposal_date: string | null
+          p_reason: string | null
+        }
+        Returns: string
+      }
+      delete_stock_disposal: { Args: { p_disposal_id: string }; Returns: undefined }
+      set_purchase_payment: { Args: { p_purchase_id: string; p_paid_on: string | null }; Returns: undefined }
       create_sale: { Args: CreateSaleArgs; Returns: string }
       get_stock_status: { Args: { p_store_id: string }; Returns: StockStatusRow[] }
       get_pnl: { Args: GetPnlArgs; Returns: PnlRow[] }

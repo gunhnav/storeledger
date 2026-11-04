@@ -12,6 +12,7 @@ import { BatchStatsPage } from './pages/BatchStatsPage'
 import { BestSellersPage } from './pages/BestSellersPage'
 import { DailyLogPage } from './pages/DailyLogPage'
 import { DishRecipesPage } from './pages/DishRecipesPage'
+import { DisposalPage } from './pages/DisposalPage'
 import { ExpensePage } from './pages/ExpensePage'
 import { ExpenseReport } from './pages/ExpenseReport'
 import { GuidePage } from './pages/GuidePage'
@@ -39,6 +40,7 @@ const HOGI_ENTRY_TABS: Tab[] = [
   { to: '/entry/preorders', label: 'Đơn đặt trước', icon: 'log', adminOnly: true },
   { to: '/entry/purchases', label: 'Nhập hàng', icon: 'purchase' },
   { to: '/entry/transfers', label: 'Phân phối', icon: 'transfer' },
+  { to: '/entry/disposals', label: 'Hàng huỷ', icon: 'trash' },
   { to: '/entry/expenses', label: 'Chi phí', icon: 'expense', adminOnly: true },
   { to: '/entry/products', label: 'Sản phẩm', icon: 'product', adminOnly: true },
   { to: '/entry/storefront', label: 'Trang khách', icon: 'store', adminOnly: true },
@@ -101,7 +103,7 @@ function EntryLayout() {
   const { current } = useStore()
   if (usesRevenueEntry(current?.code)) return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập hoặc tải file lên." tabs={ENTRY_TABS} />
   const tabs = usesDistribution(current?.code) ? HOGI_ENTRY_TABS : HOGI_ENTRY_TABS.filter((tab) => tab.to !== '/entry/transfers')
-  return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập: bán hàng, nhập hàng, phân phối, chi phí, sản phẩm, trang khách." tabs={tabs} />
+  return <TabsLayout title="Nhập liệu" hint="Những mục cần bạn nhập: bán hàng, nhập hàng, phân phối, hàng huỷ, chi phí, sản phẩm, trang khách." tabs={tabs} />
 }
 
 // Trang đầu của Nhập liệu
@@ -194,6 +196,7 @@ function App() {
             <Route path="sales" element={<ItemBased fallback="/entry"><SalePage /></ItemBased>} />
             <Route path="purchases" element={<ItemBased fallback="/entry"><PurchasePage /></ItemBased>} />
             <Route path="transfers" element={<ItemBased fallback="/entry"><DistributionOnly><TransferPage /></DistributionOnly></ItemBased>} />
+            <Route path="disposals" element={<ItemBased fallback="/entry"><DisposalPage /></ItemBased>} />
             <Route element={<RequireAdmin />}>
               <Route path="expenses" element={<ExpensePage />} />
               <Route path="products" element={<ItemBased fallback="/entry"><ProductsPage /></ItemBased>} />

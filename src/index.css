@@ -5491,3 +5491,59 @@ input.overridden {
     text-align: center;
   }
 }
+
+/* Báo cáo → Theo đợt nhập: khung cập nhật thanh toán đợt nhập */
+.payment-panel {
+  margin-bottom: 14px;
+  padding: 12px 16px;
+}
+.payment-panel summary {
+  cursor: pointer;
+}
+.payment-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.payment-list li {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto minmax(170px, 210px) auto;
+  gap: 10px;
+  align-items: center;
+}
+.payment-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 720px) {
+  .payment-list li {
+    grid-template-columns: 1fr;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+/* Nhập liệu → Hàng huỷ */
+.disposal-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+.disposal-form h3 {
+  margin: 0;
+}
+.disposal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.disposal-reason {
+  grid-column: 1 / -1;
+}
+.disposal-form > button[type='submit'] {
+  justify-self: start;
+}

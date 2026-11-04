@@ -88,13 +88,14 @@ web-nhap-lieu/
 │   │   ├── appVersion.ts       # So mã build đang chạy với /version.json trên server (phát hiện bản mới sau deploy)
 │   │   ├── shopMotion.ts       # Kiểu chuyển động dùng chung (lò xo, hiện dần, stagger) cho trang đặt hàng công khai, dùng thư viện motion
 │   │   ├── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
+│   │   ├── analytics/disposals.test.ts # Test hàng huỷ (trừ tồn theo nơi để, giá trị huỷ theo lô) và ngày thanh toán đợt nhập
 │   │   └── dailyCalendar.ts    # Gom đơn bán theo ngày (Quán / Công ty, số set đọc từ ghi chú) + lưới lịch tháng cho pages/DailyCalendar.tsx (Nhật ký ngày → Lịch tháng)
 │   ├── components/             # Các component tái sử dụng (Header, CartModal, ShopMotion (khung + Reveal + PopNumber hiệu ứng trang cửa hàng), Settings, UpdateWatcher tự tải lại khi có bản mới...)
-│   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses...)
+│   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses, DisposalPage = Nhập liệu → Hàng huỷ ghi hàng không đủ chất lượng bán, BatchStatsPage = Báo cáo → Theo đợt nhập kèm cột thanh toán / hàng huỷ...)
 │
 ├── supabase/                   # Cấu hình và mã nguồn Backend Supabase
 │   ├── config.toml             # Cấu hình dự án Supabase cục bộ
-│   ├── migrations/             # Các file migration SQL (gồm 20261025250000_enable_vault.sql kích hoạt Supabase Vault, 20261101090000_revenue_dau_den.sql thêm kênh doanh thu Bán dầu đen)
+│   ├── migrations/             # Các file migration SQL (gồm 20261025250000_enable_vault.sql kích hoạt Supabase Vault, 20261101090000_revenue_dau_den.sql thêm kênh doanh thu Bán dầu đen, 20261104090000_stock_disposals_purchase_payment.sql thêm bảng hàng huỷ stock_disposals + purchases.paid_on)
 │   └── functions/              # Edge Functions chạy trên nền tảng Deno
 │       ├── admin-users/        # Quản lý tài khoản nhân viên
 │       └── chat-assistant/     # Trợ lý AI phân tích số liệu bán hàng

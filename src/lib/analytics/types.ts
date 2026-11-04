@@ -24,6 +24,17 @@ export type APurchase = {
   id: string
   date: string
   note: string | null
+  // Ngày đã thanh toán đợt nhập (null / không có = chưa thanh toán)
+  paidOn?: string | null
+}
+
+// Hàng huỷ (không đủ chất lượng bán): trừ khỏi tồn ở nơi để; `lines` = phần lấy từ từng lô, giá vốn lô
+export type ADisposal = {
+  date: string
+  productId: string
+  qty: number
+  location: 'home' | 'shop' | 'company'
+  lines?: { batchLineId: string; qty: number; unitCost: number }[]
 }
 
 // Một dòng bán: số hũ một loại trong một đơn, giá đã chụp lúc bán
@@ -68,4 +79,6 @@ export type AnalyticsInput = {
   transfers: ATransfer[]
   expenses: AExpense[]
   prices: APriceRow[]
+  // Không có = chưa huỷ hàng nào
+  disposals?: ADisposal[]
 }

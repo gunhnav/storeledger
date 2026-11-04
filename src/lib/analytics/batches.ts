@@ -8,8 +8,10 @@ export type BatchLineStat = {
   qty: number
   cost: number
   sold: number
+  // Số hũ huỷ vì không đủ chất lượng bán
+  disposed: number
   remaining: number
-  // Ngày bán hũ cuối cùng của lô (lô hết); null = chưa hết
+  // Ngày lô về 0 (hũ cuối cùng bán hoặc huỷ); null = chưa hết
   soldOutDate: string | null
 }
 
@@ -17,6 +19,8 @@ export type BatchStat = {
   purchaseId: string
   date: string
   note: string | null
+  // Ngày đã thanh toán đợt nhập; null = chưa thanh toán
+  paidOn: string | null
   lines: BatchLineStat[]
   totalQty: number
   cost: number
@@ -26,6 +30,9 @@ export type BatchStat = {
   revenue: number
   cogs: number
   grossProfit: number
+  disposed: number
+  // Giá vốn của phần hàng huỷ (lỗ, chưa nằm trong giá vốn hàng bán)
+  disposedValue: number
   remaining: number
   remainingValue: number
   recoveryPct: number | null
@@ -49,9 +56,12 @@ export type BatchTotals = {
   revenue: number
   cogs: number
   grossProfit: number
+  disposed: number
+  disposedValue: number
   remaining: number
   remainingValue: number
   expenses: number
+  // Lãi gộp − chi phí − giá trị hàng huỷ
   netProfit: number
 }
 
@@ -71,6 +81,15 @@ export function batchStats(
     list.push(a)
     byLine.set(a.batchLineId, list)
   }
+  // Phần hàng huỷ của từng lô (kèm ngày huỷ, giá vốn lô)
+  const disposedByLine = new Map<string, { date: string; qty: number; cost: number }[]>()
+  for (const d of input.disposals ?? []) {
+    for (const l of d.lines ?? []) {
+      const list = disposedByLine.get(l.batchLineId) ?? []
+      list.push({ date: d.date, qty: l.qty, cost: l.qty * l.unitCost })
+      disposedByLine.set(l.batchLineId, list)
+    }
+  }
 
   const purchaseOrder = [...input.purchases].sort((a, b) => a.date.localeCompare(b.date))
   const batches: BatchStat[] = []
@@ -81,13 +100,16 @@ export function batchStats(
     const lineStats: BatchLineStat[] = own.map((line) => {
       const allocs = [...(byLine.get(line.id) ?? [])].sort((a, b) => a.date.localeCompare(b.date))
       ownAllocations.push(...allocs)
+      const disposals = disposedByLine.get(line.id) ?? []
       const sold = Math.min(sum(allocs.map((a) => a.qty)), line.qty)
-      const remaining = line.qty - sold
-      // Ngày hết = ngày của phần bán làm lô về 0, không sớm hơn ngày nhập
+      const disposed = Math.min(sum(disposals.map((d) => d.qty)), line.qty - sold)
+      const remaining = line.qty - sold - disposed
+      // Ngày hết = ngày của phần bán / huỷ làm lô về 0, không sớm hơn ngày nhập
       let soldOutDate: string | null = null
       if (remaining === 0) {
         let running = 0
-        for (const a of allocs) {
+        const events = [...allocs, ...disposals].sort((x, y) => x.date.localeCompare(y.date))
+        for (const a of events) {
           running += a.qty
           if (running >= line.qty) {
             soldOutDate = a.date < line.date ? line.date : a.date
@@ -95,7 +117,7 @@ export function batchStats(
           }
         }
       }
-      return { batchLineId: line.id, productId: line.productId, qty: line.qty, cost: line.qty * line.unitCost, sold, remaining, soldOutDate }
+      return { batchLineId: line.id, productId: line.productId, qty: line.qty, cost: line.qty * line.unitCost, sold, disposed, remaining, soldOutDate }
     })
 
     const totalQty = sum(lineStats.map((l) => l.qty))
@@ -103,7 +125,9 @@ export function batchStats(
     const sold = sum(lineStats.map((l) => l.sold))
     const revenue = sum(ownAllocations.map((a) => a.revenue))
     const cogs = sum(ownAllocations.map((a) => a.cost))
-    const remaining = totalQty - sold
+    const disposed = sum(lineStats.map((l) => l.disposed))
+    const disposedValue = sum(own.map((line) => sum((disposedByLine.get(line.id) ?? []).map((d) => d.cost))))
+    const remaining = totalQty - sold - disposed
     const remainingValue = sum(own.map((line, i) => lineStats[i].remaining * line.unitCost))
 
     // Ngày hoà vốn của đợt: doanh thu luỹ kế riêng của đợt ≥ vốn đợt
@@ -128,6 +152,7 @@ export function batchStats(
       purchaseId: purchase.id,
       date: purchase.date,
       note: purchase.note,
+      paidOn: purchase.paidOn ?? null,
       lines: lineStats,
       totalQty,
       cost,
@@ -136,12 +161,15 @@ export function batchStats(
       revenue,
       cogs,
       grossProfit: revenue - cogs,
+      disposed,
+      disposedValue,
       remaining,
       remainingValue,
       recoveryPct: cost > 0 ? revenue / cost : null,
       recovered: cost > 0 && revenue >= cost,
       breakEvenDate,
-      projectedProfit: sum(lineStats.map((l) => l.qty * (currentPrice.get(l.productId) ?? 0))) - cost,
+      // Hũ đã huỷ không bán được nữa
+      projectedProfit: sum(lineStats.map((l) => (l.qty - l.disposed) * (currentPrice.get(l.productId) ?? 0))) - cost,
       soldOutDate,
       daysToSellOut: soldOutDate ? daysInclusive(purchase.date, soldOutDate) : null,
       sellingDay: soldOutDate ? null : today >= purchase.date ? daysInclusive(purchase.date, today) : null,
@@ -153,9 +181,12 @@ export function batchStats(
   // Chi phí cùng khoảng thời gian: từ ngày nhập đợt đầu tiên đến hôm nay
   const first = batches[0]?.date
   const expenses = first ? sum(input.expenses.filter((e) => e.date >= first && e.date <= today).map((e) => e.amount)) : 0
-  const pick = (key: keyof Pick<BatchStat, 'totalQty' | 'cost' | 'sold' | 'revenue' | 'cogs' | 'grossProfit' | 'remaining' | 'remainingValue'>) =>
+  const pick = (
+    key: keyof Pick<BatchStat, 'totalQty' | 'cost' | 'sold' | 'revenue' | 'cogs' | 'grossProfit' | 'disposed' | 'disposedValue' | 'remaining' | 'remainingValue'>,
+  ) =>
     sum(batches.map((b) => b[key]))
   const grossProfit = pick('grossProfit')
+  const disposedValue = pick('disposedValue')
   return {
     batches,
     totals: {
@@ -165,10 +196,12 @@ export function batchStats(
       revenue: pick('revenue'),
       cogs: pick('cogs'),
       grossProfit,
+      disposed: pick('disposed'),
+      disposedValue,
       remaining: pick('remaining'),
       remainingValue: pick('remainingValue'),
       expenses,
-      netProfit: grossProfit - expenses,
+      netProfit: grossProfit - expenses - disposedValue,
     },
   }
 }

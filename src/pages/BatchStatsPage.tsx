@@ -1,6 +1,10 @@
+import { useState } from 'react'
+import { DatePicker } from '../components/DatePicker'
 import { useStore } from '../lib/store'
 import { useI18n } from '../lib/i18n'
-import { formatDate, formatVND } from '../lib/format'
+import { useToast } from '../lib/toast'
+import { supabase } from '../lib/supabase'
+import { errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
 import { batchStats, type BatchStat } from '../lib/analytics/batches'
 import { useAnalyticsData } from '../lib/useAnalyticsData'
 
@@ -15,12 +19,16 @@ export function BatchStatsPage() {
 function BatchStats({ storeId }: { storeId: string }) {
   const { t } = useI18n()
   const { loading, error, data } = useAnalyticsData(storeId)
+  // Ngày thanh toán vừa sửa trên trang (ghi đè dữ liệu đã tải, khỏi tải lại cả báo cáo)
+  const [paidOverride, setPaidOverride] = useState<Record<string, string | null>>({})
 
   if (loading) return <p className="muted">{t('Đang tải…')}</p>
   if (error) return <p className="error">{t(error)}</p>
   if (!data) return null
 
-  const { batches, totals } = batchStats(data.input, data.allocations, data.currentPrice, data.today)
+  const stats = batchStats(data.input, data.allocations, data.currentPrice, data.today)
+  const { totals } = stats
+  const batches = stats.batches.map((b) => (b.purchaseId in paidOverride ? { ...b, paidOn: paidOverride[b.purchaseId] } : b))
   if (batches.length === 0) {
     return <p className="pos-empty muted">{t('Chưa có đợt nhập nào. Nhập hàng ở Kho hàng → Nhập hàng.')}</p>
   }
@@ -31,12 +39,19 @@ function BatchStats({ storeId }: { storeId: string }) {
     .filter((p) => batches.some((b) => b.lines.some((l) => l.productId === p.id)))
     .map((p) => p.id)
 
+  const unpaidCost = batches.filter((b) => !b.paidOn).reduce((sum, b) => sum + b.cost, 0)
   const money = (v: number) => <span className={v < 0 ? 'negative' : undefined}>{formatVND(v)}</span>
   const status = (b: BatchStat) =>
     b.recovered ? (
       <span className="badge badge-ok">{t('Đã hoàn vốn')}</span>
     ) : (
       <span className="badge badge-low">{t('Chưa hoàn vốn')}</span>
+    )
+  const payment = (b: BatchStat) =>
+    b.paidOn ? (
+      <span className="badge badge-ok">{t('Đã thanh toán')}</span>
+    ) : (
+      <span className="badge badge-low">{t('Chưa thanh toán')}</span>
     )
   const soldOut = (b: BatchStat) =>
     b.soldOutDate ? formatDate(b.soldOutDate) : t('Đang bán – ngày thứ {n}', { n: b.sellingDay ?? 0 })
@@ -50,6 +65,7 @@ function BatchStats({ storeId }: { storeId: string }) {
       <p className="muted section-note">
         {t('Mỗi đợt nhập là một dòng. Hũ bán được gán cho đợt cũ trước (FIFO); doanh thu là doanh thu thuần theo giá lúc bán.')}
       </p>
+      <PaymentPanel batches={batches} onSaved={(id, paidOn) => setPaidOverride((m) => ({ ...m, [id]: paidOn }))} />
       <div className="table-wrap batch-wrap">
         <table className="batch-table">
           <thead>
@@ -62,11 +78,15 @@ function BatchStats({ storeId }: { storeId: string }) {
                 </th>
               ))}
               <th className="num">{t('Vốn nhập')}</th>
+              <th>{t('Thanh toán')}</th>
+              <th>{t('Ngày thanh toán')}</th>
               <th className="num">{t('Đã bán')}</th>
               <th className="num">{t('% đã bán')}</th>
               <th className="num">{t('Doanh thu')}</th>
               <th className="num">{t('Giá vốn hàng bán')}</th>
               <th className="num">{t('Lãi gộp')}</th>
+              <th className="num">{t('Đã huỷ')}</th>
+              <th className="num">{t('Giá trị huỷ')}</th>
               <th className="num">{t('Còn tồn')}</th>
               <th className="num">{t('Giá trị tồn')}</th>
               <th className="num">{t('% vốn thu hồi')}</th>
@@ -98,11 +118,15 @@ function BatchStats({ storeId }: { storeId: string }) {
                   </td>
                 ))}
                 <td className="num">{formatVND(b.cost)}</td>
+                <td>{payment(b)}</td>
+                <td>{b.paidOn ? formatDate(b.paidOn) : '—'}</td>
                 <td className="num">{b.sold}</td>
                 <td className="num">{pct(b.soldPct)}</td>
                 <td className="num">{formatVND(b.revenue)}</td>
                 <td className="num">{formatVND(b.cogs)}</td>
                 <td className="num">{money(b.grossProfit)}</td>
+                <td className="num">{b.disposed || '—'}</td>
+                <td className="num">{b.disposedValue ? money(-b.disposedValue) : '—'}</td>
                 <td className="num">{b.remaining}</td>
                 <td className="num">{formatVND(b.remainingValue)}</td>
                 <td className="num">{pct(b.recoveryPct)}</td>
@@ -137,11 +161,16 @@ function BatchStats({ storeId }: { storeId: string }) {
                 </td>
               ))}
               <td className="num">{formatVND(totals.cost)}</td>
+              <td colSpan={2} className="muted">
+                {unpaidCost > 0 ? t('Chưa trả: {value}', { value: formatVND(unpaidCost) }) : ''}
+              </td>
               <td className="num">{totals.sold}</td>
               <td className="num">{pct(totals.totalQty > 0 ? totals.sold / totals.totalQty : null)}</td>
               <td className="num">{formatVND(totals.revenue)}</td>
               <td className="num">{formatVND(totals.cogs)}</td>
               <td className="num">{money(totals.grossProfit)}</td>
+              <td className="num">{totals.disposed}</td>
+              <td className="num">{money(-totals.disposedValue)}</td>
               <td className="num">{totals.remaining}</td>
               <td className="num">{formatVND(totals.remainingValue)}</td>
               <td className="num">{pct(totals.cost > 0 ? totals.revenue / totals.cost : null)}</td>
@@ -149,19 +178,102 @@ function BatchStats({ storeId }: { storeId: string }) {
             </tr>
             <tr>
               <td className="sticky-col">{t('Trừ chi phí')}</td>
-              <td colSpan={6 + productIds.length} />
+              <td colSpan={8 + productIds.length} />
               <td className="num">{money(-totals.expenses)}</td>
-              <td colSpan={11 + productIds.length} />
+              <td colSpan={13 + productIds.length} />
             </tr>
+            {totals.disposedValue > 0 && (
+              <tr>
+                <td className="sticky-col">{t('Trừ hàng huỷ')}</td>
+                <td colSpan={8 + productIds.length} />
+                <td className="num">{money(-totals.disposedValue)}</td>
+                <td colSpan={13 + productIds.length} />
+              </tr>
+            )}
             <tr className="net-row">
               <td className="sticky-col">{t('Lợi nhuận ròng tất cả các đợt')}</td>
-              <td colSpan={6 + productIds.length} />
+              <td colSpan={8 + productIds.length} />
               <td className="num">{money(totals.netProfit)}</td>
-              <td colSpan={11 + productIds.length} />
+              <td colSpan={13 + productIds.length} />
             </tr>
           </tfoot>
         </table>
       </div>
     </section>
+  )
+}
+
+// Đánh dấu đợt nhập đã thanh toán tiền hàng (chọn ngày trả) hoặc bỏ đánh dấu. Đặt ngoài bảng vì bảng cuộn ngang
+// sẽ cắt mất lịch chọn ngày.
+function PaymentPanel({ batches, onSaved }: { batches: BatchStat[]; onSaved: (purchaseId: string, paidOn: string | null) => void }) {
+  const { t } = useI18n()
+  const toast = useToast()
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState<string | null>(null)
+  const unpaid = batches.filter((b) => !b.paidOn).length
+
+  const save = async (b: BatchStat, index: number, paidOn: string | null) => {
+    setSaving(b.purchaseId)
+    const { error } = await supabase.rpc('set_purchase_payment', { p_purchase_id: b.purchaseId, p_paid_on: paidOn })
+    setSaving(null)
+    if (error) return toast.error(t(errorMessage(error)))
+    onSaved(b.purchaseId, paidOn)
+    setDrafts((d) => {
+      const next = { ...d }
+      delete next[b.purchaseId]
+      return next
+    })
+    toast.success(
+      paidOn
+        ? t('Đợt {n}: đã thanh toán ngày {date}', { n: index + 1, date: formatDate(paidOn) })
+        : t('Đợt {n}: chuyển về chưa thanh toán', { n: index + 1 }),
+    )
+  }
+
+  return (
+    <details className="card payment-panel" open={unpaid > 0}>
+      <summary>
+        <strong>{t('Cập nhật thanh toán')}</strong>{' '}
+        <span className="muted">
+          {unpaid > 0 ? t('{count} đợt chưa thanh toán', { count: unpaid }) : t('Tất cả đợt đã thanh toán')}
+        </span>
+      </summary>
+      <ul className="payment-list">
+        {batches.map((b, i) => {
+          const draft = drafts[b.purchaseId] ?? b.paidOn ?? todayVN()
+          const busy = saving === b.purchaseId
+          return (
+            <li key={b.purchaseId}>
+              <span className="payment-name">
+                <strong>{t('Đợt {n}', { n: i + 1 })}</strong> <small className="muted">{formatDate(b.date)} · {formatVND(b.cost)}</small>
+              </span>
+              {b.paidOn ? (
+                <span className="badge badge-ok">{t('Đã thanh toán {date}', { date: formatDate(b.paidOn) })}</span>
+              ) : (
+                <span className="badge badge-low">{t('Chưa thanh toán')}</span>
+              )}
+              <DatePicker
+                value={draft}
+                onChange={(v) => setDrafts((d) => ({ ...d, [b.purchaseId]: v }))}
+                max={todayVN()}
+                label={t('Ngày thanh toán')}
+              />
+              <div className="payment-actions">
+                {(!b.paidOn || draft !== b.paidOn) && (
+                  <button type="button" className="primary" disabled={busy || !draft} onClick={() => save(b, i, draft)}>
+                    {b.paidOn ? t('Lưu ngày') : t('Đã thanh toán')}
+                  </button>
+                )}
+                {b.paidOn && (
+                  <button type="button" disabled={busy} onClick={() => save(b, i, null)}>
+                    {t('Bỏ đánh dấu')}
+                  </button>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </details>
   )
 }
