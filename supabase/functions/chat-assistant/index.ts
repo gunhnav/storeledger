@@ -32,19 +32,22 @@ const CORS_HEADERS = {
 };
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
-// Model ưu tiên: Gemini 3.8 Flash (trả lời hợp lý nhất, có suy nghĩ ngắn), dự phòng 3.8 Flash-Lite.
-// Bỏ model đời cũ (2.0 / 1.5) để không tốn lượt gọi vào model đã ngừng. Ghi đè được bằng secret GEMINI_MODELS.
+// Model ưu tiên: Gemini 3.8 Flash (trả lời hợp lý nhất, có suy nghĩ ngắn), dự phòng 3.6 Flash (nhanh hơn).
+// Bỏ 3.8 Flash-Lite: API trả 404 (không có model này). Model ưu tiên không có trong danh sách API trả về thì bỏ qua,
+// để không phí một lượt gọi mỗi lần khởi động. Ghi đè được bằng secret GEMINI_MODELS.
 const PREFERRED_MODELS = (
   Deno.env.get("GEMINI_MODELS") ??
-  "gemini-3.8-flash,gemini-3.8-flash-lite"
+  "gemini-3.8-flash,gemini-3.6-flash"
 )
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
 
-const ATTEMPT_TIMEOUT_MS = 12000;
-const HEDGE_MS = 5000;
-const TOTAL_BUDGET_MS = 20000;
+// Tổng thời gian dùng chung cho cả bước gọi công cụ lẫn bước trả lời: 20s cũ hết ngay ở bước 2
+// (model dự phòng chỉ còn ~4s). Sau HEDGE_MS chưa có kết quả thì gọi song song model kế tiếp.
+const ATTEMPT_TIMEOUT_MS = 15000;
+const HEDGE_MS = 4000;
+const TOTAL_BUDGET_MS = 40000;
 const MAX_QUESTION_CHARS = 2000;
 
 function reply(body: unknown) {
@@ -435,8 +438,18 @@ type Failure = { model: string; status: number | "timeout" | "error"; retryable:
 
 // Danh sách model flash còn dùng được, lưu tạm 10 phút
 let modelCache: { at: number; names: string[] } | null = null;
-async function discoverModels(apiKey: string): Promise<string[]> {
-  if (modelCache && Date.now() - modelCache.at < 10 * 60 * 1000) return modelCache.names;
+// Lần tải đang chạy: các bước trong cùng một câu hỏi dùng chung, không gọi lại API
+let modelLoading: Promise<string[]> | null = null;
+// Mọi model gọi generateContent được (chưa lọc), để biết model ưu tiên có tồn tại không
+let knownModels: Set<string> | null = null;
+function discoverModels(apiKey: string): Promise<string[]> {
+  if (modelCache && Date.now() - modelCache.at < 10 * 60 * 1000) return Promise.resolve(modelCache.names);
+  modelLoading ??= loadModels(apiKey).finally(() => {
+    modelLoading = null;
+  });
+  return modelLoading;
+}
+async function loadModels(apiKey: string): Promise<string[]> {
   try {
     const res = await fetch(`${API}/models?pageSize=200`, {
       headers: { "x-goog-api-key": apiKey },
@@ -444,6 +457,11 @@ async function discoverModels(apiKey: string): Promise<string[]> {
     });
     if (!res.ok) return [];
     const data = await res.json();
+    knownModels = new Set(
+      (data.models ?? [])
+        .filter((m: { supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes("generateContent"))
+        .map((m: { name: string }) => m.name.replace(/^models\//, "")),
+    );
     const names: string[] = (data.models ?? [])
       .filter((m: { name: string; supportedGenerationMethods?: string[] }) =>
         m.supportedGenerationMethods?.includes("generateContent") &&
@@ -466,6 +484,8 @@ const deadModels = new Set<string>();
 const cooldownUntil = new Map<string, number>();
 let lastGood: string | null = null;
 const COOLDOWN_MS: Record<number, number> = { 429: 120_000, 503: 30_000 };
+// Model vừa quá giờ thì tạm xếp sau các model khác 60s (câu kế tiếp trên cùng instance đi model nhanh trước)
+const TIMEOUT_COOLDOWN_MS = 60_000;
 const available = (m: string) => !deadModels.has(m) && (cooldownUntil.get(m) ?? 0) <= Date.now();
 
 async function callModel(
@@ -523,6 +543,8 @@ async function callModel(
   } catch (err) {
     const name = (err as Error).name;
     const timedOut = name === "TimeoutError" || name === "AbortError";
+    // Bị huỷ vì model khác đã trả lời trước thì không tính là chậm
+    if (!outer.aborted) cooldownUntil.set(model, Date.now() + TIMEOUT_COOLDOWN_MS);
     trace.push(`${model} ${timedOut ? "timeout" : "lỗi"} ${((Date.now() - started) / 1000).toFixed(1)}s`);
     return { failure: { model, status: timedOut ? "timeout" : "error", retryable: true, ms: Date.now() - started } };
   }
@@ -553,8 +575,11 @@ async function askModels(
   role: ChatRole,
   allowTools = true
 ): Promise<{ content: Content; model: string } | null> {
+  // Đợi danh sách model (có cache, đã khởi động sớm lúc nạp ngữ cảnh) để bỏ model ưu tiên mà API không có
+  const known = await discoverModels(apiKey);
+  if (knownModels && knownModels.size > 0) for (const m of PREFERRED_MODELS) if (!knownModels.has(m)) deadModels.add(m);
   const queue = [...new Set([...(lastGood ? [lastGood] : []), ...PREFERRED_MODELS])].filter(available);
-  const discovery = discoverModels(apiKey).then((names) => {
+  const discovery = Promise.resolve(known).then((names) => {
     for (const m of names) if (!queue.includes(m) && available(m)) queue.push(m);
     if (queue.length === 0) for (const m of [...PREFERRED_MODELS, ...names]) if (!deadModels.has(m) && !queue.includes(m)) queue.push(m);
   });
@@ -623,6 +648,9 @@ export default {
       // Xác thực và lấy vai trò người dùng song song cùng lúc với nạp danh mục và ghi nhớ
       const trace: string[] = [];
       const ctxStart = Date.now();
+      // Tải sẵn danh sách model trong lúc nạp ngữ cảnh (instance mới khởi động mỗi lần nên cache thường trống)
+      const warmKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+      if (warmKey) void discoverModels(warmKey);
       const [user, catalog, memories] = await Promise.all([
         loadUserInfo(authHeader),
         loadCatalog(authHeader),
