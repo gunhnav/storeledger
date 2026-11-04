@@ -45,7 +45,7 @@ function Disposals({ storeId, storeCode }: { storeId: string; storeCode: string 
   const [productId, setProductId] = useState('')
   const [location, setLocation] = useState<DisposalLocation>('shop')
   const [qty, setQty] = useState('1')
-  const [reason, setReason] = useState(() => t('Không đủ chất lượng bán'))
+  const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [from, setFrom] = useState(() => monthStart(todayVN()))
@@ -108,7 +108,10 @@ function Disposals({ storeId, storeCode }: { storeId: string; storeCode: string 
     toast.success(
       t('Đã ghi huỷ {count} {name} ngày {date}', { count: quantity, name: names.get(productId) ?? '', date: formatDate(date) }),
     )
+    // Xoá form sau khi ghi để không ghi trùng lần huỷ; giữ ngày và nơi để vì hay nhập liền nhiều món
+    setProductId('')
     setQty('1')
+    setReason('')
     reload()
     setVersion((v) => v + 1)
   }
@@ -184,7 +187,7 @@ function Disposals({ storeId, storeCode }: { storeId: string; storeCode: string 
             </div>
             <label className="field disposal-reason">
               {t('Lý do')}
-              <input type="text" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Không bắt buộc')} />
+              <input type="text" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Không đủ chất lượng bán')} />
             </label>
           </div>
         )}

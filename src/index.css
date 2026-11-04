@@ -5537,9 +5537,34 @@ input.overridden {
 }
 .disposal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   align-items: start;
+}
+/* Nơi để + Số lượng: cùng chiều cao 40px, cùng bo góc và full cột như ô ngày / ô chọn món */
+.disposal-grid .segmented,
+.disposal-grid .stepper {
+  display: flex;
+  width: 100%;
+  height: 40px;
+  border-radius: 10px;
+}
+.disposal-grid .segmented button {
+  flex: 1;
+  min-height: 0;
+  padding: 0 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.disposal-grid .stepper button {
+  min-height: 0;
+  height: 100%;
+}
+.disposal-grid .stepper input {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 .disposal-reason {
   grid-column: 1 / -1;
