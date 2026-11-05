@@ -47,8 +47,11 @@ export function stockRows(input: AnalyticsInput): StockRow[] {
       const purchased = sum(input.batchLines.filter((b) => b.productId === p.id).map((b) => b.qty))
       const transfers = input.transfers.filter((t) => t.productId === p.id)
       const sales = input.sales.filter((s) => s.productId === p.id)
-      const isCompany = (x: { destination?: string; channel?: string }) => x.destination === 'company' || x.channel === 'company'
-      // Chuyển về nhà (destination 'home') trừ khỏi số đã mang khỏi nhà và số đã ra quán
+      const isCompanyReturn = (t: { destination?: string; note?: string | null }) =>
+        t.destination === 'home' && !!t.note && /công ty|company/i.test(t.note)
+      const isCompany = (x: { destination?: string; channel?: string; note?: string | null }) =>
+        x.destination === 'company' || x.channel === 'company' || isCompanyReturn(x)
+      // Chuyển về nhà (destination 'home') trừ khỏi số đã mang khỏi nhà
       const signed = (t: { qty: number; destination?: string }) => (t.destination === 'home' ? -t.qty : t.qty)
       const moved = sum(transfers.map(signed))
       const movedShop = sum(transfers.filter((t) => !isCompany(t)).map(signed))

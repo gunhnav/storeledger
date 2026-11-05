@@ -55,8 +55,9 @@ export type ATransfer = {
   date: string
   productId: string
   qty: number
-  // Nơi nhận: quán (mặc định), công ty, hoặc 'home' = chuyển lại từ quán về nhà (trừ vào số đã mang ra)
+  // Nơi nhận: quán (mặc định), công ty, hoặc 'home' = chuyển lại từ quán hoặc công ty về nhà (trừ vào số đã mang ra)
   destination?: 'shop' | 'company' | 'home'
+  note?: string | null
 }
 
 export type AExpense = {

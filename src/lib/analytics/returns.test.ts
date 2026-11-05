@@ -46,4 +46,16 @@ describe('chuyển hàng từ quán về nhà', () => {
     expect(days[0].homeStock.pm).toBe(0)
     expect(days[1].homeStock.pm).toBe(4)
   })
+
+  it('chuyển hàng từ công ty về nhà: công ty giảm, nhà tăng, quán không đổi', () => {
+    const [row] = stockRows(input([
+      { date: '2026-10-15', productId: 'pm', qty: 5, destination: 'company' },
+      { date: '2026-10-16', productId: 'pm', qty: 2, destination: 'home', note: 'Chuyển từ công ty về nhà' },
+    ]))
+    expect(row.home).toBe(7) // 10 - 5 + 2 = 7
+    expect(row.company).toBe(3) // 5 - 2 = 3
+    expect(row.shop).toBe(0)
+    expect(row.moved).toBe(3) // 5 - 2 = 3
+    expect(row.movedShop).toBe(0)
+  })
 })

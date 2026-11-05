@@ -756,6 +756,11 @@ export type Database = {
         Args: { p_store_id: string; p_product_id: string; p_quantity: number; p_transfer_date: string | null; p_note: string | null }
         Returns: string
       }
+      // supabase/migrations/20261106000000_company_distribution_full_flow.sql
+      create_company_return: {
+        Args: { p_store_id: string; p_product_id: string; p_quantity: number; p_transfer_date: string | null; p_note: string | null }
+        Returns: string
+      }
       // supabase/migrations/20261104090000_stock_disposals_purchase_payment.sql
       create_stock_disposal: {
         Args: {

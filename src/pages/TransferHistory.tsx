@@ -164,7 +164,19 @@ function CompanyHistory({ data }: { data: Loaded }) {
   const { t } = useI18n()
   const byDate = new Map<string, CompanySetHistoryRow[]>()
   for (const s of data.sets) byDate.set(s.distribution_date, [...(byDate.get(s.distribution_date) ?? []), s])
-  const dates = [...byDate.keys()].sort().reverse()
+
+  // Tổng chuyển cho công ty theo ngày và theo món từ stock_transfers (gồm cả theo set và theo món lẻ)
+  const compTransfers = new Map<string, Map<string, number>>()
+  for (const x of data.transfers) {
+    if (x.destination !== 'company') continue
+    const day = compTransfers.get(x.transfer_date) ?? new Map<string, number>()
+    day.set(x.product_id, (day.get(x.product_id) ?? 0) + x.quantity)
+    compTransfers.set(x.transfer_date, day)
+  }
+
+  // Toàn bộ các ngày có phân phối cho công ty (theo set hoặc món lẻ)
+  const dates = [...new Set([...byDate.keys(), ...compTransfers.keys()])].sort().reverse()
+
   // Hàng lấy thẳng từ quán cho công ty: ngày -> món -> số hũ
   const fromShop = new Map<string, Map<string, number>>()
   for (const x of data.transfers) {
@@ -176,21 +188,33 @@ function CompanyHistory({ data }: { data: Loaded }) {
   const names = new Map(data.items.map((i) => [i.id, i.name]))
   // Cùng các cột loại như bảng Quán để hai bảng thẳng hàng
   const cols = data.items
-  // Tổng hũ của một dòng (mỗi loại × số set) và của cả bảng theo từng loại
+  // Tổng hũ của một dòng set (mỗi loại × số set)
   const jars = (r: CompanySetHistoryRow, id: string) => (r.mix[id] ?? 0) * r.set_count
-  const colTotal = (id: string) => data.sets.reduce((s, r) => s + jars(r, id), 0)
+  // Tổng hũ trong ngày của từng món (lấy giá trị lớn hơn giữa set và stock_transfers)
+  const dayItemTotal = (d: string, id: string) => {
+    const setSum = (byDate.get(d) ?? []).reduce((n, r) => n + jars(r, id), 0)
+    const transferSum = compTransfers.get(d)?.get(id) ?? 0
+    return Math.max(setSum, transferSum)
+  }
+  // Số hũ món lẻ phân phối riêng ngoài set trong ngày
+  const singleJars = (d: string, id: string) => {
+    const setSum = (byDate.get(d) ?? []).reduce((n, r) => n + jars(r, id), 0)
+    const transferSum = compTransfers.get(d)?.get(id) ?? 0
+    return Math.max(0, transferSum - setSum)
+  }
+  const colTotal = (id: string) => dates.reduce((s, d) => s + dayItemTotal(d, id), 0)
 
   return (
     <div>
       <h2>{t('Công ty')}</h2>
       {dates.length === 0 ? (
-        <p className="muted">{t('Chưa phân phối set nào cho công ty.')}</p>
+        <p className="muted">{t('Chưa phân phối hàng cho công ty.')}</p>
       ) : (
         <div className="table-wrap">
           <table className="history-table">
             <thead>
               <tr>
-                <th>{t('Set')}</th>
+                <th>{t('Set / Món')}</th>
                 {cols.map((i) => (
                   <th key={i.id} className="num">
                     {i.name}
@@ -202,6 +226,7 @@ function CompanyHistory({ data }: { data: Loaded }) {
               {dates.map((d) => {
                 const rows = byDate.get(d) ?? []
                 const taken = [...(fromShop.get(d) ?? [])].map(([id, n]) => `${n} ${names.get(id) ?? '?'}`).join(', ')
+                const hasSingles = cols.some((i) => singleJars(d, i.id) > 0)
                 return [
                   <tr key={d} className="group-row">
                     <td>
@@ -209,7 +234,7 @@ function CompanyHistory({ data }: { data: Loaded }) {
                       {taken && <small className="muted"> · {t('Trong đó lấy từ hàng ở quán: {list}', { list: taken })}</small>}
                     </td>
                     {cols.map((i) => {
-                      const sum = rows.reduce((n, r) => n + jars(r, i.id), 0)
+                      const sum = dayItemTotal(d, i.id)
                       return (
                         <td key={i.id} className="num">
                           <strong>{sum > 0 ? sum : '—'}</strong>
@@ -230,6 +255,21 @@ function CompanyHistory({ data }: { data: Loaded }) {
                       ))}
                     </tr>
                   )),
+                  ...(hasSingles ? [
+                    <tr key={`${d}-single`}>
+                      <td>
+                        <span className="badge badge-info">{t('Món lẻ')}</span>
+                      </td>
+                      {cols.map((i) => {
+                        const q = singleJars(d, i.id)
+                        return (
+                          <td key={i.id} className="num">
+                            {q > 0 ? <strong>{q}</strong> : <span className="muted">—</span>}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ] : []),
                 ]
               })}
               <tr className="total-row">
@@ -246,7 +286,7 @@ function CompanyHistory({ data }: { data: Loaded }) {
           </table>
         </div>
       )}
-      <small className="muted">{t('Mỗi dòng là một loại set; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.')}</small>
+      <small className="muted">{t('Mỗi dòng là một loại set hoặc món lẻ; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.')}</small>
     </div>
   )
 }
