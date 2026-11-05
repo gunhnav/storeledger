@@ -103,9 +103,9 @@ function DailyLog({ storeId, storeName, partner }: { storeId: string; storeName:
       supabase.rpc('get_daily_product_log', args),
       supabase
         .from('stock_transfers')
-        .select('product_id, transfer_date, quantity')
+        .select('product_id, transfer_date, quantity, destination, note')
         .eq('store_id', storeId)
-        .eq('destination', 'company')
+        .or('destination.eq.company,destination.eq.home')
         .gte('transfer_date', range.from)
         .lte('transfer_date', to),
     ]).then(([summary, products, company]) => {
@@ -114,7 +114,12 @@ function DailyLog({ storeId, storeName, partner }: { storeId: string; storeName:
       const companyMap = new Map<string, number>()
       for (const r of company.data ?? []) {
         const k = `${r.product_id}|${r.transfer_date}`
-        companyMap.set(k, (companyMap.get(k) ?? 0) + r.quantity)
+        if (r.destination === 'company') {
+          companyMap.set(k, (companyMap.get(k) ?? 0) + r.quantity)
+        } else if (r.destination === 'home' && /công ty|company/i.test(r.note ?? '') && r.note !== 'Lấy từ quán cho công ty') {
+          // Trừ đi số hũ đã chuyển trả từ công ty về lại nhà
+          companyMap.set(k, (companyMap.get(k) ?? 0) - r.quantity)
+        }
       }
       setResult({
         key,

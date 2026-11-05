@@ -1133,4 +1133,5 @@ export const zh: Record<string, string> = {
   'Chuyển từ quán về nhà': '从店里调回家中',
   'Công ty lấy được cả hàng ở nhà lẫn ở quán (thiếu ở nhà thì tự chuyển từ quán về nhà).': '公司可同时使用家中和店里库存（家中不足时自动从店里调回）。',
   'Ở công ty còn {count}': '公司还剩 {count}',
+  'Số nhỏ (−n) là hũ chuyển lại từ công ty về nhà.': '小数字（−n）表示当天从公司退回居家的罐数。',
 }

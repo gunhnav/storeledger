@@ -1,6 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "(?<subdomain>.*)hogi(?<domain>.*)"
+        }
+      ],
+      "destination": "/shop.html"
+    },
+    { "source": "/hogi", "destination": "/shop.html" },
     { "source": "/shop/(.*)", "destination": "/shop.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

@@ -1054,6 +1054,12 @@ td.actions {
   background: var(--surface-2);
   border: 1px solid var(--border);
   flex: none;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.segmented::-webkit-scrollbar {
+  display: none;
 }
 .segmented button {
   min-height: 34px;
@@ -1062,6 +1068,7 @@ td.actions {
   background: none;
   font-size: 14px;
   color: var(--muted);
+  white-space: nowrap;
 }
 .segmented button.active {
   background: var(--surface);

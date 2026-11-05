@@ -1133,4 +1133,5 @@ export const ja: Record<string, string> = {
   'Chuyển từ quán về nhà': '店舗から自宅へ移動',
   'Công ty lấy được cả hàng ở nhà lẫn ở quán (thiếu ở nhà thì tự chuyển từ quán về nhà).': '法人は自宅と店舗の両方の在庫を利用できます（自宅不足分は店舗から自動移動）。',
   'Ở công ty còn {count}': '法人に残り {count}',
+  'Số nhỏ (−n) là hũ chuyển lại từ công ty về nhà.': '小さい数字（−n）は法人から自宅へ戻した個数です。',
 }

@@ -180,6 +180,11 @@ const ShopFallback = (
   </div>
 )
 
+// Nhận diện domain bán hàng riêng (ví dụ hogifood.vn, order.hogifood.vn) để mở thẳng thực đơn khách
+const isStorefrontHost =
+  typeof window !== 'undefined' &&
+  /hogi/i.test(window.location.hostname)
+
 function App() {
   return (
     <Routes>
@@ -187,6 +192,13 @@ function App() {
       {/* Trang bán hàng công khai, không cần đăng nhập */}
       <Route path="/hogi" element={<Suspense fallback={ShopFallback}><ShopPage code="hogi" /></Suspense>} />
       <Route path="/shop/:code" element={<Suspense fallback={ShopFallback}><ShopPage /></Suspense>} />
+      {isStorefrontHost && (
+        <>
+          <Route path="/" element={<Suspense fallback={ShopFallback}><ShopPage code="hogi" /></Suspense>} />
+          <Route path="/menu" element={<Suspense fallback={ShopFallback}><ShopPage code="hogi" /></Suspense>} />
+          <Route path="/order" element={<Suspense fallback={ShopFallback}><ShopPage code="hogi" /></Suspense>} />
+        </>
+      )}
       <Route element={<RequireAuth />}>
         <Route element={<StoreScope />}>
           <Route index element={<Navigate to="/entry" replace />} />

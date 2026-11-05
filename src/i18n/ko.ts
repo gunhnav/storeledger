@@ -1133,4 +1133,5 @@ export const ko: Record<string, string> = {
   'Chuyển từ quán về nhà': '매장에서 창고로 이동',
   'Công ty lấy được cả hàng ở nhà lẫn ở quán (thiếu ở nhà thì tự chuyển từ quán về nhà).': '회사는 창고와 매장 재고를 모두 사용할 수 있습니다 (창고 부족 시 매장에서 자동 이동).',
   'Ở công ty còn {count}': '회사에 {count}개 남음',
+  'Số nhỏ (−n) là hũ chuyển lại từ công ty về nhà.': '작은 숫자(−n)는 회사에서 집으로 반환된 수량입니다.',
 }

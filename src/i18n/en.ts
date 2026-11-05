@@ -1133,4 +1133,5 @@ export const en: Record<string, string> = {
   'Chuyển từ quán về nhà': 'Transfer from shop to home',
   'Công ty lấy được cả hàng ở nhà lẫn ở quán (thiếu ở nhà thì tự chuyển từ quán về nhà).': 'Company orders can use stock from both home and shop (if short at home, auto-transfers from shop).',
   'Ở công ty còn {count}': '{count} left at company',
+  'Số nhỏ (−n) là hũ chuyển lại từ công ty về nhà.': 'Small numbers (−n) are jars transferred from company back to home.',
 }

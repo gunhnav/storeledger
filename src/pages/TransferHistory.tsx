@@ -89,6 +89,8 @@ function HomeHistory({ data }: { data: Loaded }) {
     if (x.destination !== 'shop' && x.destination !== 'home') continue
     // Hàng lấy từ quán cho công ty chỉ đi qua nhà trong một thao tác, không phải chuyển về nhà: tính ở phần Công ty
     if (x.destination === 'home' && x.note === FROM_SHOP_NOTE) continue
+    // Chuyển từ công ty về nhà: tính ở phần Công ty, không làm giảm số liệu ra quán
+    if (x.destination === 'home' && /công ty|company/i.test(x.note ?? '')) continue
     const day = days.get(x.transfer_date) ?? new Map()
     const cell = day.get(x.product_id) ?? { out: 0, back: 0 }
     if (x.destination === 'shop') cell.out += x.quantity
@@ -174,8 +176,18 @@ function CompanyHistory({ data }: { data: Loaded }) {
     compTransfers.set(x.transfer_date, day)
   }
 
-  // Toàn bộ các ngày có phân phối cho công ty (theo set hoặc món lẻ)
-  const dates = [...new Set([...byDate.keys(), ...compTransfers.keys()])].sort().reverse()
+  // Hàng chuyển từ công ty về lại nhà: ngày -> món -> số hũ
+  const compReturns = new Map<string, Map<string, number>>()
+  for (const x of data.transfers) {
+    if (x.destination === 'home' && /công ty|company/i.test(x.note ?? '') && x.note !== FROM_SHOP_NOTE) {
+      const day = compReturns.get(x.transfer_date) ?? new Map<string, number>()
+      day.set(x.product_id, (day.get(x.product_id) ?? 0) + x.quantity)
+      compReturns.set(x.transfer_date, day)
+    }
+  }
+
+  // Toàn bộ các ngày có phân phối hoặc chuyển về từ công ty
+  const dates = [...new Set([...byDate.keys(), ...compTransfers.keys(), ...compReturns.keys()])].sort().reverse()
 
   // Hàng lấy thẳng từ quán cho công ty: ngày -> món -> số hũ
   const fromShop = new Map<string, Map<string, number>>()
@@ -202,7 +214,7 @@ function CompanyHistory({ data }: { data: Loaded }) {
     const transferSum = compTransfers.get(d)?.get(id) ?? 0
     return Math.max(0, transferSum - setSum)
   }
-  const colTotal = (id: string) => dates.reduce((s, d) => s + dayItemTotal(d, id), 0)
+  const colTotal = (id: string) => dates.reduce((s, d) => s + dayItemTotal(d, id) - (compReturns.get(d)?.get(id) ?? 0), 0)
 
   return (
     <div>
@@ -235,9 +247,11 @@ function CompanyHistory({ data }: { data: Loaded }) {
                     </td>
                     {cols.map((i) => {
                       const sum = dayItemTotal(d, i.id)
+                      const ret = compReturns.get(d)?.get(i.id) ?? 0
                       return (
                         <td key={i.id} className="num">
-                          <strong>{sum > 0 ? sum : '—'}</strong>
+                          {sum > 0 ? <strong>{sum}</strong> : <span className="muted">—</span>}
+                          {ret > 0 ? <small className="warn"> −{ret}</small> : null}
                         </td>
                       )
                     })}
@@ -286,7 +300,10 @@ function CompanyHistory({ data }: { data: Loaded }) {
           </table>
         </div>
       )}
-      <small className="muted">{t('Mỗi dòng là một loại set hoặc món lẻ; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.')}</small>
+      <small className="muted">
+        {t('Mỗi dòng là một loại set hoặc món lẻ; số trong cột là số hũ từng loại (số hũ trong 1 set × số set). Dòng ngày là tổng hũ từng loại trong ngày.')}{' '}
+        {t('Số nhỏ (−n) là hũ chuyển lại từ công ty về nhà.')}
+      </small>
     </div>
   )
 }
