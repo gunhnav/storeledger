@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { DatePicker } from '../components/DatePicker'
+import { useEffect, useState } from 'react'
+import { Calendar } from '../components/DatePicker'
 import { useStore } from '../lib/store'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
@@ -21,6 +21,8 @@ function BatchStats({ storeId }: { storeId: string }) {
   const { loading, error, data } = useAnalyticsData(storeId)
   // Ngày thanh toán vừa sửa trên trang (ghi đè dữ liệu đã tải, khỏi tải lại cả báo cáo)
   const [paidOverride, setPaidOverride] = useState<Record<string, string | null>>({})
+  // Đợt đang mở hộp thoại thanh toán (index để hiện "Đợt n")
+  const [paying, setPaying] = useState<{ batch: BatchStat; index: number } | null>(null)
 
   if (loading) return <p className="muted">{t('Đang tải…')}</p>
   if (error) return <p className="error">{t(error)}</p>
@@ -47,12 +49,22 @@ function BatchStats({ storeId }: { storeId: string }) {
     ) : (
       <span className="badge badge-low">{t('Chưa hoàn vốn')}</span>
     )
-  const payment = (b: BatchStat) =>
-    b.paidOn ? (
-      <span className="badge badge-ok">{t('Đã thanh toán')}</span>
-    ) : (
-      <span className="badge badge-low">{t('Chưa thanh toán')}</span>
-    )
+  const payment = (b: BatchStat, index: number) => (
+    <div className="payment-cell">
+      {b.paidOn ? (
+        <span className="badge badge-ok">{t('Đã thanh toán')}</span>
+      ) : (
+        <span className="badge badge-low">{t('Chưa thanh toán')}</span>
+      )}
+      <button
+        type="button"
+        className={b.paidOn ? 'payment-btn' : 'payment-btn primary'}
+        onClick={() => setPaying({ batch: b, index })}
+      >
+        {b.paidOn ? t('Sửa') : t('Thanh toán')}
+      </button>
+    </div>
+  )
   const soldOut = (b: BatchStat) =>
     b.soldOutDate ? formatDate(b.soldOutDate) : t('Đang bán – ngày thứ {n}', { n: b.sellingDay ?? 0 })
   const notOut = (b: BatchStat) =>
@@ -65,7 +77,17 @@ function BatchStats({ storeId }: { storeId: string }) {
       <p className="muted section-note">
         {t('Mỗi đợt nhập là một dòng. Hũ bán được gán cho đợt cũ trước (FIFO); doanh thu là doanh thu thuần theo giá lúc bán.')}
       </p>
-      <PaymentPanel batches={batches} onSaved={(id, paidOn) => setPaidOverride((m) => ({ ...m, [id]: paidOn }))} />
+      {paying && (
+        <PaymentDialog
+          batch={paying.batch}
+          index={paying.index}
+          onClose={() => setPaying(null)}
+          onSaved={(id, paidOn) => {
+            setPaidOverride((m) => ({ ...m, [id]: paidOn }))
+            setPaying(null)
+          }}
+        />
+      )}
       <div className="table-wrap batch-wrap">
         <table className="batch-table">
           <thead>
@@ -118,7 +140,7 @@ function BatchStats({ storeId }: { storeId: string }) {
                   </td>
                 ))}
                 <td className="num">{formatVND(b.cost)}</td>
-                <td>{payment(b)}</td>
+                <td>{payment(b, i)}</td>
                 <td>{b.paidOn ? formatDate(b.paidOn) : '—'}</td>
                 <td className="num">{b.sold}</td>
                 <td className="num">{pct(b.soldPct)}</td>
@@ -203,26 +225,38 @@ function BatchStats({ storeId }: { storeId: string }) {
   )
 }
 
-// Đánh dấu đợt nhập đã thanh toán tiền hàng (chọn ngày trả) hoặc bỏ đánh dấu. Đặt ngoài bảng vì bảng cuộn ngang
-// sẽ cắt mất lịch chọn ngày.
-function PaymentPanel({ batches, onSaved }: { batches: BatchStat[]; onSaved: (purchaseId: string, paidOn: string | null) => void }) {
+// Hộp thoại thanh toán một đợt nhập: chọn ngày trả tiền hàng trên lịch rồi xác nhận, hoặc bỏ đánh dấu.
+// Hiện dạng modal vì bảng cuộn ngang sẽ cắt mất lịch nếu đặt trong ô.
+function PaymentDialog({
+  batch,
+  index,
+  onClose,
+  onSaved,
+}: {
+  batch: BatchStat
+  index: number
+  onClose: () => void
+  onSaved: (purchaseId: string, paidOn: string | null) => void
+}) {
   const { t } = useI18n()
   const toast = useToast()
-  const [drafts, setDrafts] = useState<Record<string, string>>({})
-  const [saving, setSaving] = useState<string | null>(null)
-  const unpaid = batches.filter((b) => !b.paidOn).length
+  const [draft, setDraft] = useState(batch.paidOn ?? todayVN())
+  const [saving, setSaving] = useState(false)
 
-  const save = async (b: BatchStat, index: number, paidOn: string | null) => {
-    setSaving(b.purchaseId)
-    const { error } = await supabase.rpc('set_purchase_payment', { p_purchase_id: b.purchaseId, p_paid_on: paidOn })
-    setSaving(null)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const save = async (paidOn: string | null) => {
+    setSaving(true)
+    const { error } = await supabase.rpc('set_purchase_payment', { p_purchase_id: batch.purchaseId, p_paid_on: paidOn })
+    setSaving(false)
     if (error) return toast.error(t(errorMessage(error)))
-    onSaved(b.purchaseId, paidOn)
-    setDrafts((d) => {
-      const next = { ...d }
-      delete next[b.purchaseId]
-      return next
-    })
+    onSaved(batch.purchaseId, paidOn)
     toast.success(
       paidOn
         ? t('Đợt {n}: đã thanh toán ngày {date}', { n: index + 1, date: formatDate(paidOn) })
@@ -231,49 +265,42 @@ function PaymentPanel({ batches, onSaved }: { batches: BatchStat[]; onSaved: (pu
   }
 
   return (
-    <details className="card payment-panel" open={unpaid > 0}>
-      <summary>
-        <strong>{t('Cập nhật thanh toán')}</strong>{' '}
-        <span className="muted">
-          {unpaid > 0 ? t('{count} đợt chưa thanh toán', { count: unpaid }) : t('Tất cả đợt đã thanh toán')}
-        </span>
-      </summary>
-      <ul className="payment-list">
-        {batches.map((b, i) => {
-          const draft = drafts[b.purchaseId] ?? b.paidOn ?? todayVN()
-          const busy = saving === b.purchaseId
-          return (
-            <li key={b.purchaseId}>
-              <span className="payment-name">
-                <strong>{t('Đợt {n}', { n: i + 1 })}</strong> <small className="muted">{formatDate(b.date)} · {formatVND(b.cost)}</small>
-              </span>
-              {b.paidOn ? (
-                <span className="badge badge-ok">{t('Đã thanh toán {date}', { date: formatDate(b.paidOn) })}</span>
-              ) : (
-                <span className="badge badge-low">{t('Chưa thanh toán')}</span>
-              )}
-              <DatePicker
-                value={draft}
-                onChange={(v) => setDrafts((d) => ({ ...d, [b.purchaseId]: v }))}
-                max={todayVN()}
-                label={t('Ngày thanh toán')}
-              />
-              <div className="payment-actions">
-                {(!b.paidOn || draft !== b.paidOn) && (
-                  <button type="button" className="primary" disabled={busy || !draft} onClick={() => save(b, i, draft)}>
-                    {b.paidOn ? t('Lưu ngày') : t('Đã thanh toán')}
-                  </button>
-                )}
-                {b.paidOn && (
-                  <button type="button" disabled={busy} onClick={() => save(b, i, null)}>
-                    {t('Bỏ đánh dấu')}
-                  </button>
-                )}
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    </details>
+    <div className="confirm-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="confirm-modal payment-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-dialog-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div>
+          <h3 id="payment-dialog-title" className="confirm-title">
+            {t('Thanh toán đợt {n}', { n: index + 1 })}
+          </h3>
+          <p className="confirm-message">
+            {formatDate(batch.date)} · {formatVND(batch.cost)}
+          </p>
+        </div>
+        <Calendar value={draft} onChange={setDraft} max={todayVN()} />
+        <div className="confirm-actions">
+          {batch.paidOn && (
+            <button type="button" className="payment-unmark" disabled={saving} onClick={() => save(null)}>
+              {t('Bỏ đánh dấu')}
+            </button>
+          )}
+          <button type="button" className="confirm-btn-cancel" disabled={saving} onClick={onClose}>
+            {t('Huỷ')}
+          </button>
+          <button
+            type="button"
+            className="primary"
+            disabled={saving || !draft || draft === batch.paidOn}
+            onClick={() => save(draft)}
+          >
+            {batch.paidOn ? t('Lưu ngày') : t('Xác nhận')}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
