@@ -49,6 +49,39 @@ describe('giá set', () => {
   it('không trộn hai dòng món trong một set', () => {
     expect(addSet([], 4, { tt: 2, fl: 2 }, 1, menu, rules)).toEqual([])
   })
+  it('nhiều dòng món cùng bán theo set có giá mix riêng cho từng dòng (Sữa chua vs Bánh flan)', () => {
+    const flanItems = [
+      { ...item('ftt', 'Flan truyền thống', 10000), category: 'Bánh flan' },
+      { ...item('fmc', 'Flan matcha', 12500), category: 'Bánh flan' },
+      { ...item('fpm', 'Flan phô mai', 12500), category: 'Bánh flan' },
+    ]
+    const fullMenu = [...yogurt, ...flanItems]
+    const multiRules = {
+      set_prices: [
+        { size: 4 as const, product_id: 'tt', category: null, price: 50000 },
+        { size: 6 as const, product_id: 'tt', category: null, price: 70000 },
+        { size: 4 as const, product_id: null, category: 'Sữa chua', price: 55000 },
+        { size: 6 as const, product_id: null, category: 'Sữa chua', price: 80000 },
+        { size: 4 as const, product_id: 'ftt', category: null, price: 40000 },
+        { size: 6 as const, product_id: 'ftt', category: null, price: 60000 },
+        { size: 4 as const, product_id: null, category: 'Bánh flan', price: 50000 },
+        { size: 6 as const, product_id: null, category: 'Bánh flan', price: 70000 },
+      ],
+    }
+    expect(setPrice(4, { ftt: 4 }, fullMenu, multiRules)).toBe(40000)
+    expect(setPrice(6, { ftt: 6 }, fullMenu, multiRules)).toBe(60000)
+    expect(setPrice(4, { ftt: 2, fmc: 1, fpm: 1 }, fullMenu, multiRules)).toBe(50000)
+    expect(setPrice(6, { fmc: 3, fpm: 3 }, fullMenu, multiRules)).toBe(70000)
+    expect(setPrice(4, { tt: 2, pm: 2 }, fullMenu, multiRules)).toBe(55000)
+    expect(setPriceHints(4, flanItems, multiRules)).toEqual([
+      { label: 'Truyền thống', price: 40000 },
+      { label: 'Mix vị', price: 50000 },
+    ])
+    expect(setPriceHints(6, flanItems, multiRules)).toEqual([
+      { label: 'Truyền thống', price: 60000 },
+      { label: 'Mix vị', price: 70000 },
+    ])
+  })
 })
 
 describe('soạn set', () => {
@@ -106,14 +139,20 @@ describe('hình và mô tả theo vị', () => {
   it('nhận vị không phân biệt dấu và hoa thường', () => {
     expect(flavorImage('Nếp cẩm')).toBe('/shop/nepcam.jpg')
     expect(flavorImage('PHÔ MAI')).toBe('/shop/phomai.jpg')
+    expect(flavorImage('Flan truyền thống')).toBe('/shop/flan.jpeg')
+    expect(flavorImage('Flan matcha')).toBe('/shop/flan-matcha-phomai.jpg')
+    expect(flavorImage('Flan phô mai')).toBe('/shop/flan-matcha-phomai.jpg')
     expect(flavorImage('Hũ làm quen 110gr')).toBe('/shop/hilap.jpeg')
     expect(flavorImage('Hũ tri kỷ 400gr')).toBe('/shop/hilaplon.jpeg')
     expect(flavorImage('Nước whey 220ml')).toBe('/shop/hilaplon.jpeg')
     expect(flavorImage('Dâu tằm')).toBeNull()
     expect(flavorNote('Matcha')).toBe('Thơm dịu vị trà xanh')
+    expect(flavorNote('Flan matcha')).toBe('Mềm mịn, thơm dịu vị trà xanh')
     expect(flavorNote('Dâu tằm')).toBeNull()
     expect(flavorColors('Matcha')[0]).toMatch(/^#/)
     expect(flavorPosition('Hũ làm quen 110gr')).toBe('center 18%')
+    expect(flavorPosition('Flan matcha')).toBe('center 8%')
+    expect(flavorPosition('Flan phô mai')).toBe('center 95%')
     expect(flavorPosition('Truyền thống')).toBe('center 28%')
   })
 })

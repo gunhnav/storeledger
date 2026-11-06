@@ -7,7 +7,7 @@ import { errorMessage } from '../lib/format'
 import { BANKS } from '../lib/banks'
 import { describePayload, payloadError } from '../lib/emvQr'
 
-// Một dòng giá set: cỡ set, áp dụng cho ('' = set mix vị, còn lại là mã vị), giá (chuỗi để cho phép ô trống khi gõ)
+// Một dòng giá set: cỡ set, áp dụng cho ('' = set mix vị chung, 'cat:<nhóm>' = set mix vị của nhóm món, còn lại là mã vị), giá (chuỗi để cho phép ô trống khi gõ)
 type RuleDraft = { uid: number; size: 4 | 6; productId: string; price: string }
 type Settings = { is_public: boolean; public_phone: string; public_tagline: string; bankCode: string; bankAccount: string; bankHolder: string; qrPayload: string; qrLabel: string }
 type ProductOption = { id: string; name: string; category: string | null; public_sale_mode: 'set' | 'single' }
@@ -28,7 +28,7 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [payMethod, setPayMethod] = useState<'qr' | 'bank' | 'none'>('qr')
-  const link = `${window.location.origin}/shop/${code}`
+  const link = code === 'hogi' ? 'https://hogifood.vercel.app' : `${window.location.origin}/shop/${code}`
 
   useEffect(() => {
     let cancelled = false
@@ -59,7 +59,14 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
       setPayMethod(initialMethod)
       setProducts(prods.data ?? [])
       setModes(Object.fromEntries((prods.data ?? []).map((p) => [p.category ?? '', p.public_sale_mode])))
-      setRules(prices.data.map((r) => ({ uid: nextUid++, size: r.set_size, productId: r.product_id ?? '', price: String(Number(r.price)) })))
+      setRules(
+        prices.data.map((r) => ({
+          uid: nextUid++,
+          size: r.set_size,
+          productId: r.product_id ? r.product_id : r.category ? `cat:${r.category}` : '',
+          price: String(Number(r.price)),
+        }))
+      )
     })
     return () => {
       cancelled = true
@@ -75,11 +82,16 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
     e.preventDefault()
     setError(null)
 
-    const parsed = rules.map((r) => ({ size: r.size, product_id: r.productId || null, price: Number(digits(r.price)) }))
+    const parsed = rules.map((r) => ({
+      size: r.size,
+      product_id: r.productId && !r.productId.startsWith('cat:') ? r.productId : null,
+      category: r.productId.startsWith('cat:') ? r.productId.slice(4) : null,
+      price: Number(digits(r.price)),
+    }))
     if (parsed.some((r) => !(r.price > 0 && r.price <= 100_000_000))) return setError('Giá set phải là số lớn hơn 0')
     const seen = new Set<string>()
     for (const r of parsed) {
-      const key = `${r.size}|${r.product_id ?? ''}`
+      const key = `${r.size}|${r.product_id ?? ''}|${r.category ?? ''}`
       if (seen.has(key)) return setError('Mỗi cỡ set chỉ có một giá cho cùng một loại (bị trùng dòng)')
       seen.add(key)
     }
@@ -205,6 +217,13 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
             {t('Áp dụng cho')}
             <select value={r.productId} onChange={(e) => updateRule(r.uid, { productId: e.target.value })}>
               <option value="">{t('Set mix vị')}</option>
+              {Object.entries(modes)
+                .filter(([cat, mode]) => cat && mode === 'set')
+                .map(([cat]) => (
+                  <option key={`cat:${cat}`} value={`cat:${cat}`}>
+                    {`${t('Set mix vị')} (${cat})`}
+                  </option>
+                ))}
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {t('Set toàn {name}', { name: p.name })}

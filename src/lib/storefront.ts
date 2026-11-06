@@ -9,8 +9,8 @@ export type MenuItem = { id: string; name: string; category: string | null; pric
 export type PublicBank = { code: string; account: string; holder: string }
 // QR thanh toán gốc của quán (chuỗi EMVCo, ví dụ QR Góp Quỹ MoMo): trang tự thêm số tiền, số hoá đơn, nội dung
 export type PublicPay = { payload: string; label: string | null; holder: string }
-// Bảng giá set: product_id có giá trị = set chỉ gồm vị đó; null = giá mặc định cho set mix vị của dòng món có từ 2 vị trở lên
-export type SetPriceRule = { size: SetSize; product_id: string | null; price: number }
+// Bảng giá set: product_id có giá trị = set chỉ gồm vị đó; null = giá mặc định cho set mix vị của dòng món có từ 2 vị trở lên (category = tên dòng món, hoặc null = chung)
+export type SetPriceRule = { size: SetSize; product_id: string | null; category?: string | null; price: number }
 export type PublicStore = {
   name: string
   phone: string | null
@@ -67,9 +67,12 @@ export function setPrice(size: SetSize, mix: Mix, items: MenuItem[], store: Pric
     const own = store.set_prices.find((r) => r.size === size && r.product_id === ids[0])
     if (own) return own.price
   }
-  const line = items.filter((i) => lineOf(i) === lineOf(first))
+  const cat = lineOf(first)
+  const line = items.filter((i) => lineOf(i) === cat)
   if (line.length >= 2) {
-    const mixed = store.set_prices.find((r) => r.size === size && r.product_id === null)
+    const catMixed = store.set_prices.find((r) => r.size === size && r.product_id === null && r.category === cat)
+    if (catMixed) return catMixed.price
+    const mixed = store.set_prices.find((r) => r.size === size && r.product_id === null && !r.category)
     if (mixed) return mixed.price
   }
   let total = 0
@@ -83,17 +86,30 @@ export function setPrice(size: SetSize, mix: Mix, items: MenuItem[], store: Pric
 }
 
 // Vị nào chọn được cho set cỡ này: có giá lẻ, hoặc quán đã đặt giá cho cỡ set đó
-export const selectable = (item: MenuItem, size: SetSize, store: Pricing) =>
-  item.price !== null || store.set_prices.some((r) => r.size === size && (r.product_id === item.id || r.product_id === null))
+export const selectable = (item: MenuItem, size: SetSize, store: Pricing) => {
+  const cat = lineOf(item)
+  return (
+    item.price !== null ||
+    store.set_prices.some(
+      (r) => r.size === size && (r.product_id === item.id || (r.product_id === null && (!r.category || r.category === cat)))
+    )
+  )
+}
+
+// Tên ngắn hiện trên thẻ món và gợi ý cỡ set (vd: "Flan truyền thống" -> "Truyền thống")
+export const flavorTitle = (name: string) => (/^flan\s+truyền\s+thống$/i.test(name.trim()) ? 'Truyền thống' : name)
 
 // Giá hiện trên nút chọn cỡ set của một dòng món, ví dụ [{ label: 'Truyền thống', price: 50000 }, { label: 'Mix vị', price: 55000 }]
 export function setPriceHints(size: SetSize, lineItems: MenuItem[], store: Pricing): { label: string | null; price: number }[] {
   const out: { label: string | null; price: number }[] = []
   for (const item of lineItems) {
     const own = store.set_prices.find((r) => r.size === size && r.product_id === item.id)
-    if (own) out.push({ label: item.name, price: own.price })
+    if (own) out.push({ label: flavorTitle(item.name), price: own.price })
   }
-  const mixed = store.set_prices.find((r) => r.size === size && r.product_id === null)
+  const cat = lineItems[0] ? lineOf(lineItems[0]) : null
+  const mixed =
+    (cat ? store.set_prices.find((r) => r.size === size && r.product_id === null && r.category === cat) : undefined) ??
+    store.set_prices.find((r) => r.size === size && r.product_id === null && !r.category)
   if (mixed && lineItems.length >= 2) out.push({ label: 'Mix vị', price: mixed.price })
   if (out.length === 0 && lineItems.length === 1 && lineItems[0].price !== null) out.push({ label: null, price: size * lineItems[0].price })
   return out
@@ -297,12 +313,15 @@ export const flavorEmoji = (name: string) => (/whey|chai|ml/i.test(norm(name)) ?
 // Hình minh hoạ theo vị; vị lạ thì null và trang dùng màu nền thay thế
 export function flavorImage(name: string): string | null {
   const n = norm(name)
+  if (n.includes('flan')) {
+    if (n.includes('matcha') || n.includes('pho mai')) return '/shop/flan-matcha-phomai.jpg'
+    return '/shop/flan.jpeg'
+  }
   if (n.includes('matcha')) return '/shop/matcha.jpg'
   if (n.includes('ca cao') || n.includes('cacao') || n.includes('socola')) return '/shop/cacao.jpg'
   if (n.includes('nep cam')) return '/shop/nepcam.jpg'
   if (n.includes('pho mai')) return '/shop/phomai.jpg'
   if (n.includes('truyen thong') || n.includes('nguyen ban')) return '/shop/truyenthong.jpg'
-  if (n.includes('flan')) return '/shop/flan.jpeg'
   if (n.includes('whey') || n.includes('tri ky') || n.includes('400')) return '/shop/hilaplon.jpeg'
   if (n.includes('hy lap') || n.includes('lam quen')) return '/shop/hilap.jpeg'
   return null
@@ -311,21 +330,29 @@ export function flavorImage(name: string): string | null {
 // Điểm căn chỉnh ảnh để các món không bị sát nắp hoặc lệch trọng tâm
 export function flavorPosition(name: string): string {
   const n = norm(name)
+  if (n.includes('flan')) {
+    if (n.includes('matcha')) return 'center 8%'
+    if (n.includes('pho mai')) return 'center 95%'
+    return 'center 35%'
+  }
   if (n.includes('hy lap') || n.includes('lam quen')) return 'center 18%'
   if (n.includes('tri ky') || n.includes('400') || n.includes('whey')) return 'center 35%'
-  if (n.includes('flan')) return 'center 35%'
   return 'center 28%'
 }
 
 // Mô tả ngắn từng vị hiện dưới tên món; vị lạ thì không có mô tả
 export function flavorNote(name: string): string | null {
   const n = norm(name)
+  if (n.includes('flan')) {
+    if (n.includes('matcha')) return 'Mềm mịn, thơm dịu vị trà xanh'
+    if (n.includes('pho mai')) return 'Béo mịn vị phô mai'
+    return 'Mềm mịn, caramel thơm'
+  }
   if (n.includes('matcha')) return 'Thơm dịu vị trà xanh'
   if (n.includes('ca cao') || n.includes('cacao') || n.includes('socola')) return 'Đậm vị sô-cô-la'
   if (n.includes('nep cam')) return 'Dẻo thơm nếp cẩm'
   if (n.includes('pho mai')) return 'Béo mịn vị phô mai'
   if (n.includes('truyen thong') || n.includes('nguyen ban')) return 'Vị nguyên bản, béo dịu'
-  if (n.includes('flan')) return 'Mềm mịn, caramel thơm'
   if (n.includes('whey')) return 'Nước whey từ sữa chua Hy Lạp'
   if (n.includes('lam quen')) return 'Sữa chua Hy Lạp, hũ nhỏ dùng thử'
   if (n.includes('tri ky')) return 'Sữa chua Hy Lạp, hũ lớn dùng cả tuần'

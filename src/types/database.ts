@@ -253,8 +253,9 @@ export type StorefrontSetPrice = {
   id: string
   store_id: string
   set_size: 4 | 6
-  // null = giá mặc định cho set mix vị
+  // null = giá mặc định cho set mix vị (category xác định dòng món áp dụng, null = mọi dòng)
   product_id: string | null
+  category: string | null
   price: number
   created_at: string
 }

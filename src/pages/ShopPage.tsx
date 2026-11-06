@@ -16,6 +16,7 @@ import {
   flavorEmoji,
   flavorImage,
   flavorPosition,
+  flavorTitle,
   getCachedMenu,
   setCachedMenu,
   isSingle,
@@ -426,7 +427,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                     </div>
                     <div className="shop-body">
                       <div className="shop-title">
-                        <h4>{item.name}</h4>
+                        <h4>{flavorTitle(item.name)}</h4>
                         {note && <p className="shop-note">{note}</p>}
                       </div>
                       {(single || perJar) && item.price !== null && (

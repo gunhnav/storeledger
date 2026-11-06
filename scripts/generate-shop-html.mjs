@@ -23,7 +23,7 @@ html = html
   )
   .replace(
     /<meta property="og:url" content=".*?" \/>/,
-    '<meta property="og:url" content="https://storeledger-one.vercel.app/shop/hogi" />'
+    '<meta property="og:url" content="https://hogifood.vercel.app" />'
   )
   .replace(
     /<meta property="og:title" content=".*?" \/>/,
@@ -35,7 +35,7 @@ html = html
   )
   .replace(
     /<meta property="og:image" content=".*?" \/>/,
-    '<meta property="og:image" content="https://storeledger-one.vercel.app/shop/truyenthong.jpg" />'
+    '<meta property="og:image" content="https://hogifood.vercel.app/shop/truyenthong.jpg" />'
   )
   .replace(
     /<meta property="og:image:width" content=".*?" \/>/,
@@ -59,7 +59,7 @@ html = html
   )
   .replace(
     /<meta name="twitter:image" content=".*?" \/>/,
-    '<meta name="twitter:image" content="https://storeledger-one.vercel.app/shop/truyenthong.jpg" />'
+    '<meta name="twitter:image" content="https://hogifood.vercel.app/shop/truyenthong.jpg" />'
   )
 
 fs.writeFileSync(distShop, html, 'utf8')
