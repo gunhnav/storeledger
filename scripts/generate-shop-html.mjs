@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const distIndex = path.resolve('dist/index.html')
+const distApp = path.resolve('dist/app.html')
 const distShop = path.resolve('dist/shop.html')
 
 if (!fs.existsSync(distIndex)) {
@@ -11,8 +12,19 @@ if (!fs.existsSync(distIndex)) {
 
 let html = fs.readFileSync(distIndex, 'utf8')
 
-// Thay thế meta tags Sổ Xanh thành Hogi Food cho trang đặt hàng /shop/*
+// Đổi index.html -> app.html để Vercel chạy rewrites theo host cho cả đường dẫn gốc "/"
+fs.renameSync(distIndex, distApp)
+
+// Thay thế favicon & meta tags Sổ Xanh thành Hogi Food cho trang đặt hàng
 html = html
+  .replace(
+    /<link rel="icon" type="image\/svg\+xml" href="\/favicon\.svg" \/>/,
+    '<link rel="icon" type="image/png" href="/shop/hogi-logo.png" />'
+  )
+  .replace(
+    /<link rel="apple-touch-icon" href="\/favicon\.svg" \/>/,
+    '<link rel="apple-touch-icon" href="/shop/hogi-logo.png" />'
+  )
   .replace(
     /<title>.*?<\/title>/,
     '<title>Hogi Food – Đặt trước sữa chua &amp; bánh flan</title>'

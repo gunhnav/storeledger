@@ -153,7 +153,12 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   }, [load])
 
   useEffect(() => {
-    if (menu) document.title = `${menu.store.name} – Sữa chua dẻo & bánh flan`
+    document.title = `${menu?.store.name ?? 'Hogi Food'} – Sữa chua dẻo & bánh flan`
+    const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    if (icon) {
+      icon.type = 'image/png'
+      icon.href = '/shop/hogi-logo.png'
+    }
   }, [menu])
 
   const items = useMemo(() => menu?.items ?? [], [menu])

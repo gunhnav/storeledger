@@ -13,6 +13,6 @@
     },
     { "source": "/hogi", "destination": "/shop.html" },
     { "source": "/shop/(.*)", "destination": "/shop.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/app.html" }
   ]
 }
