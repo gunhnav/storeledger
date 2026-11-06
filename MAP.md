@@ -86,6 +86,7 @@ web-nhap-lieu/
 │   │   ├── emvQr.ts            # Tạo chuỗi thanh toán mã QR EMVCo chuẩn Napas
 │   │   ├── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
 │   │   ├── appVersion.ts       # So mã build đang chạy với /version.json trên server (phát hiện bản mới sau deploy)
+│   │   ├── slip.ts             # Slip Node (lucian-labs/slip-node): chuyển trang giữa Sổ Xanh ⇄ Hogi Food / web khác không nháy trắng; script inline trong index.html + liftSlip() ở main.tsx (test: slip.test.ts)
 │   │   ├── shopMotion.ts       # Kiểu chuyển động dùng chung (lò xo, hiện dần, stagger) cho trang đặt hàng công khai, dùng thư viện motion
 │   │   ├── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
 │   │   ├── analytics/disposals.test.ts # Test hàng huỷ (trừ tồn theo nơi để, giá trị huỷ theo lô) và ngày thanh toán đợt nhập

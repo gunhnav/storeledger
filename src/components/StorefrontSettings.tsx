@@ -6,6 +6,7 @@ import { usePrompt } from '../lib/confirm'
 import { errorMessage } from '../lib/format'
 import { BANKS } from '../lib/banks'
 import { describePayload, payloadError } from '../lib/emvQr'
+import { pageColour, withSlip } from '../lib/slip'
 
 // Một dòng giá set: cỡ set, áp dụng cho ('' = set mix vị chung, 'cat:<nhóm>' = set mix vị của nhóm món, còn lại là mã vị), giá (chuỗi để cho phép ô trống khi gõ)
 type RuleDraft = { uid: number; size: 4 | 6; productId: string; price: string }
@@ -329,7 +330,21 @@ export function StorefrontSettings({ storeId, code, onSaved }: { storeId: string
             <button type="button" onClick={copyLink}>
               {t('Sao chép liên kết')}
             </button>
-            <a className="button" href={link} target="_blank" rel="noopener noreferrer">
+            <a
+              className="button"
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              // Tab mới mở theo Slip Node: hiện màu nền trang quản trị rồi mở dần trang khách, không nháy trắng
+              onClick={(e) => {
+                const a = e.currentTarget
+                a.href = withSlip(link, pageColour())
+                // Trả lại link sạch sau khi tab đã mở (chuột phải → sao chép link không dính tham số slip)
+                setTimeout(() => {
+                  a.href = link
+                })
+              }}
+            >
               {t('Mở trang khách')}
             </a>
           </>

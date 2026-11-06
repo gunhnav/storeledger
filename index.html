@@ -2,6 +2,8 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
+    <!-- Slip Node (github.com/lucian-labs/slip-node, CC0): giữ màu nền khi chuyển từ website khác sang, ẩn nội dung đến khi app mở (src/lib/slip.ts). Phải đứng ngay sau meta charset, trước mọi stylesheet -->
+    <script>(function(){try{var q=new URLSearchParams(location.search);if(q.get('slip')!=='1')return;var bg=q.get('slipbg')||'';if(!/^(#[0-9a-f]{3,8}|rgba?\([0-9 .,%]+\))$/i.test(bg))bg='#000';var d=document.documentElement;d.setAttribute('data-slip-arriving','');d.style.setProperty('background',bg,'important');var s=document.createElement('style');s.textContent='html[data-slip-arriving] body{visibility:hidden}html[data-slip-arriving] [data-slip-keep]{visibility:visible}';document.head.appendChild(s);setTimeout(function(){d.removeAttribute('data-slip-arriving');d.style.removeProperty('background')},2500)}catch(e){}})()</script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
