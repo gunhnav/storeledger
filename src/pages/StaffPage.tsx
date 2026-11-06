@@ -488,10 +488,10 @@ export function StaffPage() {
             </thead>
             <tbody>
               {activeUsers.map((user) => {
-                const isMainSuper = (user.email ?? '').toLowerCase() === 'hungng28900@gmail.com'
+                const isMainSuper = Boolean(MASTER_EMAIL) && (user.email ?? '').toLowerCase() === MASTER_EMAIL
                 const isSuperAdminRow = user.role === 'super_admin' || isMainSuper
                 const isAdminRow = user.role === 'admin'
-                const isMaster = (user.email ?? '').toLowerCase() === MASTER_EMAIL || isMainSuper
+                const isMaster = isMainSuper
                 const isSelf = user.id === session?.user.id
                 const isRejected = user.status === 'rejected'
                 const canManageUser = !isSelf && !isMainSuper && (!isSuperAdminRow || isSuperAdmin)

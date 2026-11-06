@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import { AuthContext, type AuthState } from '../lib/auth'
 import type { Profile } from '../types/database'
 
+const MASTER_EMAIL = (import.meta.env.VITE_MASTER_ADMIN_EMAIL ?? '').trim().toLowerCase()
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [sessionReady, setSessionReady] = useState(false)
@@ -75,10 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin:
         (profile?.role === 'admin' ||
           profile?.role === 'super_admin' ||
-          profile?.email?.toLowerCase() === 'hungng28900@gmail.com') &&
+          (Boolean(MASTER_EMAIL) && profile?.email?.toLowerCase() === MASTER_EMAIL)) &&
         profile?.status === 'approved',
       isSuperAdmin:
-        (profile?.role === 'super_admin' || profile?.email?.toLowerCase() === 'hungng28900@gmail.com') &&
+        (profile?.role === 'super_admin' ||
+          (Boolean(MASTER_EMAIL) && profile?.email?.toLowerCase() === MASTER_EMAIL)) &&
         profile?.status === 'approved',
       isPending: profile?.status === 'pending',
       isApproved: profile?.status === 'approved',

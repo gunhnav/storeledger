@@ -4,7 +4,9 @@ export type Part = { text?: string; functionCall?: { name: string; args?: Record
 export type Content = { role: string; parts: Part[] };
 
 export type ChatRole = 'super_admin' | 'admin' | 'staff';
-export const SUPER_ADMIN_EMAIL = 'hungng28900@gmail.com';
+export const SUPER_ADMIN_EMAIL =
+  (globalThis as unknown as { Deno?: { env: { get: (k: string) => string | undefined } } }).Deno?.env.get("MASTER_ADMIN_EMAIL") ||
+  "hungng28900@gmail.com";
 
 export function sanitizeText(text: string): string {
   if (!text) return "";

@@ -349,42 +349,34 @@ async function loadUserInfo(authHeader: string): Promise<UserInfo | null> {
   if (fresh(hit) && hit?.user) return hit.user;
 
   const payload = parseJwtPayload(authHeader);
-  const userEmail = (payload?.email ?? "").trim().toLowerCase();
   const userId = payload?.sub ?? "";
-
-  // Super Admin khớp email -> phản hồi 0ms ngay không cần truy vấn profiles
-  if (userEmail === SUPER_ADMIN_EMAIL) {
-    const user: UserInfo = { id: userId, email: userEmail, role: "super_admin", status: "approved" };
-    ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: Date.now(), user });
-    return user;
-  }
+  if (!userId) return null;
 
   try {
+    // Luôn xác thực token qua PostgREST (PostgREST kiểm tra chữ ký mã hoá cryptographic của JWT)
     const rows = (await rest(authHeader, `profiles?id=eq.${userId}&select=id,email,role,status`)) as {
       id: string; email: string | null; role: string; status: string;
     }[];
     const r = rows?.[0];
-    const email = (r?.email ?? userEmail).toLowerCase();
-    const role: ChatRole = (email === SUPER_ADMIN_EMAIL || r?.role === "super_admin")
+    if (!r) return null;
+
+    const email = (r.email ?? payload?.email ?? "").toLowerCase();
+    const role: ChatRole = (r.role === "super_admin" || email === SUPER_ADMIN_EMAIL)
       ? "super_admin"
-      : r?.role === "admin"
+      : r.role === "admin"
       ? "admin"
       : "staff";
 
     const user: UserInfo = {
-      id: r?.id ?? userId,
+      id: r.id,
       email,
       role,
-      status: r?.status ?? "approved",
+      status: r.status ?? "approved",
     };
     ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: Date.now(), user });
     return user;
   } catch {
-    if (userId) {
-      const user: UserInfo = { id: userId, email: userEmail, role: "staff", status: "approved" };
-      ctxCache.set(authHeader, { ...(fresh(hit) ? hit : {}), at: Date.now(), user });
-      return user;
-    }
+    // Nếu token giả mạo, hết hạn hoặc không hợp lệ: PostgREST trả 401 -> từ chối, không tạo phiên ảo
     return null;
   }
 }

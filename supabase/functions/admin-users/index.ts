@@ -10,7 +10,7 @@ const CORS_HEADERS = {
 };
 
 type Body =
-  | { action: "create"; email: string; password: string; full_name: string; store_ids: string[]; role?: "admin" | "staff" }
+  | { action: "create"; email: string; password: string; full_name: string; store_ids: string[]; role?: "super_admin" | "admin" | "staff" }
   | { action: "set_password"; user_id: string; password: string }
   | { action: "update"; user_id: string; full_name: string; email: string };
 
@@ -35,6 +35,12 @@ export default {
     if (adminError) return fail(adminError.message, 500);
     if (!isAdmin) return fail("Chỉ admin được quản lý tài khoản", 403);
 
+    const { data: isSuperAdmin } = await ctx.supabase.rpc("is_super_admin");
+    const callerIsSuper = Boolean(isSuperAdmin);
+
+    const { data: callerAuth } = await ctx.supabase.auth.getUser();
+    const callerUserId = callerAuth?.user?.id;
+
     let body: Body;
     try {
       body = await req.json();
@@ -42,8 +48,38 @@ export default {
       return fail("Dữ liệu gửi lên không hợp lệ");
     }
 
+    // Kiểm tra bảo vệ cấp bậc tài khoản khi cập nhật hoặc đổi mật khẩu
+    if (body.action === "update" || body.action === "set_password") {
+      if (!body.user_id) return fail("Thiếu tài khoản cần thao tác");
+
+      const { data: targetProfile, error: targetError } = await ctx.supabase
+        .from("profiles")
+        .select("id, email, role, status")
+        .eq("id", body.user_id)
+        .maybeSingle();
+
+      if (targetError) return fail(targetError.message, 500);
+      if (!targetProfile) return fail("Không tìm thấy tài khoản", 404);
+
+      const targetRole = targetProfile.role;
+      const targetEmail = (targetProfile.email ?? "").trim().toLowerCase();
+      const masterEmail = (Deno.env.get("MASTER_ADMIN_EMAIL") ?? "").trim().toLowerCase();
+      const isTargetSuper = targetRole === "super_admin" || (masterEmail && targetEmail === masterEmail);
+
+      // Phân quyền cấp bậc:
+      // 1. Chỉ Super Admin mới được đổi mật khẩu/thông tin của Super Admin
+      // 2. Admin thường không được can thiệp vào tài khoản admin khác (chỉ được tự đổi của mình hoặc nhân viên)
+      if (!callerIsSuper) {
+        if (isTargetSuper) {
+          return fail("Chỉ Super Admin mới được thay đổi tài khoản Super Admin", 403);
+        }
+        if (targetRole === "admin" && body.user_id !== callerUserId) {
+          return fail("Chỉ Super Admin mới được thay đổi tài khoản quản trị viên khác", 403);
+        }
+      }
+    }
+
     if (body.action === "update") {
-      if (!body.user_id) return fail("Thiếu tài khoản cần sửa");
       const email = (body.email ?? "").trim().toLowerCase();
       const fullName = (body.full_name ?? "").trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email không hợp lệ");
@@ -73,7 +109,6 @@ export default {
     if (password.length < 6) return fail("Mật khẩu phải có ít nhất 6 ký tự");
 
     if (body.action === "set_password") {
-      if (!body.user_id) return fail("Thiếu tài khoản cần đổi mật khẩu");
       const { error } = await ctx.supabaseAdmin.auth.admin.updateUserById(body.user_id, { password });
       if (error) return fail(error.message);
       return reply({ ok: true });
@@ -83,7 +118,10 @@ export default {
 
     const email = (body.email ?? "").trim().toLowerCase();
     const fullName = (body.full_name ?? "").trim();
-    const role = body.role === "admin" ? "admin" : "staff";
+    const role = body.role === "super_admin" ? "super_admin" : body.role === "admin" ? "admin" : "staff";
+    if (role === "super_admin" && !callerIsSuper) {
+      return fail("Chỉ Super Admin mới được tạo tài khoản Super Admin", 403);
+    }
     // Admin thấy mọi cửa hàng theo role, không cần gán cửa hàng
     const storeIds = role === "staff" && Array.isArray(body.store_ids) ? body.store_ids : [];
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Email không hợp lệ");
@@ -102,8 +140,8 @@ export default {
     }
 
     const userId = created.user.id;
-    if (role === "admin") {
-      const { error } = await ctx.supabase.rpc("admin_set_role", { p_user_id: userId, p_role: "admin" });
+    if (role === "admin" || role === "super_admin") {
+      const { error } = await ctx.supabase.rpc("admin_set_role", { p_user_id: userId, p_role: role });
       if (error) {
         await ctx.supabaseAdmin.auth.admin.deleteUser(userId);
         return fail(error.message);
