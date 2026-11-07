@@ -1,11 +1,23 @@
 // Trang bán hàng công khai (/hogi, /shop/<mã quán>): ĐẶT TRƯỚC theo set (4 hoặc 6 hũ, tự chọn vị) như kênh Công ty.
 // Không lấy tồn kho: ai đặt gì nhận đó. Giỏ hàng gồm dòng set và dòng món lẻ (vd: sữa chua Hy Lạp); nội dung đơn gửi qua Hangout (hoặc Zalo).
+import { frameFrom, type ImageFrame } from './productImage'
 
 export const SET_SIZES = [4, 6] as const
 export type SetSize = (typeof SET_SIZES)[number]
 
 // mode: 'set' = gộp vào set 4 / 6 hũ, 'single' = bán lẻ từng phần / chai
-export type MenuItem = { id: string; name: string; category: string | null; price: number | null; mode?: 'set' | 'single' }
+export type MenuItem = {
+  id: string
+  name: string
+  category: string | null
+  price: number | null
+  mode?: 'set' | 'single'
+  // Ảnh admin tải lên + căn chỉnh (null = ảnh / căn mặc định theo tên món)
+  image_url?: string | null
+  image_x?: number | null
+  image_y?: number | null
+  image_zoom?: number | null
+}
 export type PublicBank = { code: string; account: string; holder: string }
 // QR thanh toán gốc của quán (chuỗi EMVCo, ví dụ QR Góp Quỹ MoMo): trang tự thêm số tiền, số hoá đơn, nội dung
 export type PublicPay = { payload: string; label: string | null; holder: string }
@@ -325,6 +337,12 @@ export function flavorImage(name: string): string | null {
   if (n.includes('whey') || n.includes('tri ky') || n.includes('400')) return '/shop/hilaplon.jpeg'
   if (n.includes('hy lap') || n.includes('lam quen')) return '/shop/hilap.jpeg'
   return null
+}
+
+// Ảnh thẻ món: ảnh admin tải lên (kèm khung đã căn) -> ảnh tĩnh theo vị -> null (dùng emoji + màu nền)
+export function menuImage(item: Pick<MenuItem, 'name' | 'image_url' | 'image_x' | 'image_y' | 'image_zoom'>): { src: string; frame: ImageFrame } | null {
+  const src = item.image_url || flavorImage(item.name)
+  return src ? { src, frame: frameFrom(item, flavorPosition(item.name)) } : null
 }
 
 // Điểm căn chỉnh ảnh để các món không bị sát nắp hoặc lệch trọng tâm

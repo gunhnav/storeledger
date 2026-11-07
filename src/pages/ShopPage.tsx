@@ -6,6 +6,7 @@ import { useToast } from '../lib/toast'
 import { ShopCartModal } from '../components/ShopCartModal'
 import { PopNumber, ShopMotion } from '../components/ShopMotion'
 import { SOFT_SPRING, SPRING } from '../lib/shopMotion'
+import { frameStyle } from '../lib/productImage'
 import {
   SET_SIZES,
   addSet,
@@ -15,8 +16,7 @@ import {
   changeMix,
   flavorColors,
   flavorEmoji,
-  flavorImage,
-  flavorPosition,
+  menuImage,
   flavorTitle,
   getCachedMenu,
   setCachedMenu,
@@ -435,7 +435,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             <div className="shop-grid">
               {lineItems.map((item) => {
                 const [c1, c2] = flavorColors(item.name)
-                const image = flavorImage(item.name)
+                const image = menuImage(item)
                 const note = flavorNote(item.name)
                 const single = isSingle(item)
                 const n = single ? singleQty(cart, item.id) : (mix[item.id] ?? 0)
@@ -444,7 +444,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                   <div key={item.id} className="shop-card-wrap">
                   <article className={`shop-card${n > 0 ? ' is-picked' : ''}${ok ? '' : ' is-out'}`}>
                     <div className="shop-art" style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }} aria-hidden="true">
-                      {image ? <img src={image} alt="" loading="lazy" width={520} height={430} style={{ objectPosition: flavorPosition(item.name) }} /> : <span>{flavorEmoji(item.name)}</span>}
+                      {image ? <img src={image.src} alt="" loading="lazy" width={520} height={430} style={frameStyle(image.frame)} /> : <span>{flavorEmoji(item.name)}</span>}
                       <AnimatePresence>
                         {n > 0 && (
                           <m.span key="picked" className="shop-picked" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={SPRING}>

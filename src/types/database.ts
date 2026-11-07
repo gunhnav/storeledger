@@ -55,6 +55,11 @@ export type Product = {
   is_active: boolean
   // Trang đặt trước: set = bán theo set 4/6 hũ, single = bán lẻ (20261025230000_storefront_sale_mode.sql)
   public_sale_mode: 'set' | 'single'
+  // Ảnh món trang đặt hàng + căn chỉnh (20261107044100_product_images.sql). null = ảnh / căn mặc định theo tên món
+  image_url: string | null
+  image_x: number | null
+  image_y: number | null
+  image_zoom: number | null
   created_at: string
 }
 
@@ -324,6 +329,10 @@ export type ProductInsert = {
   low_stock_threshold?: number
   is_active?: boolean
   public_sale_mode?: 'set' | 'single'
+  image_url?: string | null
+  image_x?: number | null
+  image_y?: number | null
+  image_zoom?: number | null
   created_at?: string
 }
 export type ProductUpdate = Partial<ProductInsert>
@@ -440,7 +449,17 @@ export type PublicMenuResult = {
     chat_url?: string | null
     contact_email?: string | null
   }
-  items: { id: string; name: string; category: string | null; price: number | null; mode: 'set' | 'single' }[]
+  items: {
+    id: string
+    name: string
+    category: string | null
+    price: number | null
+    mode: 'set' | 'single'
+    image_url?: string | null
+    image_x?: number | null
+    image_y?: number | null
+    image_zoom?: number | null
+  }[]
 } | null
 
 export type CompanySetHistoryRow = {

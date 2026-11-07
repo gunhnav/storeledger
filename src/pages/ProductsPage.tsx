@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
+import { ProductImageEditor } from '../components/ProductImageEditor'
 import { supabase } from '../lib/supabase'
 import { useI18n } from '../lib/i18n'
 import { useToast } from '../lib/toast'
 import { useStore } from '../lib/store'
 import { MAX_MONEY, errorMessage, formatDate, formatVND, todayVN } from '../lib/format'
 import { usesPartnerChannel } from '../lib/storeFeatures'
+import { menuImage } from '../lib/storefront'
+import { frameStyle } from '../lib/productImage'
 import type { Product, ProductPrice, StorePriceRow } from '../types/database'
 
 type FormValues = {
@@ -86,6 +89,8 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
   const [editing, setEditing] = useState<Product | null>(null)
   const [pricing, setPricing] = useState<Product | null>(null)
   const [bulk, setBulk] = useState(false)
+  // Sản phẩm đang mở khung sửa ảnh trang đặt hàng
+  const [imaging, setImaging] = useState<Product | null>(null)
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   const {
     register,
@@ -379,12 +384,20 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
               {catalog.products.map((row) => {
                 const price = catalog.prices.get(row.id)
                 const cost = effectiveAt(catalog.history, row.id, today)?.unit_cost ?? null
+                const image = menuImage(row)
                 return (
                   <tr key={row.id} className={row.is_active ? undefined : 'inactive'}>
                     <td>
-                      {row.name}
-                      {row.category && <small className="muted"> · {row.category}</small>}
-                      {!row.is_active && <small className="muted"> {t('· ngừng bán')}</small>}
+                      <div className="product-name-cell">
+                        <button type="button" className="img-thumb" title={t('Ảnh trang đặt hàng')} aria-label={t('Ảnh trang đặt hàng')} onClick={() => setImaging(row)}>
+                          {image && <img src={image.src} alt="" loading="lazy" style={frameStyle(image.frame)} />}
+                        </button>
+                        <span>
+                          {row.name}
+                          {row.category && <small className="muted"> · {row.category}</small>}
+                          {!row.is_active && <small className="muted"> {t('· ngừng bán')}</small>}
+                        </span>
+                      </div>
                     </td>
                     <td className="num">{price ? formatVND(price.sale_price) : '—'}</td>
                     {partner && (
@@ -404,6 +417,9 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
                       <button type="button" className="link" onClick={() => startEdit(row)}>
                         {t('Sửa')}
                       </button>
+                      <button type="button" className="link" onClick={() => setImaging(row)}>
+                        {t('Ảnh')}
+                      </button>
                     </td>
                   </tr>
                 )
@@ -413,6 +429,18 @@ function ProductsManager({ storeId, partner }: { storeId: string; partner: boole
         </div>
       )}
 
+      {imaging && (
+        <ProductImageEditor
+          product={imaging}
+          storeId={storeId}
+          onClose={() => setImaging(null)}
+          onSaved={(text) => {
+            setImaging(null)
+            toast.success(text)
+            refresh()
+          }}
+        />
+      )}
     </section>
   )
 }

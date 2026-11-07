@@ -4190,10 +4190,12 @@ input.overridden {
   height: 100%;
   object-fit: cover;
   object-position: center 28%;
+  /* --img-zoom: độ phóng admin căn chỉnh (lib/productImage.ts frameStyle) */
+  transform: scale(var(--img-zoom, 1));
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .shop-card:hover .shop-art img {
-  transform: scale(1.03);
+  transform: scale(calc(var(--img-zoom, 1) * 1.03));
 }
 .shop-size,
 .shop-tabs button {
@@ -4211,9 +4213,12 @@ input.overridden {
   .shop-footer-btn {
     transition: none;
   }
-  .shop-card:hover,
-  .shop-card:hover .shop-art img {
+  .shop-card:hover {
     transform: none;
+  }
+  /* Không phóng thêm khi hover nhưng giữ độ phóng admin đã căn */
+  .shop-card:hover .shop-art img {
+    transform: scale(var(--img-zoom, 1));
   }
 }
 .shop-picked {
@@ -5510,4 +5515,97 @@ input.overridden {
 }
 .disposal-form > button[type='submit'] {
   justify-self: start;
+}
+
+/* ---------------------------------------------------------------------------
+   Ảnh món (Sản phẩm → Ảnh): khung căn chỉnh kéo / phóng, xem trước thẻ máy tính + điện thoại
+   components/ProductImageEditor.tsx
+--------------------------------------------------------------------------- */
+.img-thumb {
+  display: block;
+  width: 44px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--border);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.img-thumb img,
+.img-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(var(--img-zoom, 1));
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.product-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.img-editor {
+  max-width: 600px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.img-editor-previews {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.img-editor-previews figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.img-editor-previews figcaption {
+  font-size: 12px;
+  color: var(--muted, #888);
+}
+.img-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: repeating-conic-gradient(var(--border) 0 25%, transparent 0 50%) 0 0 / 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+}
+.img-frame.is-main {
+  width: min(300px, 100%);
+  aspect-ratio: 220 / 190;
+  cursor: grab;
+  touch-action: none;
+  outline-offset: 2px;
+}
+.img-frame.is-main:active {
+  cursor: grabbing;
+}
+.img-frame.is-mobile {
+  width: 150px;
+  aspect-ratio: 165 / 130;
+}
+.img-editor-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.img-editor-zoom input[type='range'] {
+  flex: 1;
+}
+.img-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.img-editor-actions .spacer {
+  flex: 1;
 }
