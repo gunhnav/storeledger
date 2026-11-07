@@ -1,8 +1,4 @@
 import { createContext, useContext } from 'react'
-import { en } from '../i18n/en'
-import { ja } from '../i18n/ja'
-import { ko } from '../i18n/ko'
-import { zh } from '../i18n/zh'
 
 // Đa ngôn ngữ: chữ tiếng Việt trong code chính là khoá tra từ điển.
 // Thiếu bản dịch thì hiện tiếng Việt. Tham số viết dạng {name}.
@@ -16,7 +12,25 @@ export const LANGUAGES: { code: Lang; label: string; short: string; locale: stri
   { code: 'ja', label: '日本語', short: '日', locale: 'ja-JP' },
 ]
 
-const DICTIONARIES: Record<Exclude<Lang, 'vi'>, Record<string, string>> = { en, ko, zh, ja }
+type Dict = Record<string, string>
+
+// Từ điển tải riêng theo ngôn ngữ đang chọn (mỗi file ~90KB): người dùng tiếng Việt không phải tải bản dịch nào
+const LOADERS: Record<Exclude<Lang, 'vi'>, () => Promise<Dict>> = {
+  en: () => import('../i18n/en').then((m) => m.en),
+  ko: () => import('../i18n/ko').then((m) => m.ko),
+  zh: () => import('../i18n/zh').then((m) => m.zh),
+  ja: () => import('../i18n/ja').then((m) => m.ja),
+}
+const DICTIONARIES: Partial<Record<Exclude<Lang, 'vi'>, Dict>> = {}
+
+export const hasDictionary = (lang: Lang) => lang === 'vi' || DICTIONARIES[lang] !== undefined
+
+// Tải từ điển một lần; trong lúc chờ, translate() hiện tiếng Việt
+export async function loadDictionary(lang: Lang): Promise<void> {
+  if (hasDictionary(lang)) return
+  const l = lang as Exclude<Lang, 'vi'>
+  DICTIONARIES[l] = await LOADERS[l]()
+}
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string
 
@@ -92,7 +106,7 @@ function translateServer(lang: Exclude<Lang, 'vi'>, text: string): string | null
   for (const { template, names, re } of SERVER_PATTERNS) {
     const match = re.exec(text)
     if (!match) continue
-    const translated = DICTIONARIES[lang][template]
+    const translated = DICTIONARIES[lang]?.[template]
     if (!translated) return null
     return translated.replace(/\{(\w+)\}/g, (m, name: string) => {
       const i = names.indexOf(name)
@@ -104,7 +118,7 @@ function translateServer(lang: Exclude<Lang, 'vi'>, text: string): string | null
 
 export function translate(lang: Lang, key: string, params?: Record<string, string | number>): string {
   const text =
-    lang === 'vi' ? key : (DICTIONARIES[lang][key] ?? (params ? null : translateServer(lang, key)) ?? key)
+    lang === 'vi' ? key : (DICTIONARIES[lang]?.[key] ?? (params ? null : translateServer(lang, key)) ?? key)
   if (!params) return text
   return text.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in params ? String(params[name]) : match,

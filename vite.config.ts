@@ -25,7 +25,10 @@ export default defineConfig({
             { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/, priority: 4 },
             { name: 'motion', test: /node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/, priority: 3 },
             { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/, priority: 2 },
-            { name: 'vendor', test: /node_modules[\\/]/, priority: 1 },
+            // Thư viện nặng chỉ một số trang dùng: tách riêng để trang khác không phải tải
+            // (không gom mọi node_modules vào 1 chunk vendor, vì chunk đó sẽ bị tải ngay lần đầu)
+            { name: 'charts', test: /node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor|@reduxjs|react-redux|redux|reselect|immer|es-toolkit|decimal\.js-light|eventemitter3|use-sync-external-store|tiny-invariant)[\\/]/, priority: 2 },
+            { name: 'xlsx', test: /node_modules[\\/](xlsx|fflate)[\\/]/, priority: 2 },
           ],
         },
       },

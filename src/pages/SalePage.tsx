@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { DatePicker } from '../components/DatePicker'
 import { ProductPicker, QtyStepper } from '../components/ProductPicker'
@@ -51,7 +51,9 @@ function SaleForm({
   const { products, stock, loading, error, reload } = useStoreCatalog(storeId)
   // Banner hết / sắp hết tại quầy (chỉ số lượng); làm mới sau mỗi lần lưu đơn
   const [alertVersion, setAlertVersion] = useState(0)
-  const alerts = useStockAlerts(storeId, alertVersion)
+  // Dùng lại số tồn đã tải trong useStoreCatalog, không gọi get_stock_status lần hai
+  const stockRows = useMemo(() => (loading ? null : [...stock.values()]), [loading, stock])
+  const alerts = useStockAlerts(storeId, alertVersion, stockRows)
   // Dòng nhập tay (quán / đối tác); kênh Công ty lấy dòng từ các set đã chọn
   const [shopLines, setLines] = useState<Line[]>([])
   const [picks, setPicks] = useState<Picks>({})

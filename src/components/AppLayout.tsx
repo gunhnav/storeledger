@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { BRAND_NAME } from '../lib/brand'
@@ -104,7 +104,9 @@ export function AppLayout() {
             message="Tài khoản của bạn chưa được thêm vào cửa hàng nào. Liên hệ quản trị để được cấp quyền."
           />
         ) : (
-          <Outlet />
+          <Suspense fallback={<p className="muted">{t('Đang tải…')}</p>}>
+            <Outlet />
+          </Suspense>
         )}
       </main>
       <ChatWidget />

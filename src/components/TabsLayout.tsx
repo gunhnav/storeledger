@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useI18n } from '../lib/i18n'
@@ -25,7 +26,10 @@ export function TabsLayout({ title, hint, tabs }: { title: string; hint?: string
           ))}
         </nav>
       </div>
-      <Outlet />
+      {/* Trang con tải riêng (lazy): giữ tiêu đề + hàng tab, chỉ vùng nội dung hiện "Đang tải…" */}
+      <Suspense fallback={<p className="muted">{t('Đang tải…')}</p>}>
+        <Outlet />
+      </Suspense>
     </div>
   )
 }

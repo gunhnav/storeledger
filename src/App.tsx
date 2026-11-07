@@ -7,30 +7,31 @@ import { Suspense, lazy, type ReactNode } from 'react'
 import { useAuth } from './lib/auth'
 import { useStore } from './lib/store'
 import { usesDistribution, usesRevenueEntry } from './lib/storeFeatures'
-import { AccountPage } from './pages/AccountPage'
-import { BatchStatsPage } from './pages/BatchStatsPage'
-import { BestSellersPage } from './pages/BestSellersPage'
-import { DailyLogPage } from './pages/DailyLogPage'
-import { DishRecipesPage } from './pages/DishRecipesPage'
-import { DisposalPage } from './pages/DisposalPage'
-import { ExpensePage } from './pages/ExpensePage'
-import { ExpenseReport } from './pages/ExpenseReport'
-import { GuidePage } from './pages/GuidePage'
-import { ItemImportPage } from './pages/ItemImportPage'
-import { ItemSalesPage } from './pages/ItemSalesPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
-import { PreordersPage } from './pages/PreordersPage'
-import { ProductsPage } from './pages/ProductsPage'
-import { PurchasePage } from './pages/PurchasePage'
-import { ReportsPage } from './pages/ReportsPage'
-import { RevenuePage } from './pages/RevenuePage'
+// Mỗi trang tải riêng khi mở (code splitting): lần đầu vào web không phải tải biểu đồ, đọc Excel... của trang khác
+const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })))
+const BatchStatsPage = lazy(() => import('./pages/BatchStatsPage').then((m) => ({ default: m.BatchStatsPage })))
+const BestSellersPage = lazy(() => import('./pages/BestSellersPage').then((m) => ({ default: m.BestSellersPage })))
+const DailyLogPage = lazy(() => import('./pages/DailyLogPage').then((m) => ({ default: m.DailyLogPage })))
+const DishRecipesPage = lazy(() => import('./pages/DishRecipesPage').then((m) => ({ default: m.DishRecipesPage })))
+const DisposalPage = lazy(() => import('./pages/DisposalPage').then((m) => ({ default: m.DisposalPage })))
+const ExpensePage = lazy(() => import('./pages/ExpensePage').then((m) => ({ default: m.ExpensePage })))
+const ExpenseReport = lazy(() => import('./pages/ExpenseReport').then((m) => ({ default: m.ExpenseReport })))
+const GuidePage = lazy(() => import('./pages/GuidePage').then((m) => ({ default: m.GuidePage })))
+const ItemImportPage = lazy(() => import('./pages/ItemImportPage').then((m) => ({ default: m.ItemImportPage })))
+const ItemSalesPage = lazy(() => import('./pages/ItemSalesPage').then((m) => ({ default: m.ItemSalesPage })))
+const PreordersPage = lazy(() => import('./pages/PreordersPage').then((m) => ({ default: m.PreordersPage })))
+const ProductsPage = lazy(() => import('./pages/ProductsPage').then((m) => ({ default: m.ProductsPage })))
+const PurchasePage = lazy(() => import('./pages/PurchasePage').then((m) => ({ default: m.PurchasePage })))
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then((m) => ({ default: m.ReportsPage })))
+const RevenuePage = lazy(() => import('./pages/RevenuePage').then((m) => ({ default: m.RevenuePage })))
+const SalePage = lazy(() => import('./pages/SalePage').then((m) => ({ default: m.SalePage })))
+const StaffPage = lazy(() => import('./pages/StaffPage').then((m) => ({ default: m.StaffPage })))
+const StockPage = lazy(() => import('./pages/StockPage').then((m) => ({ default: m.StockPage })))
+const StorefrontPage = lazy(() => import('./pages/StorefrontPage').then((m) => ({ default: m.StorefrontPage })))
+const TransferPage = lazy(() => import('./pages/TransferPage').then((m) => ({ default: m.TransferPage })))
 const ShopPage = lazy(() => import('./pages/ShopPage').then((m) => ({ default: m.ShopPage })))
-import { SalePage } from './pages/SalePage'
-import { StaffPage } from './pages/StaffPage'
-import { StockPage } from './pages/StockPage'
-import { StorefrontPage } from './pages/StorefrontPage'
-import { TransferPage } from './pages/TransferPage'
 
 // Menu chia hai phần cho mọi quán: Nhập liệu = những gì người dùng tự nhập hoặc tải file lên;
 // Báo cáo = số liệu hệ thống tự tính từ dữ liệu đã nhập. Mỗi phần là một trang có hàng tab.

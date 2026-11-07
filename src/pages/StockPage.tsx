@@ -21,7 +21,6 @@ const STATUS_LABEL: Record<StockStatus, string> = {
 export function StockPage() {
   const { current } = useStore()
   const { t } = useI18n()
-  const alerts = useStockAlerts(current?.id ?? '')
   const storeId = current?.id
   const [result, setResult] = useState<{
     storeId: string
@@ -54,6 +53,9 @@ export function StockPage() {
       cancelled = true
     }
   }, [storeId])
+
+  // Banner dùng lại kết quả get_stock_status ở trên (null = đang tải)
+  const alerts = useStockAlerts(storeId ?? '', 0, result && result.storeId === storeId ? result.rows : null)
 
   if (!result || result.storeId !== storeId) return <p className="muted">{t('Đang tải tồn kho…')}</p>
   if (result.error) return <p className="error">{t(result.error)}</p>

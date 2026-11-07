@@ -85,6 +85,8 @@ web-nhap-lieu/
 │   │   ├── storefront.ts       # Logic giỏ hàng, bảng giá set, nhận diện vị món
 │   │   ├── emvQr.ts            # Tạo chuỗi thanh toán mã QR EMVCo chuẩn Napas
 │   │   ├── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
+│   │   ├── productImage.ts     # Ảnh món trang đặt hàng: kiểm tra file, nén WebP, khung căn chỉnh (điểm căn x/y + phóng) dùng chung cho thẻ món và khung sửa
+│   │   ├── productImageUpload.ts # Tải / xoá ảnh món trên Supabase Storage (bucket product-images, chỉ admin ghi)
 │   │   ├── appVersion.ts       # So mã build đang chạy với /version.json trên server (phát hiện bản mới sau deploy)
 │   │   ├── toastStack.ts       # Bộ máy chồng thông báo Lucian UX/UI #070 (ToastProvider dùng, cả Sổ Xanh và Hogi)
 │   │   ├── themeReveal.ts      # Đổi sáng/tối lan vòng tròn từ nút bấm (Lucian UX/UI #219, View Transitions API)
@@ -95,12 +97,12 @@ web-nhap-lieu/
 │   │   └── dailyCalendar.ts    # Gom đơn bán theo ngày (Quán / Công ty, số set đọc từ ghi chú) + lưới lịch tháng cho pages/DailyCalendar.tsx (Nhật ký ngày → Lịch tháng)
 │   ├── lucian/                 # CSS phần tử Lucian UX/UI Prompt (lucianlabs.dev/uxui-prompt, MIT): tokens.css ánh xạ --ux-* sang biến giao diện,
 │   │                           #   u070-toasts.css (chồng thông báo), u219-theme.css (đổi giao diện vòng tròn); giữ dòng license đầu file
-│   ├── components/             # Các component tái sử dụng (Header, CartModal, ShopMotion (khung motion + PopNumber; không có hiệu ứng hiện dần khi cuộn), Settings, UpdateWatcher tự tải lại khi có bản mới...)
+│   ├── components/             # Các component tái sử dụng (ProductImageEditor = khung chọn / xoay / kéo căn / phóng ảnh món ở Sản phẩm → Ảnh, Header, CartModal, ShopMotion (khung motion + PopNumber; không có hiệu ứng hiện dần khi cuộn), Settings, UpdateWatcher tự tải lại khi có bản mới...)
 │   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses, DisposalPage = Nhập liệu → Hàng huỷ ghi hàng không đủ chất lượng bán, BatchStatsPage = Báo cáo → Theo đợt nhập kèm cột thanh toán / hàng huỷ...)
 │
 ├── supabase/                   # Cấu hình và mã nguồn Backend Supabase
 │   ├── config.toml             # Cấu hình dự án Supabase cục bộ
-│   ├── migrations/             # Các file migration SQL (gồm 20261025250000_enable_vault.sql kích hoạt Supabase Vault, 20261101090000_revenue_dau_den.sql thêm kênh doanh thu Bán dầu đen, 20261104090000_stock_disposals_purchase_payment.sql thêm bảng hàng huỷ stock_disposals + purchases.paid_on)
+│   ├── migrations/             # Các file migration SQL (gồm 20261025250000_enable_vault.sql kích hoạt Supabase Vault, 20261101090000_revenue_dau_den.sql thêm kênh doanh thu Bán dầu đen, 20261104090000_stock_disposals_purchase_payment.sql thêm bảng hàng huỷ stock_disposals + purchases.paid_on, 20261107044100_product_images.sql thêm bucket product-images + cột products.image_url/image_x/image_y/image_zoom, 20261107050834_dba_hardening.sql siết quyền EXECUTE hàm, search_path Vault, index khoá ngoại, gộp policy ingredients)
 │   └── functions/              # Edge Functions chạy trên nền tảng Deno
 │       ├── admin-users/        # Quản lý tài khoản nhân viên
 │       └── chat-assistant/     # Trợ lý AI phân tích số liệu bán hàng
