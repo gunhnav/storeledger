@@ -1,0 +1,29 @@
+/* Lucian UX/UI Prompt #219 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#219
+   Circular-reveal dark mode cho nút Giao diện của Sổ Xanh (src/lib/themeReveal.ts). Trang khách Hogi luôn sáng nên không dùng. */
+
+/* Tắt hiệu ứng mờ chéo mặc định: chỉ còn vòng tròn clip-path do themeReveal.ts chạy */
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+/* Về sáng: ảnh trang tối nằm trên và thu vòng lại vào nút */
+html.theme-reveal-back::view-transition-old(root) {
+  z-index: 2;
+}
+html.theme-reveal-back::view-transition-new(root) {
+  z-index: 1;
+}
+
+/* Biểu tượng mặt trăng xoay lò xo khi chọn Tối (như nút trong trang tối của bản gốc) */
+.theme-switch button svg {
+  transition: transform 0.6s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.theme-switch button[data-mode='dark'].active svg {
+  transform: rotate(-90deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch button svg {
+    transition: none;
+  }
+}

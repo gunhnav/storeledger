@@ -577,6 +577,7 @@ export const ko: Record<string, string> = {
   'Đã đổi mật khẩu': '비밀번호가 변경되었습니다',
   'Đã đổi mật khẩu cho {value}': '{value}의 비밀번호가 변경되었습니다',
   'Đóng': '닫기',
+  'Thông báo': '알림',
   'Đăng nhập': '로그인',
   'Đăng nhập gần nhất: {time}': '최근 로그인: {time}',
   'Đăng xuất': '로그아웃',

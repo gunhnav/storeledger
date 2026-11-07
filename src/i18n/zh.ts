@@ -577,6 +577,7 @@ export const zh: Record<string, string> = {
   'Đã đổi mật khẩu': '密码已更改',
   'Đã đổi mật khẩu cho {value}': '已更改 {value} 的密码',
   'Đóng': '关闭',
+  'Thông báo': '通知',
   'Đăng nhập': '登录',
   'Đăng nhập gần nhất: {time}': '最近登录：{time}',
   'Đăng xuất': '退出登录',

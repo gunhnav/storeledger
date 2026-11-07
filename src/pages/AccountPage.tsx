@@ -125,7 +125,7 @@ export function AccountPage() {
               role="radio"
               aria-checked={mode === o.value}
               className={mode === o.value ? 'active' : undefined}
-              onClick={() => change(o.value)}
+              onClick={(e) => change(o.value, e.currentTarget)}
             >
               {t(o.label)}
             </button>

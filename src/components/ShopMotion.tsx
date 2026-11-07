@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { LazyMotion, MotionConfig, domAnimation, m } from 'motion/react'
-import { ONCE, SPRING, revealUp } from '../lib/shopMotion'
+import { SPRING } from '../lib/shopMotion'
 
 // Bọc trang cửa hàng: nạp bộ tính năng motion gọn (LazyMotion) và tự giảm hiệu ứng khi máy bật "giảm chuyển động".
 // Mọi m.* của trang cửa hàng phải nằm trong khung này (strict).
@@ -9,22 +9,6 @@ export function ShopMotion({ children }: { children: ReactNode }) {
     <LazyMotion features={domAnimation} strict>
       <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </LazyMotion>
-  )
-}
-
-// Khối hiện dần và trượt lên khi cuộn tới (một lần)
-export function Reveal({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
-  return (
-    <m.div
-      className={className}
-      variants={revealUp}
-      initial="hidden"
-      whileInView="show"
-      viewport={ONCE}
-      transition={delay ? { delay } : undefined}
-    >
-      {children}
-    </m.div>
   )
 }
 

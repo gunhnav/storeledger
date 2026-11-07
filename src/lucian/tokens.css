@@ -1,0 +1,82 @@
+/* Lucian UX/UI Prompt theme tokens · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/
+   Các phần tử Lucian (src/lucian/*) đọc màu từ --ux-*; ở đây trỏ --ux-* về biến giao diện của Sổ Xanh (index.css)
+   nên tự đổi theo chế độ sáng / tối. Trang khách Hogi (.shop) luôn sáng nên dùng bảng màu riêng của trang đó. */
+:root {
+  --ux-surface: var(--surface);
+  --ux-surface-2: var(--surface-2);
+  --ux-ink: var(--text-h);
+  --ux-ink-3: var(--muted);
+  --ux-line: var(--border);
+  --ux-line-2: color-mix(in srgb, var(--text-h) 17%, transparent);
+  --ux-accent: var(--accent);
+  --ux-mint: var(--accent);
+  --ux-warn: var(--orange);
+  --ux-danger: var(--danger);
+  --ux-shadow-strong: rgba(22, 48, 31, 0.3);
+  --ux-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ux-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ux-shadow-strong: rgba(0, 0, 0, 0.72);
+  }
+}
+:root[data-theme='dark'] {
+  --ux-shadow-strong: rgba(0, 0, 0, 0.72);
+}
+/* Hogi Food (/hogi, /shop/<mã>, hogifood.vercel.app): giống --s-* của .shop trong index.css */
+:root:has(.shop) {
+  --ux-surface: #fff;
+  --ux-surface-2: #eaf3e6;
+  --ux-ink: #16301f;
+  --ux-ink-3: #5d6d62;
+  --ux-line: #e6dec9;
+  --ux-line-2: rgba(22, 48, 31, 0.17);
+  --ux-accent: #256b40;
+  --ux-mint: #256b40;
+  --ux-warn: #c2410c;
+  --ux-danger: #b42318;
+  --ux-shadow-strong: rgba(22, 48, 31, 0.3);
+}
+
+/* Nền chung của mọi phần tử .ux (giữ font của dự án thay cho Pretendard) */
+.ux,
+.ux *,
+.ux *::before,
+.ux *::after {
+  box-sizing: border-box;
+}
+.ux {
+  font-family: inherit;
+  color: var(--ux-ink);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+:where(.ux) :is(button, input, textarea, select) {
+  font: inherit;
+  color: inherit;
+}
+:where(.ux) button {
+  cursor: pointer;
+}
+.ux :focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 3px;
+}
+.ux [hidden] {
+  display: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ux,
+  .ux *,
+  .ux *::before,
+  .ux *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

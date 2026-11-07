@@ -122,6 +122,25 @@ body {
   background: var(--bg);
 }
 
+/* Bề mặt trình duyệt theo bảng màu (chọn chữ, con trỏ nhập, ô chọn), chữ không bị rớt một từ cuối dòng */
+:root {
+  accent-color: var(--accent);
+  caret-color: var(--accent);
+}
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  color: var(--text-h);
+}
+p,
+li {
+  text-wrap: pretty;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
 h1,
 h2 {
   color: var(--text-h);
@@ -313,7 +332,7 @@ a {
   gap: 12px;
   width: 100%;
   padding: 12px 20px;
-  background: var(--card);
+  background: var(--surface);
   color: var(--text-h);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -321,12 +340,12 @@ a {
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: all 0.15s ease-in-out;
-  margin-top: 12px;
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
+  margin-top: 6px;
 }
 .btn-google:hover:not(:disabled) {
-  background: var(--hover);
-  border-color: var(--border-strong);
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--text-h) 24%, var(--border));
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 .btn-google:active:not(:disabled) {
@@ -338,13 +357,15 @@ a {
 }
 .login-hint {
   font-size: 13px;
-  margin: 12px 0 0;
+  margin: 0;
   line-height: 1.5;
+  text-align: center;
+  text-wrap: pretty;
 }
 .login-divider {
   display: flex;
   align-items: center;
-  margin: 18px 0 12px;
+  margin: 4px 0 0;
   text-align: center;
 }
 .login-divider::before,
@@ -356,7 +377,7 @@ a {
 .login-divider span {
   padding: 0 12px;
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--muted);
 }
 .login-toggle-btn {
   font-size: 13px;
@@ -368,12 +389,11 @@ a {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 8px;
 }
 
 /* Hàng chờ phê duyệt */
 .approval-queue {
-  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
   border-radius: 12px;
   padding: 20px;
@@ -408,7 +428,7 @@ a {
   margin-top: 14px;
 }
 .approval-card {
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 16px;
@@ -434,7 +454,7 @@ a {
 }
 .staff-manual-details {
   margin-bottom: 24px;
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 18px;
@@ -779,7 +799,7 @@ th {
   background: var(--ok-bg);
   padding: 10px 14px;
   border-radius: 12px;
-  border-left: 4px solid var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
   margin: 0;
   font-weight: 500;
 }
@@ -865,7 +885,6 @@ tr.inactive td {
   gap: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-top: 3px solid var(--highlight);
   border-radius: 14px;
   padding: 12px 14px;
   box-shadow: var(--shadow);
@@ -1641,10 +1660,6 @@ button.block {
   line-height: 1;
   color: var(--accent);
   margin-bottom: 12px;
-  background: linear-gradient(135deg, var(--lime), var(--accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 .error-page h1 {
   font-size: 24px;
@@ -1915,13 +1930,13 @@ tr.row-editing td {
 }
 .set-group {
   margin: 0;
-  border-left: 4px solid var(--border);
 }
 .set-group.ok {
-  border-left-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 .set-group.has-issue {
-  border-left-color: var(--low-fg);
+  border-color: color-mix(in srgb, var(--low-fg) 50%, var(--border));
+  background: color-mix(in srgb, var(--low-bg) 35%, var(--surface));
 }
 .set-group-head {
   display: flex;
@@ -1997,7 +2012,8 @@ tr.row-editing td {
   display: block;
 }
 .grid-table tr.grid-over td.sticky-col {
-  box-shadow: inset 3px 0 0 var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  color: var(--danger);
 }
 .grid-problems {
   margin: 10px 0 0;
@@ -2640,105 +2656,7 @@ select option {
   font-variant-numeric: tabular-nums;
 }
 
-/* Thông báo nổi (toast) */
-.toasts {
-  position: fixed;
-  top: 76px;
-  right: 16px;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: min(380px, calc(100vw - 32px));
-  pointer-events: none;
-}
-.toast {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 12px 14px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-h);
-  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.4);
-  pointer-events: auto;
-  animation: toast-in 0.2s ease-out;
-}
-.toast-icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  font-weight: 800;
-  font-size: 14px;
-}
-.toast-success .toast-icon {
-  background: var(--accent);
-  color: var(--accent-text);
-}
-.toast-error .toast-icon {
-  background: var(--danger);
-  color: #fff;
-}
-.toast-text {
-  flex: 1;
-  font-weight: 500;
-  line-height: 1.35;
-}
-.toast-close {
-  flex: none;
-  min-height: 28px;
-  width: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: var(--muted);
-  font-size: 18px;
-  box-shadow: none;
-}
-.toast-close:hover:not(:disabled) {
-  background: var(--surface-2);
-}
-/* Vạch đếm ngược 3 giây */
-.toast-timer {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 3px;
-  width: 100%;
-  transform-origin: left;
-  animation: toast-timer linear forwards;
-}
-.toast-success .toast-timer {
-  background: var(--accent);
-}
-.toast-error .toast-timer {
-  background: var(--danger);
-}
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-}
-@keyframes toast-timer {
-  to {
-    transform: scaleX(0);
-  }
-}
-@media (max-width: 520px) {
-  .toasts {
-    top: 12px;
-    right: 50%;
-    transform: translateX(50%);
-  }
-}
+/* Thông báo nổi (toast): xem src/lucian/u070-toasts.css (Lucian UX/UI #070) */
 
 /* Khung đơn: không cho các phần co lại (danh sách bị cắt), khung tự cuộn khi dài */
 .pos-side > * {
@@ -3635,17 +3553,18 @@ input.overridden {
   padding: 10px 14px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  border-left-width: 4px;
   background: var(--surface);
 }
 .insight-warn {
-  border-left-color: #e0a800;
+  border-color: color-mix(in srgb, var(--low-fg) 40%, var(--border));
+  background: color-mix(in srgb, var(--low-bg) 45%, var(--surface));
 }
 .insight-good {
-  border-left-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--ok-bg) 45%, var(--surface));
 }
 .insight-info {
-  border-left-color: var(--muted);
+  border-color: var(--border);
 }
 .bundau-report .stat-sub {
   font-size: 12px;
@@ -3692,13 +3611,36 @@ input.overridden {
   background: var(--s-bg);
   color: var(--s-ink);
   font-family: 'Be Vietnam Pro', system-ui, sans-serif;
-  padding-bottom: 96px;
   scroll-behavior: smooth;
+}
+.shop ::selection {
+  background: rgba(37, 107, 64, 0.22);
+  color: var(--s-ink);
+}
+.shop :is(a, button):focus-visible {
+  outline: 2px solid var(--s-green);
+  outline-offset: 2px;
+}
+.shop :is(.shop-hero, .shop-footer) :is(a, button):focus-visible {
+  outline-color: #f7f3ea;
+}
+/* Nút bấm: đổi nền khi rê chuột, nhún nhẹ khi bấm */
+.shop-cta,
+.shop-contact,
+.shop-footer-btn {
+  transition: background-color 0.15s ease-out, transform 0.1s ease-out;
+}
+.shop-cta:active,
+.shop-contact:active,
+.shop-footer-btn:active {
+  transform: scale(0.97);
+}
+.shop-contact:hover {
+  background: var(--s-green-dark);
 }
 .shop h1,
 .shop h2,
 .shop h3,
-.shop h4,
 .shop strong {
   color: var(--s-ink);
 }
@@ -4048,15 +3990,6 @@ input.overridden {
   flex-direction: column;
   align-items: center;
 }
-.shop-eyebrow {
-  margin-bottom: 12px;
-  padding: 5px 14px;
-  border-radius: 999px;
-  background: #fdf3b8;
-  color: #6b5a00;
-  font-size: 13px;
-  font-weight: 700;
-}
 .shop-hero h1 {
   margin: 0 0 10px;
   font-family: 'Lora', Georgia, serif;
@@ -4135,7 +4068,7 @@ input.overridden {
   height: 42px;
   border-radius: 50%;
   background: var(--s-soft);
-  font-size: 22px;
+  color: var(--s-green);
 }
 .shop-points strong {
   display: block;
@@ -4214,7 +4147,7 @@ input.overridden {
   grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
   gap: 16px;
 }
-/* Khung bọc để hiệu ứng hiện dần không đè lên hiệu ứng nhấc thẻ khi rê chuột */
+/* Khung bọc thẻ món: giữ thẻ giãn đều chiều cao trong lưới */
 .shop-card-wrap {
   display: flex;
   min-width: 0;
@@ -4231,10 +4164,10 @@ input.overridden {
   background: var(--s-card);
   border: 2px solid transparent;
   box-shadow: 0 4px 14px rgba(22, 48, 31, 0.07);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease-out, border-color 0.15s ease-out;
 }
 .shop-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(22, 48, 31, 0.12);
 }
 .shop-card.is-picked {
@@ -4257,10 +4190,31 @@ input.overridden {
   height: 100%;
   object-fit: cover;
   object-position: center 28%;
-  transition: transform 0.25s ease;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .shop-card:hover .shop-art img {
-  transform: scale(1.04);
+  transform: scale(1.03);
+}
+.shop-size,
+.shop-tabs button {
+  transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
+}
+.shop-size:hover:not(.active),
+.shop-tabs button:hover:not(.active) {
+  border-color: color-mix(in srgb, var(--s-green) 45%, var(--s-line));
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-card,
+  .shop-art img,
+  .shop-cta,
+  .shop-contact,
+  .shop-footer-btn {
+    transition: none;
+  }
+  .shop-card:hover,
+  .shop-card:hover .shop-art img {
+    transform: none;
+  }
 }
 .shop-picked {
   position: absolute;
@@ -4285,7 +4239,7 @@ input.overridden {
   gap: 8px;
   padding: 14px 16px 16px;
 }
-.shop-body h4 {
+.shop-body h3 {
   margin: 0;
   font-size: 18px;
 }
@@ -4478,6 +4432,10 @@ input.overridden {
   background: #16301f;
   color: #f7f3ea;
 }
+/* Chừa chỗ cho thanh giỏ hàng nổi ở đáy, nền chân trang kéo dài xuống dưới thanh */
+.shop.has-cart .shop-footer {
+  padding-bottom: 88px;
+}
 .shop-footer-in {
   display: flex;
   flex-direction: column;
@@ -4622,10 +4580,7 @@ input.overridden {
 
 /* ---- Phong cách "Lofi Organic": hero xanh đậm, tiêu đề serif có chữ nghiêng, nhãn nhỏ viết hoa ---- */
 .shop-hero {
-  background:
-    radial-gradient(560px 360px at 82% 30%, rgba(238, 205, 21, 0.18), transparent 70%),
-    radial-gradient(520px 380px at 8% 100%, rgba(120, 190, 140, 0.16), transparent 70%),
-    linear-gradient(160deg, #16301f 0%, #1f4a30 100%);
+  background: linear-gradient(160deg, #16301f 0%, #1f4a30 100%);
 }
 .shop-hero h1 {
   color: #f7f3ea;
@@ -4638,11 +4593,6 @@ input.overridden {
 }
 .shop-hero p {
   color: #cfe0d3;
-}
-.shop-eyebrow {
-  background: rgba(238, 205, 21, 0.18);
-  color: #f4dc58;
-  letter-spacing: 0.02em;
 }
 .shop-cta {
   background: #f7f3ea;
@@ -4663,15 +4613,6 @@ input.overridden {
 .shop-hero-art {
   filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.35));
 }
-.shop-kicker {
-  margin: 0 0 6px;
-  color: #c0451a;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.shop-steps .shop-kicker,
 .shop-steps h2 {
   text-align: center;
 }
@@ -5013,7 +4954,7 @@ input.overridden {
   .shop-body {
     padding: 12px;
   }
-  .shop-body h4 {
+  .shop-body h3 {
     font-size: 16px;
   }
   .shop-contact {
@@ -5118,7 +5059,8 @@ input.overridden {
   gap: 8px;
 }
 .preorder-new {
-  border-left: 4px solid var(--chart-2);
+  border-color: color-mix(in srgb, var(--chart-2) 55%, var(--border));
+  background: color-mix(in srgb, var(--chart-2) 6%, var(--surface));
 }
 .preorder-head {
   display: flex;

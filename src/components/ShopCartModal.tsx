@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, m } from 'motion/react'
 import { supabase } from '../lib/supabase'
+import { useToast } from '../lib/toast'
 import { PopNumber } from './ShopMotion'
 import { SOFT_SPRING, SPRING, revealUp, stagger } from '../lib/shopMotion'
 import { bankName } from '../lib/banks'
@@ -43,6 +44,7 @@ interface ShopCartModalProps {
 // Hộp thoại đơn đặt trước. Luồng: điền domain, tầng -> bấm "Đặt hàng" (máy chủ kiểm tra, tự tính lại giá, cấp mã đơn và
 // báo cho quán) -> lúc đó mới hiện mã QR chuyển khoản có sẵn số tiền + nội dung, kèm tải QR / tải hoá đơn / nhắn Hangout.
 export function ShopCartModal({ open, onClose, storeCode, cart, items, store, onSetLineQty, onPlaced }: ShopCartModalProps) {
+  const toast = useToast()
   const [customer, setCustomer] = useState<Customer>(EMPTY_CUSTOMER)
   const [tried, setTried] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -120,7 +122,11 @@ export function ShopCartModal({ open, onClose, storeCode, cart, items, store, on
     setSubmitError(null)
     const { data, error } = await supabase.rpc('submit_preorder', { p_store_code: storeCode, p_order: preorderPayload(cart, customer) })
     setSubmitting(false)
-    if (error || !data) return setSubmitError(error?.message ?? 'Chưa gửi được đơn, bạn thử lại nhé.')
+    if (error || !data) {
+      toast.error('Chưa gửi được đơn, bạn thử lại nhé.')
+      return setSubmitError(error?.message ?? 'Chưa gửi được đơn, bạn thử lại nhé.')
+    }
+    toast.success(`Đã gửi đơn ${data.code} cho quán`)
     setPlaced({ code: data.code, total: Number(data.total), lines: data.lines.map((l) => ({ ...l, unit_price: Number(l.unit_price) })) })
     onPlaced()
   }

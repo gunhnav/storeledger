@@ -86,12 +86,16 @@ web-nhap-lieu/
 │   │   ├── emvQr.ts            # Tạo chuỗi thanh toán mã QR EMVCo chuẩn Napas
 │   │   ├── invoiceImage.ts     # Vẽ hoá đơn bán hàng ra file ảnh PNG bằng Canvas
 │   │   ├── appVersion.ts       # So mã build đang chạy với /version.json trên server (phát hiện bản mới sau deploy)
+│   │   ├── toastStack.ts       # Bộ máy chồng thông báo Lucian UX/UI #070 (ToastProvider dùng, cả Sổ Xanh và Hogi)
+│   │   ├── themeReveal.ts      # Đổi sáng/tối lan vòng tròn từ nút bấm (Lucian UX/UI #219, View Transitions API)
 │   │   ├── slip.ts             # Slip Node (lucian-labs/slip-node): chuyển trang giữa Sổ Xanh ⇄ Hogi Food / web khác không nháy trắng; script inline trong index.html + liftSlip() ở main.tsx (test: slip.test.ts)
-│   │   ├── shopMotion.ts       # Kiểu chuyển động dùng chung (lò xo, hiện dần, stagger) cho trang đặt hàng công khai, dùng thư viện motion
+│   │   ├── shopMotion.ts       # Kiểu chuyển động dùng chung (lò xo khi bấm, stagger trong hộp thoại đơn) cho trang đặt hàng công khai, dùng thư viện motion
 │   │   ├── companySalesHistory.ts # Tổng hợp lịch sử đơn bán kênh Công ty (khối trong tab Báo cáo, pages/CompanySalesHistory.tsx)
 │   │   ├── analytics/disposals.test.ts # Test hàng huỷ (trừ tồn theo nơi để, giá trị huỷ theo lô) và ngày thanh toán đợt nhập
 │   │   └── dailyCalendar.ts    # Gom đơn bán theo ngày (Quán / Công ty, số set đọc từ ghi chú) + lưới lịch tháng cho pages/DailyCalendar.tsx (Nhật ký ngày → Lịch tháng)
-│   ├── components/             # Các component tái sử dụng (Header, CartModal, ShopMotion (khung + Reveal + PopNumber hiệu ứng trang cửa hàng), Settings, UpdateWatcher tự tải lại khi có bản mới...)
+│   ├── lucian/                 # CSS phần tử Lucian UX/UI Prompt (lucianlabs.dev/uxui-prompt, MIT): tokens.css ánh xạ --ux-* sang biến giao diện,
+│   │                           #   u070-toasts.css (chồng thông báo), u219-theme.css (đổi giao diện vòng tròn); giữ dòng license đầu file
+│   ├── components/             # Các component tái sử dụng (Header, CartModal, ShopMotion (khung motion + PopNumber; không có hiệu ứng hiện dần khi cuộn), Settings, UpdateWatcher tự tải lại khi có bản mới...)
 │   └── pages/                  # Các trang màn hình giao diện (ShopPage, Revenue, Expenses, DisposalPage = Nhập liệu → Hàng huỷ ghi hàng không đủ chất lượng bán, BatchStatsPage = Báo cáo → Theo đợt nhập kèm cột thanh toán / hàng huỷ...)
 │
 ├── supabase/                   # Cấu hình và mã nguồn Backend Supabase

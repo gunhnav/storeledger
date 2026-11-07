@@ -1,4 +1,5 @@
-// Kiểu chuyển động dùng chung cho trang đặt hàng công khai (theo phong cách Animate UI: nhẹ, lò xo, hiện dần khi cuộn tới).
+// Kiểu chuyển động dùng chung cho trang đặt hàng công khai: phản hồi khi bấm (lò xo ngắn) và hộp thoại đơn hàng.
+// Không có hiệu ứng hiện dần khi cuộn (theo chuẩn design-taste-frontend / impeccable: nội dung hiện sẵn, chỉ chuyển động khi đổi trạng thái).
 // Thư viện motion chỉ nạp cùng trang cửa hàng (chunk riêng), không ảnh hưởng các trang quản trị.
 import type { Transition, Variants } from 'motion/react'
 
@@ -20,6 +21,3 @@ export const stagger = (gap = 0.07, delay = 0): Variants => ({
   hidden: {},
   show: { transition: { staggerChildren: gap, delayChildren: delay } },
 })
-
-// Chỉ phát hiệu ứng một lần khi phần tử vào khung nhìn
-export const ONCE = { once: true, amount: 0.2 } as const

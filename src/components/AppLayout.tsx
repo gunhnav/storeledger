@@ -215,7 +215,8 @@ function UserMenu({
                 role="radio"
                 aria-checked={mode === choice.value}
                 className={mode === choice.value ? 'active' : undefined}
-                onClick={() => change(choice.value)}
+                data-mode={choice.value}
+                onClick={(e) => change(choice.value, e.currentTarget)}
                 title={t(choice.label)}
               >
                 <Icon name={choice.icon} size={16} />

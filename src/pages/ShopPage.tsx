@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { AnimatePresence, m } from 'motion/react'
 import { supabase } from '../lib/supabase'
+import { useToast } from '../lib/toast'
 import { ShopCartModal } from '../components/ShopCartModal'
-import { PopNumber, Reveal, ShopMotion } from '../components/ShopMotion'
-import { ONCE, SOFT_SPRING, SPRING, revealUp, stagger } from '../lib/shopMotion'
+import { PopNumber, ShopMotion } from '../components/ShopMotion'
+import { SOFT_SPRING, SPRING } from '../lib/shopMotion'
 import {
   SET_SIZES,
   addSet,
@@ -97,6 +98,30 @@ function ShopLoading() {
 
 // Trang đặt trước của một quán (/hogi, /shop/<mã quán>): khách không cần đăng nhập.
 // Bán theo SET 4 hoặc 6 hũ, khách tự chọn vị cho từng set (giống kênh Công ty). Không lấy tồn kho: ai đặt gì nhận đó.
+// Biểu tượng nét vẽ cho 3 điểm nổi bật (thay emoji): cùng nét 1.8, 24px, màu theo chữ
+const POINT_ICONS = {
+  set: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 9h6v9a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+      <path d="M13 9h6v9a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z" />
+      <path d="M4.5 9h7M12.5 9h7M7 6h2M15 6h2" />
+    </svg>
+  ),
+  mix: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="9" r="5" />
+      <circle cx="15" cy="9" r="5" />
+      <circle cx="12" cy="14.5" r="5" />
+    </svg>
+  ),
+  auto: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="M8.5 12.2l2.3 2.3 4.7-5" />
+    </svg>
+  ),
+}
+
 // Tiếng Việt cố định vì dành cho khách của quán (không đi qua bộ dịch của app).
 export function ShopPage({ code: fixedCode }: { code?: string }) {
   const params = useParams()
@@ -113,6 +138,8 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const [copies, setCopies] = useState(1)
   const [open, setOpen] = useState(false)
   const [copiedContact, setCopiedContact] = useState(false)
+  // Thông báo nổi dạng chồng (Lucian #070), dùng chung với Sổ Xanh
+  const toast = useToast()
 
   const load = useCallback(async () => {
     try {
@@ -241,6 +268,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
   const onContactHangout = () => {
     if (!store?.domain) return
     navigator.clipboard?.writeText(hangoutEmail(store.domain)).catch(() => undefined)
+    toast.success(`Đã chép ${hangoutEmail(store.domain)}, dán vào Google Chat để nhắn quán`)
     setCopiedContact(true)
     setTimeout(() => setCopiedContact(false), 2500)
   }
@@ -271,7 +299,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
 
   return (
     <ShopMotion>
-    <div className="shop" id="top">
+    <div className={`shop${count > 0 && !open ? ' has-cart' : ''}`} id="top">
       <header className="shop-header">
         <div className="shop-header-in">
           <a className="shop-brand" href="#top">
@@ -310,65 +338,60 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
 
       <section className="shop-hero">
         <div className="shop-hero-in">
-          <m.div className="shop-hero-copy" variants={stagger(0.09, 0.05)} initial="hidden" animate="show">
-            <m.span className="shop-eyebrow" variants={revealUp}>{store.name}</m.span>
-            <m.h1 variants={revealUp}>
+          <div className="shop-hero-copy">
+            <h1>
               Sữa chua dẻo,
               <em>dopamine dạng hũ.</em>
-            </m.h1>
-            <m.p variants={revealUp}>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi đặt hàng trực tiếp tiện lợi.'}</m.p>
-            <m.div className="shop-hero-cta" variants={revealUp}>
+            </h1>
+            <p>{store.tagline || 'Chọn set 4 hoặc 6 hũ, tự mix vị bạn thích rồi đặt hàng trực tiếp tiện lợi.'}</p>
+            <div className="shop-hero-cta">
               <a className="shop-cta" href="#chon-set">
                 Chọn set ngay
               </a>
               <a className="shop-cta shop-cta-ghost" href="#cach-dat">
                 Cách đặt hàng
               </a>
-            </m.div>
-          </m.div>
-          <m.img
+            </div>
+          </div>
+          <img
             className="shop-hero-art"
             src="/shop/hero.svg"
             alt="Chú hũ sữa chua Hogi cùng các vị phô mai, matcha, ca cao, nếp cẩm"
             width={640}
             height={420}
-            initial={{ opacity: 0, scale: 0.92, y: 14 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ ...SOFT_SPRING, delay: 0.15 }}
           />
         </div>
       </section>
 
-      <m.ul className="shop-points" variants={stagger(0.1)} initial="hidden" whileInView="show" viewport={ONCE}>
-        <m.li variants={revealUp}>
-          <span aria-hidden="true">🥣</span>
+      <ul className="shop-points">
+        <li>
+          <span aria-hidden="true">{POINT_ICONS.set}</span>
           <div>
             <strong>Set 4 hoặc 6 hũ</strong>
             <small>Đặt theo set, nhiều set cũng được</small>
           </div>
-        </m.li>
-        <m.li variants={revealUp}>
-          <span aria-hidden="true">🎨</span>
+        </li>
+        <li>
+          <span aria-hidden="true">{POINT_ICONS.mix}</span>
           <div>
             <strong>Tự chọn vị</strong>
             <small>Mix đa dạng vị trong một set</small>
           </div>
-        </m.li>
-        <m.li variants={revealUp}>
-          <span aria-hidden="true">⚡</span>
+        </li>
+        <li>
+          <span aria-hidden="true">{POINT_ICONS.auto}</span>
           <div>
             <strong>Tự động nhận đơn</strong>
             <small>Chỉ cần đặt và thanh toán, nhắn hangout khi cần hỗ trợ</small>
           </div>
-        </m.li>
-      </m.ul>
+        </li>
+      </ul>
 
       <main id="chon-set" className="shop-menu">
-        <Reveal className="shop-menu-head">
-          <p className="shop-kicker">Thực đơn theo set</p>
+        <div className="shop-menu-head">
           <h2>Tự soạn set của bạn</h2>
           <p className="shop-sub">Chọn cỡ set, rồi chọn số hũ cho từng vị đến khi đủ.</p>
-        </Reveal>
+        </div>
 
         {items.length === 0 ? (
           <p className="shop-state">Thực đơn đang được cập nhật.</p>
@@ -409,7 +432,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
             </div>
             )}
 
-            <m.div key={activeLine} className="shop-grid" variants={stagger(0.05)} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.05 }}>
+            <div className="shop-grid">
               {lineItems.map((item) => {
                 const [c1, c2] = flavorColors(item.name)
                 const image = flavorImage(item.name)
@@ -418,7 +441,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                 const n = single ? singleQty(cart, item.id) : (mix[item.id] ?? 0)
                 const ok = single ? item.price !== null : selectable(item, size, store)
                 return (
-                  <m.div key={item.id} className="shop-card-wrap" variants={revealUp}>
+                  <div key={item.id} className="shop-card-wrap">
                   <article className={`shop-card${n > 0 ? ' is-picked' : ''}${ok ? '' : ' is-out'}`}>
                     <div className="shop-art" style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }} aria-hidden="true">
                       {image ? <img src={image} alt="" loading="lazy" width={520} height={430} style={{ objectPosition: flavorPosition(item.name) }} /> : <span>{flavorEmoji(item.name)}</span>}
@@ -432,7 +455,7 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                     </div>
                     <div className="shop-body">
                       <div className="shop-title">
-                        <h4>{flavorTitle(item.name)}</h4>
+                        <h3>{flavorTitle(item.name)}</h3>
                         {note && <p className="shop-note">{note}</p>}
                       </div>
                       {(single || perJar) && item.price !== null && (
@@ -466,10 +489,10 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
                       )}
                     </div>
                   </article>
-                  </m.div>
+                  </div>
                 )
               })}
-            </m.div>
+            </div>
 
             {!singleLine && (
             <div className={`shop-builder${count > 0 ? ' has-cartbar' : ''}`} aria-live="polite">
@@ -508,27 +531,24 @@ export function ShopPage({ code: fixedCode }: { code?: string }) {
 
       <section id="cach-dat" className="shop-steps">
         <div className="shop-steps-in">
-          <Reveal>
-            <p className="shop-kicker">Đơn giản trong 3 bước</p>
-            <h2>Cách đặt hàng</h2>
-          </Reveal>
-          <m.ol variants={stagger(0.12)} initial="hidden" whileInView="show" viewport={ONCE}>
-            <m.li variants={revealUp}>
+          <h2>Cách đặt hàng</h2>
+          <ol>
+            <li>
               <span className="shop-step-no">1</span>
               <strong>Chọn cỡ set</strong>
               <p>Set 4 hũ hoặc set 6 hũ, tuỳ nhu cầu của bạn.</p>
-            </m.li>
-            <m.li variants={revealUp}>
+            </li>
+            <li>
               <span className="shop-step-no">2</span>
               <strong>Chọn vị cho set</strong>
               <p>Bấm + ở từng vị đến khi đủ số hũ rồi "Thêm set". Muốn set khác thì soạn tiếp.</p>
-            </m.li>
-            <m.li variants={revealUp}>
+            </li>
+            <li>
               <span className="shop-step-no">3</span>
               <strong>Đặt hàng & Nhận hàng</strong>
               <p>Điền domain và tầng nhận hàng. Quán sẽ tự động nhận trạng thái của đơn khi bạn đặt hàng và chuyển khoản. Nếu cần tư vấn gì thêm, bạn có thể bấm "Nhắn Hangout".</p>
-            </m.li>
-          </m.ol>
+            </li>
+          </ol>
         </div>
       </section>
 

@@ -577,6 +577,7 @@ export const en: Record<string, string> = {
   'Đã đổi mật khẩu': 'Password changed',
   'Đã đổi mật khẩu cho {value}': 'Password changed for {value}',
   'Đóng': 'Close',
+  'Thông báo': 'Notifications',
   'Đăng nhập': 'Sign in',
   'Đăng nhập gần nhất: {time}': 'Last sign-in: {time}',
   'Đăng xuất': 'Sign out',

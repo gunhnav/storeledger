@@ -577,6 +577,7 @@ export const ja: Record<string, string> = {
   'Đã đổi mật khẩu': 'パスワードを変更しました',
   'Đã đổi mật khẩu cho {value}': '{value} のパスワードを変更しました',
   'Đóng': '閉じる',
+  'Thông báo': '通知',
   'Đăng nhập': 'ログイン',
   'Đăng nhập gần nhất: {time}': '最終ログイン：{time}',
   'Đăng xuất': 'ログアウト',

@@ -96,7 +96,7 @@ export function LoginPage() {
           <span>{googleLoading ? t('Đang chuyển tới Google…') : t('Đăng nhập bằng Google')}</span>
         </button>
 
-        <p className="login-hint muted center">
+        <p className="login-hint muted">
           {t('Đăng nhập nhanh với tài khoản Google. Tài khoản mới sẽ vào hàng chờ để quản trị duyệt.')}
         </p>
 
